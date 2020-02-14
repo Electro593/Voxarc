@@ -1,0 +1,4 @@
+*.lnk
+*.pdb
+.vscode/
+/build
