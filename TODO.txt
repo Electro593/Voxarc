@@ -1,0 +1,93 @@
+Remove std libraries
+Remove GLFW
+Remove GLEW
+Remove GL (Maybe)
+Independent coordinate systems, rotations, resizeable
+Occlusion, cull non-viewable vertices
+Stream IO
+Render distance
+Thread chunk updates and rebuilds
+Toroidal world (teleport to other side)
+Upgradeable player
+
+TODO(andrew):
+- Engine
+  - Physics / Game Update
+  - Graphics / Renderer
+    - SIMD
+  - Multi-Threading
+  - Debug
+  - Configurations
+  - Load Files
+  - Packed Assets
+  - Preprocessor
+  - Sound
+    - Procedural MIDI?
+- Game
+  - Procedural Generation
+    - Toroidal?
+  - Enemies
+  - AI NPCs
+
+- Repair parts of a computer
+- The character is the computer
+- As it's repaired, better graphics and more abilities
+- Open world sandbox
+- Add components and repair them to upgrade, can program specific abilities
+- Last AI in abandoned, destroyed Earth after WWIII
+- Visuals
+  - Dimensions (0D, 1D, 2D, 3D, 4D(?))
+    - 0D: No visuals
+    - 1D: Straight line, ultrasound
+    - 2D:
+      - Can see a flat plane, no depth (motion sickness much?)
+      - Ultrasound depth testing horizontally or vertically
+    - 3D: Can see on all three axes
+  - Color
+    - Channels: Red, Green, Blue, Alpha, Infrared (heat), UV (exposed electricity)
+    - 0  Bits:
+      - 2^0,  0  channels
+      - 2^0 color lookups
+    - 1  Bits:
+      - 2^1,  1  channel
+      - 2^1 color lookups
+    - 2  Bits:
+      - 2^1,  2  channels
+      - 2^2,  1  channel
+      - 2^2 color lookups
+    - 4  Bits:
+      - 2^1,  4  channels
+      - 2^2,  2  channels
+      - 2^4,  1  channel
+      - 2^4 color lookups
+    - 8  Bits:
+      - 2^1,  8  channels (capped at 6)
+      - 2^2,  4  channels
+      - 2^4,  2  channels
+      - 2^8,  1  channel
+      - 2^8 color lookups
+    - 16 Bits:
+      - 2^1,  16 channels (capped at 6)
+      - 2^2,  8  channels (capped at 6)
+      - 2^4,  4  channels
+      - 2^8,  2  channels
+      - 2^16, 1  channel
+      - 2^16 color lookups
+    - 24 Bits:
+      - 2^1,  24 channels (capped at 6)
+      - 2^2,  12 channels (capped at 6)
+      - 2^3,  8  channels (capped at 6)
+      - 2^4,  6  channels
+      - 2^6,  4  channels
+      - 2^8,  3  channels
+      - 2^12, 2  channels
+      - 2^24, 1  channel
+      - 2^24 color lookups
+    - 32 Bits:
+      - 2^1,  32 channels (capped at 6)
+      - 2^2,  16 channels (capped at 6)
+      - 2^4,  8  channels (capped at 6)
+      - 2^8,  4  channels
+      - 2^16, 2  channels
+      - 2^32, 1  channel
+      - 2^32 color lookups
