@@ -327,8 +327,6 @@
     PROC(void, OpenFile,         memory_handle *FileHandle, c08 *FileName) \
     PROC(void, ReadDataFromFile, memory_handle *Dest, memory_handle *FileHandle, size Offset) \
     PROC(vptr, ReserveMemory,    size Size) \
-    PROC(void, CaptureCursor,    void) \
-    PROC(void, ReleaseCursor,    void) \
 
 #define PROC(ReturnType, Name, ...) \
     typedef VOXAPI ReturnType VOXAPIENTRY Name##proc(__VA_ARGS__); \

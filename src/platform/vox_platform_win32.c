@@ -240,8 +240,6 @@ Win32CaptureCursor(void)
     ClientToScreen(Data.Window, (win32_point*)&ClipRect.Left);
     ClientToScreen(Data.Window, (win32_point*)&ClipRect.Right);
     ClipCursor(&ClipRect);
-    
-    Data.Flags.CursorIsCaptured = TRUE;
 }
 
 local_func void
@@ -249,8 +247,6 @@ Win32ReleaseCursor(void)
 {
     SetCursor(LoadCursorA(0, IDC_ARROW));
     ClipCursor(0);
-    
-    Data.Flags.CursorIsCaptured = FALSE;
 }
 
 local_func s64 WINAPIENTRY
@@ -275,7 +271,6 @@ Win32WindowCallback(vptr Window,
             if(Data.Flags.CursorIsCaptured)
             {
                 Win32ReleaseCursor();
-                Data.Flags.CursorIsCaptured = TRUE;
             }
             Data.Flags.GameIsFocused = FALSE;
         } break;
@@ -390,8 +385,6 @@ WinMain(vptr Instance,
     OpenFile = Win32OpenFile;
     ReadDataFromFile = Win32ReadDataFromFile;
     ReserveMemory = Win32ReserveMemory;
-    CaptureCursor = Win32CaptureCursor;
-    ReleaseCursor = Win32ReleaseCursor;
     
     if(RegisterClassA(&WindowClass))
     {
@@ -417,6 +410,7 @@ WinMain(vptr Instance,
             
             Data.Flags.GameIsRunning = TRUE;
             Data.Flags.GameIsFocused = TRUE;
+            b08 WasCursorCaptured = FALSE;
             
             while(Data.Flags.GameIsRunning)
             {
@@ -428,6 +422,19 @@ WinMain(vptr Instance,
                     TranslateMessage(&Message);
                     DispatchMessageA(&Message);
                 }
+                
+                if(Data.Flags.CursorIsCaptured != WasCursorCaptured)
+                {
+                    if(Data.Flags.CursorIsCaptured)
+                    {
+                        Win32CaptureCursor();
+                    }
+                    else
+                    {
+                        Win32ReleaseCursor();
+                    }
+                    WasCursorCaptured = Data.Flags.CursorIsCaptured;
+                }                
                 
                 if(Data.Flags.GameIsFocused)
                 {

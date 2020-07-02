@@ -29,8 +29,6 @@ InitGame(game_state *State)
     memory_handle *UtilMemoryHandle = State->UtilHandlePool->Handles;
     memory_handle *ChunksMemoryHandle = State->ChunksHandlePool->Handles;
     
-    ReleaseCursor();
-    
     State->Config = ReadConfig(UtilMemoryHandle, "config.cfg");
     State->Program3DID = LoadShaders(UtilMemoryHandle, "shaders/shader3d.vert", "shaders/shader3d.frag");
     glUseProgram(State->Program3DID);
@@ -143,8 +141,8 @@ UpdateGame(game_input *Input, game_state *State, platform_flags *Flags)
     glUniform3f(State->RenderData.LightColorID, 1, 1, 1);
     glUniform1ui(State->RenderData.LightPowerID, 2000);
     
-    RenderWorld(State->ChunksHandlePool->Handles, &State->World, State->Config,
-                &State->Random, State->RenderData);
+    // RenderWorld(State->ChunksHandlePool->Handles, &State->World, State->Config,
+    //             &State->Random, State->RenderData);
     
     //TODO: "F3" Screen
 }
