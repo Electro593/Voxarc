@@ -23,7 +23,7 @@ V2u32_1(u32 N)
 }
 
 inline v2u32
-V2u32_2(u32 X, u32 Y)
+V2u32_1_1(u32 X, u32 Y)
 {
     v2u32 Result;
     Result.X = X;
@@ -117,30 +117,6 @@ V2u32_DivideS(v2u32 V, u32 S)
     Result.X = V.X / S;
     Result.Y = V.Y / S;
     return Result;
-}
-
-inline void
-V2u32_AddEqual(v2u32 *A, v2u32 B)
-{
-    *A = V2u32_Add(*A, B);
-}
-
-inline void
-V2u32_SubtractEqual(v2u32 *A, v2u32 B)
-{
-    *A = V2u32_Subtract(*A, B);
-}
-
-inline void
-V2u32_MultiplyEqual(v2u32 *A, v2u32 B)
-{
-    *A = V2u32_Multiply(*A, B);
-}
-
-inline void
-V2u32_DivideEqual(v2u32 *A, v2u32 B)
-{
-    *A = V2u32_Divide(*A, B);
 }
 
 #define MATH_VOX_V2U32_H_

@@ -16,7 +16,7 @@ VoxReadFile(memory_handle *Handle, c08 *FilePath)
 local_func config
 ReadConfig(memory_handle *Handle, c08 *ConfigFilePath)
 {
-    //TODO(andrew): Implement type specifiers (U32:, V3S:, etc)
+    //TODO: Implement type specifiers (U32:, V3S:, etc)
     
     handle_pool *HandlePool = GetHandlePool(Handle);
     
@@ -73,6 +73,30 @@ ReadConfig(memory_handle *Handle, c08 *ConfigFilePath)
                 {
                     Config.RenderDistance = String_ToV3u32(Buffer->Base);
                 }
+                else if(String_EqualC(TypeName, "MoveLeft"))
+                {
+                    Config.MoveLeft = String_ToU32(Buffer->Base);
+                }
+                else if(String_EqualC(TypeName, "MoveForward"))
+                {
+                    Config.MoveForward = String_ToU32(Buffer->Base);
+                }
+                else if(String_EqualC(TypeName, "MoveRight"))
+                {
+                    Config.MoveRight = String_ToU32(Buffer->Base);
+                }
+                else if(String_EqualC(TypeName, "MoveBack"))
+                {
+                    Config.MoveBack = String_ToU32(Buffer->Base);
+                }
+                else if(String_EqualC(TypeName, "MoveUp"))
+                {
+                    Config.MoveUp = String_ToU32(Buffer->Base);
+                }
+                else if(String_EqualC(TypeName, "MoveDown"))
+                {
+                    Config.MoveDown = String_ToU32(Buffer->Base);
+                }
             }
             SetMemory(Buffer->Base, 0, Buffer->Size);
             SetMemory(TypeName->Base, 0, TypeName->Size);
@@ -116,7 +140,7 @@ LoadShaders(memory_handle *Handle, c08 *VertexShaderFilePath, c08 *FragmentShade
     glGetShaderInfoLog(VertexShaderID, InfoLogLength, 0, (c08*)VertexShaderErrorMessage->Base);
     if(!Result)
     {
-        //TODO(andrew): Logging
+        //TODO: Logging
     }
     FreeMemory(VertexShaderErrorMessage);
     
@@ -131,7 +155,7 @@ LoadShaders(memory_handle *Handle, c08 *VertexShaderFilePath, c08 *FragmentShade
     glGetShaderInfoLog(FragmentShaderID, InfoLogLength, 0, (c08*)FragmentShaderErrorMessage->Base);
     if(!Result)
     {
-        //TODO(andrew): Logging
+        //TODO: Logging
     }
     FreeMemory(FragmentShaderErrorMessage);
     
@@ -145,7 +169,7 @@ LoadShaders(memory_handle *Handle, c08 *VertexShaderFilePath, c08 *FragmentShade
     glGetProgramInfoLog(ProgramID, InfoLogLength, 0, (c08*)ProgramErrorMessage->Base);
     if(!Result)
     {
-        //TODO(andrew): Logging
+        //TODO: Logging
     }
     FreeMemory(ProgramErrorMessage);
     

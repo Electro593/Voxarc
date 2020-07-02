@@ -23,7 +23,7 @@ V2s32_1(s32 N)
 }
 
 inline v2s32
-V2s32_2(s32 X, s32 Y)
+V2s32_1_1(s32 X, s32 Y)
 {
     v2s32 Result;
     Result.X = X;
@@ -128,30 +128,6 @@ V2s32_DivideS(v2s32 V, s32 S)
     Result.X = V.X / S;
     Result.Y = V.Y / S;
     return Result;
-}
-
-inline void
-V2s32_AddEqual(v2s32 *A, v2s32 B)
-{
-    *A = V2s32_Add(*A, B);
-}
-
-inline void
-V2s32_SubtractEqual(v2s32 *A, v2s32 B)
-{
-    *A = V2s32_Subtract(*A, B);
-}
-
-inline void
-V2s32_MultiplyEqual(v2s32 *A, v2s32 B)
-{
-    *A = V2s32_Multiply(*A, B);
-}
-
-inline void
-V2s32_DivideEqual(v2s32 *A, v2s32 B)
-{
-    *A = V2s32_Divide(*A, B);
 }
 
 #define MATH_VOX_V2S32_H_

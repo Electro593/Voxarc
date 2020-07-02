@@ -3,9 +3,9 @@
 #include "math/vox_v2s32.h"
 
 local_func void
-UpdatePlayer(player *Player, m4r *ViewMatrix, v2s DeltaMouse, r32 Sensitivity, game_input *Input)
+UpdatePlayer(player *Player, m4x4r32 *ViewMatrix, v2s32 DeltaMouse, r32 Sensitivity, game_input *Input, config *Config)
 {
-    //TODO(andrew): DeltaTime?
+    //TODO: DeltaTime?
     
     Player->Yaw += (r32)DeltaMouse.X * Sensitivity;
     Player->Pitch += (r32)DeltaMouse.Y * Sensitivity;
@@ -15,34 +15,52 @@ UpdatePlayer(player *Player, m4r *ViewMatrix, v2s DeltaMouse, r32 Sensitivity, g
     if(Player->Pitch < -PI / 2.0f)
         Player->Pitch = -PI / 2.0f;
     
-    v3r Direction = {Cos(Player->Pitch) * Sin(Player->Yaw),
-                     Sin(Player->Pitch),
-                     Cos(Player->Pitch) * Cos(Player->Yaw)};
-    v3r Front = {Sin(Player->Yaw),
-                 0,
-                 Cos(Player->Yaw)};
-    v3r Right = {Sin(Player->Yaw - ((r32)PI / 2.0f)),
-                 0,
-                 Cos(Player->Yaw - ((r32)PI / 2.0f))};
-    v3r Up = Cross(Right, Front);
+    v3r32 Direction;
+    Direction.E[0] = Cos(Player->Pitch) * Sin(Player->Yaw);
+    Direction.E[1] = Sin(Player->Pitch);
+    Direction.E[2] = Cos(Player->Pitch) * Cos(Player->Yaw);
     
-    v3r ToMove = {};
+    v3r32 Front;
+    Front.E[0] = Sin(Player->Yaw);
+    Front.E[1] = 0;
+    Front.E[2] = Cos(Player->Yaw);
     
-    //TODO(andrew): Config for this
-    if(Input->W || Input->Up)
-        ToMove += Front;
-    if(Input->S || Input->Down)
-        ToMove -= Front;
-    if(Input->D || Input->Right)
-        ToMove += Right;
-    if(Input->A || Input->Left)
-        ToMove -= Right;
-    if(Input->Space)
-        ToMove += Up;
-    if(Input->LShift)
-        ToMove -= Up;
+    v3r32 Right;
+    Right.E[0] = Sin(Player->Yaw - ((r32)PI / 2.0f));
+    Right.E[1] = 0;
+    Right.E[2] = Cos(Player->Yaw - ((r32)PI / 2.0f));
     
-    Player->Pos += Normalize(ToMove) * Player->Speed;
+    v3r32 Up = V3r32_Cross(Right, Front);
     
-    *ViewMatrix = LookAt(Player->Pos, Player->Pos + Direction, Cross(Right, Direction));
+    v3r32 ToMove = {0};
+    
+    //TODO: Config for this
+    if(Input->Keys[Config->MoveForward])
+    {
+        ToMove = V3r32_Add(ToMove, Front);
+    }
+    if(Input->Keys[Config->MoveBack])
+    {
+        ToMove = V3r32_Subtract(ToMove, Front);
+    }
+    if(Input->Keys[Config->MoveRight])
+    {
+        ToMove = V3r32_Add(ToMove, Right);
+    }
+    if(Input->Keys[Config->MoveLeft])
+    {
+        ToMove = V3r32_Subtract(ToMove, Right);
+    }
+    if(Input->Keys[Config->MoveUp])
+    {
+        ToMove = V3r32_Add(ToMove, Up);
+    }
+    if(Input->Keys[Config->MoveDown])
+    {
+        ToMove = V3r32_Subtract(ToMove, Up);
+    }
+    
+    Player->Pos = V3r32_Add(Player->Pos, V3r32_MultiplyS(V3r32_Normalize(ToMove), Player->Speed));
+    
+    *ViewMatrix = M4x4r32_LookAt(Player->Pos, V3r32_Add(Player->Pos, Direction), V3r32_Cross(Right, Direction));
 }

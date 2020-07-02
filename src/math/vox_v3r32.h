@@ -31,7 +31,7 @@ V3r32_1(r32 N)
 }
 
 inline v3r32
-V3r32_2(v2r32 XY, r32 Z)
+V3r32_2_1(v2r32 XY, r32 Z)
 {
     v3r32 Result;
     Result.XY = XY;
@@ -40,7 +40,7 @@ V3r32_2(v2r32 XY, r32 Z)
 }
 
 inline v3r32
-V3r32_3(r32 X, r32 Y, r32 Z)
+V3r32_1_1_1(r32 X, r32 Y, r32 Z)
 {
     v3r32 Result;
     Result.X = X;
@@ -109,30 +109,6 @@ V3r32_DivideS(v3r32 V, r32 S)
     return Result;
 }
 
-inline void
-V3r32_AddEqual(v3r32 *A, v3r32 B)
-{
-    *A = V3r32_Add(*A, B);
-}
-
-inline void
-V3r32_SubtractEqual(v3r32 *A, v3r32 B)
-{
-    *A = V3r32_Subtract(*A, B);
-}
-
-inline void
-V3r32_MultiplyEqual(v3r32 *A, v3r32 B)
-{
-    *A = V3r32_Multiply(*A, B);
-}
-
-inline void
-V3r32_DivideEqual(v3r32 *A, v3r32 B)
-{
-    *A = V3r32_Divide(*A, B);
-}
-
 inline r32
 V3r32_Dot(v3r32 A, v3r32 B)
 {
@@ -169,9 +145,9 @@ V3r32_Normalize(v3r32 V)
 inline b08
 V3r32_Equal(v3r32 A, v3r32 B)
 {
-    if(AbsR(A.X - B.X) < EPSILON32 &&
-       AbsR(A.Y - B.Y) < EPSILON32 &&
-       AbsR(A.Z - B.Z) < EPSILON32)
+    if(R32_Abs(A.X - B.X) < EPSILON32 &&
+       R32_Abs(A.Y - B.Y) < EPSILON32 &&
+       R32_Abs(A.Z - B.Z) < EPSILON32)
     {
         return TRUE;
     }

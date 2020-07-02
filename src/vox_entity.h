@@ -9,7 +9,7 @@ typedef struct player
     r32 Yaw;
     r32 Pitch;
     r32 Speed;
-    v3r Pos;
+    v3r32 Pos;
 } player;
 
 #define VOX_ENTITY_H_

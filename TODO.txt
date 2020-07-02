@@ -10,7 +10,7 @@ Thread chunk updates and rebuilds
 Toroidal world (teleport to other side)
 Upgradeable player
 
-TODO(andrew):
+TODO:
 - Engine
   - Physics / Game Update
   - Graphics / Renderer

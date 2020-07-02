@@ -25,7 +25,7 @@ M4x4r32_0()
 }
 
 inline m4x4r32
-M4x4r32_4(v4r32 Col1, v4r32 Col2, v4r32 Col3, v4r32 Col4)
+M4x4r32_4_4_4_4(v4r32 Col1, v4r32 Col2, v4r32 Col3, v4r32 Col4)
 {
     m4x4r32 Result;
     Result.V[0] = Col1;

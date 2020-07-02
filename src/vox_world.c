@@ -3,9 +3,9 @@
 #include "math/vox_v3s32.h"
 
 local_func mesh
-CreateMesh(mesh_data Data, v3u Pos)
+CreateMesh(mesh_data Data, v3u32 Pos)
 {
-    mesh Mesh = {};
+    mesh Mesh = {0};
     Mesh.Data = Data;
     
     glGenBuffers(1, &Mesh.VertexBufferID);
@@ -17,9 +17,9 @@ CreateMesh(mesh_data Data, v3u Pos)
     glGenBuffers(1, &Mesh.ElementBufferID);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Mesh.ElementBufferID);
     
-    Mesh.ModelMatrix = Translate(M4x4r32(), (r32)Pos.X * CHUNK_SIZE_X,
-                                            (r32)Pos.Y * CHUNK_SIZE_Y,
-                                            (r32)Pos.Z * CHUNK_SIZE_Z);
+    Mesh.ModelMatrix = M4x4r32_Translate(M4x4r32_0(), (r32)Pos.X * CHUNK_SIZE_X,
+                                                      (r32)Pos.Y * CHUNK_SIZE_Y,
+                                                      (r32)Pos.Z * CHUNK_SIZE_Z);
     
     return Mesh;
 }
@@ -93,15 +93,15 @@ CreateMesh(mesh_data Data, v3u Pos)
 local_func void
 RenderMesh(mesh Mesh, render_data RenderData)
 {
-    glUniformMatrix4fv(RenderData.ModelMatrixID, 1, FALSE, &Mesh.ModelMatrix[0][0]);
-    m4r MVPMatrix = RenderData.ProjectionMatrix * (RenderData.ViewMatrix * Mesh.ModelMatrix);
-    glUniformMatrix4fv(RenderData.MVPMatrixID, 1, FALSE, &MVPMatrix[0][0]);
+    glUniformMatrix4fv(RenderData.ModelMatrixID, 1, FALSE, &Mesh.ModelMatrix.M[0][0]);
+    m4x4r32 MVPMatrix = M4x4r32_Multiply(RenderData.ProjectionMatrix, M4x4r32_Multiply(RenderData.ViewMatrix, Mesh.ModelMatrix));
+    glUniformMatrix4fv(RenderData.MVPMatrixID, 1, FALSE, &MVPMatrix.M[0][0]);
     
-    //TODO(andrew): Try moving VertexAttribPointer to CreateMesh
-    //TODO(andrew): Make colors a series of unsigned bytes
-    //TODO(andrew): Store normals as INT_2_10_10_10_REV (store something in 2 bit segment?)
-    //TODO(andrew): Mode glBufferData to CreateMesh, it only changes after a chunk update
-    //TODO(andrew): Interleave or pack the VBOs?
+    //TODO: Try moving VertexAttribPointer to CreateMesh
+    //TODO: Make colors a series of unsigned bytes
+    //TODO: Store normals as INT_2_10_10_10_REV (store something in 2 bit segment?)
+    //TODO: Mode glBufferData to CreateMesh, it only changes after a chunk update
+    //TODO: Interleave or pack the VBOs?
     
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, Mesh.VertexBufferID);
@@ -124,20 +124,20 @@ RenderMesh(mesh Mesh, render_data RenderData)
 }
 
 local_func block
-CreateBlock(v4r Color)
+CreateBlock(v4r32 Color)
 {
-    block Block = {};
+    block Block = {0};
     Block.Color = Color;
     
     return Block;
 }
 
 local_func block
-GetBlockFromRelativePos(world *World, v3u ChunkPos, v3s BlockPos)
+GetBlockFromRelativePos(world *World, v3u32 ChunkPos, v3s32 BlockPos)
 {
-    v3s Direction = V3s32((s32)Floor((r32)BlockPos.X / (r32)CHUNK_SIZE_X),
-                          (s32)Floor((r32)BlockPos.Y / (r32)CHUNK_SIZE_Y),
-                          (s32)Floor((r32)BlockPos.Z / (r32)CHUNK_SIZE_Z));
+    v3s32 Direction = V3s32_1_1_1((s32)Floor((r32)BlockPos.X / (r32)CHUNK_SIZE_X),
+                                (s32)Floor((r32)BlockPos.Y / (r32)CHUNK_SIZE_Y),
+                                (s32)Floor((r32)BlockPos.Z / (r32)CHUNK_SIZE_Z));
     
     if(ChunkPos.X + Direction.X >= 0 &&
        ChunkPos.X + Direction.X < WORLD_SIZE_X &&
@@ -146,22 +146,22 @@ GetBlockFromRelativePos(world *World, v3u ChunkPos, v3s BlockPos)
        ChunkPos.Z + Direction.Z >= 0 &&
        ChunkPos.Z + Direction.Z < WORLD_SIZE_Z)
     {
-        v3u ChunkPosToSearch = V3u32(ChunkPos.X + Direction.X,
+        v3u32 ChunkPosToSearch = V3u32_1_1_1(ChunkPos.X + Direction.X,
                                      ChunkPos.Y + Direction.Y,
                                      ChunkPos.Z + Direction.Z);
         
         
-        v3u32 NewBlockPos = V3u32(BlockPos.X - ((ChunkPosToSearch.X - ChunkPos.X) * CHUNK_SIZE_X),
+        v3u32 NewBlockPos = V3u32_1_1_1(BlockPos.X - ((ChunkPosToSearch.X - ChunkPos.X) * CHUNK_SIZE_X),
                                   BlockPos.Y - ((ChunkPosToSearch.Y - ChunkPos.Y) * CHUNK_SIZE_Y),
                                   BlockPos.Z - ((ChunkPosToSearch.Z - ChunkPos.Z) * CHUNK_SIZE_Z));
         
-        //TODO(andrew): Make an array of memory handles, and sort them by xyz to make this easier
+        //TODO: Make an array of memory handles, and sort them by xyz to make this easier
         for(size ChunkIndex = 0;
             ChunkIndex < World->Chunks->Size / sizeof(chunk);
             ++ChunkIndex)
         {
             chunk *CurrChunk = (chunk*)World->Chunks->Base + ChunkIndex;
-            if(CurrChunk && CurrChunk->Pos == ChunkPosToSearch)
+            if(CurrChunk && V3u32_Equal(CurrChunk->Pos, ChunkPosToSearch))
             {
                 return CurrChunk->Blocks[Index3d(NewBlockPos.X, NewBlockPos.Y, NewBlockPos.Z,
                                         CHUNK_SIZE_X, CHUNK_SIZE_Y)];
@@ -169,11 +169,11 @@ GetBlockFromRelativePos(world *World, v3u ChunkPos, v3s BlockPos)
             }
         }
     }
-    return CreateBlock(V4r32(0.0f, 0.0f, 0.0f, 0.0f));
+    return CreateBlock(V4r32_1_1_1_1(0.0f, 0.0f, 0.0f, 0.0f));
 }
 
 local_func chunk
-CreateChunk(memory_handle *Handle, config Config, random_data *RandomData, v3u Pos)
+CreateChunk(memory_handle *Handle, config Config, random *Random, v3u32 Pos)
 {
     //u32 VertexCount = 6 * 2 * 3 * CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z;
     
@@ -188,18 +188,18 @@ CreateChunk(memory_handle *Handle, config Config, random_data *RandomData, v3u P
             u32 YMin = 0;
             for(s32 Y = 0; Y < CHUNK_SIZE_Y; Y++)
             {
-                v4r Color;
+                v4r32 Color;
                 Chunk.MaxVertices += 6 * 2 * 3;
                 if((Pos.Y * CHUNK_SIZE_Y) + Y <= YMax && (Pos.Y * CHUNK_SIZE_Y) + Y >= YMin)
                 {
-                    Color = V4r32(255.0f, 255.0f, 255.0f, 255.0f);
+                    Color = V4r32_1_1_1_1(255.0f, 255.0f, 255.0f, 255.0f);
                     r32 Gradient = (r32)Y / (r32)(Config.RenderDistance.Y * CHUNK_SIZE_Y);
-                    Color *= V4r32(Gradient, Gradient, Gradient, 1.0f);
+                    Color = V4r32_Multiply(Color, V4r32_1_1_1_1(Gradient, Gradient, Gradient, 1.0f));
                     MaxVertices += 6 * 2 * 3;
                 }
                 else
                 {
-                    Color = V4r32(0.0f, 0.0f, 0.0f, 0.0f);
+                    Color = V4r32_1_1_1_1(0.0f, 0.0f, 0.0f, 0.0f);
                 }
                 
                 Chunk.Blocks[Index3d(X, Y, Z, CHUNK_SIZE_X, CHUNK_SIZE_Y)] = CreateBlock(Color);
@@ -237,19 +237,19 @@ IndexVertices(memory_handle *Vertices, memory_handle *Colors, memory_handle *Ind
     {
         b08 Found = FALSE;
         u16 PrevIndex = 0;
-        v3r *VertexData = (v3r*)Vertices->Base;
-        v4r *ColorData = (v4r*)Colors->Base;
+        v3r32 *VertexData = (v3r*)Vertices->Base;
+        v4r32 *ColorData = (v4r*)Colors->Base;
         for(;
             PrevIndex < OutSize;
             ++PrevIndex)
         {
-            if(Abs((VertexData + Index)->X - (VertexData + PrevIndex)->X) < EPSILON32 &&
-               Abs((VertexData + Index)->Y - (VertexData + PrevIndex)->Y) < EPSILON32 &&
-               Abs((VertexData + Index)->Z - (VertexData + PrevIndex)->Z) < EPSILON32 &&
-               Abs((ColorData + Index)->X - (ColorData + PrevIndex)->X) < EPSILON32 &&
-               Abs((ColorData + Index)->Y - (ColorData + PrevIndex)->Y) < EPSILON32 &&
-               Abs((ColorData + Index)->Z - (ColorData + PrevIndex)->Z) < EPSILON32 &&
-               Abs((ColorData + Index)->W - (ColorData + PrevIndex)->W) < EPSILON32)
+            if(R32_Abs((VertexData + Index)->X - (VertexData + PrevIndex)->X) < EPSILON32 &&
+               R32_Abs((VertexData + Index)->Y - (VertexData + PrevIndex)->Y) < EPSILON32 &&
+               R32_Abs((VertexData + Index)->Z - (VertexData + PrevIndex)->Z) < EPSILON32 &&
+               R32_Abs((ColorData + Index)->X - (ColorData + PrevIndex)->X) < EPSILON32 &&
+               R32_Abs((ColorData + Index)->Y - (ColorData + PrevIndex)->Y) < EPSILON32 &&
+               R32_Abs((ColorData + Index)->Z - (ColorData + PrevIndex)->Z) < EPSILON32 &&
+               R32_Abs((ColorData + Index)->W - (ColorData + PrevIndex)->W) < EPSILON32)
             {
                 Found = TRUE;
                 break;
@@ -277,7 +277,7 @@ IndexVertices(memory_handle *Vertices, memory_handle *Colors, memory_handle *Ind
 local_func void
 BuildChunk(world *World, chunk *Chunk, render_data RenderData)
 {
-    //TODO(andrew): Calcualte this
+    //TODO: Calcualte this
     u32 MaxIndices = 6 * 2 * 3 * CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z;
     
     mesh_data *OData = &Chunk->OpaqueMesh.Data;
@@ -285,19 +285,19 @@ BuildChunk(world *World, chunk *Chunk, render_data RenderData)
     u16 OIndex = 0;
     //u16 TIndex = 0;
     
-    v3r Scale = V3r32(1.0f, 1.0f, 1.0f);
-    v3u ChunkSize = V3u32(CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z);
-    v3r BlockSize = Scale * V3r32(BLOCK_SIZE_X, BLOCK_SIZE_Y, BLOCK_SIZE_Z);
+    v3r32 Scale = V3r32_1_1_1(1.0f, 1.0f, 1.0f);
+    v3u32 ChunkSize = V3u32_1_1_1(CHUNK_SIZE_X, CHUNK_SIZE_Y, CHUNK_SIZE_Z);
+    v3r32 BlockSize = V3r32_Multiply(Scale, V3r32_1_1_1(BLOCK_SIZE_X, BLOCK_SIZE_Y, BLOCK_SIZE_Z));
     
     u32 FaceOffsetY = CHUNK_SIZE_Y * CHUNK_SIZE_Z;
     u32 FaceOffsetZ = FaceOffsetY + CHUNK_SIZE_Z * CHUNK_SIZE_X;
-    v3u FaceOffsets = V3u32(0, FaceOffsetY, FaceOffsetZ);
-    v4r Faces[CHUNK_SIZE_Y*CHUNK_SIZE_Z + CHUNK_SIZE_Z*CHUNK_SIZE_X + CHUNK_SIZE_X*CHUNK_SIZE_Y];
+    v3u32 FaceOffsets = V3u32_1_1_1(0, FaceOffsetY, FaceOffsetZ);
+    v4r32 Faces[CHUNK_SIZE_Y*CHUNK_SIZE_Z + CHUNK_SIZE_Z*CHUNK_SIZE_X + CHUNK_SIZE_X*CHUNK_SIZE_Y];
     
     u32 Axis1, Axis2, Axis3;
     
-    v3u Pos;
-    v3s Dir;
+    v3u32 Pos;
+    v3s32 Dir;
     
     for(Axis1 = 0;
         Axis1 < 3;
@@ -308,37 +308,33 @@ BuildChunk(world *World, chunk *Chunk, render_data RenderData)
         
         Dir.X = Dir.Y = Dir.Z = 0;
         
-        v3r DAxis2;
+        v3r32 DAxis2;
         DAxis2.X = DAxis2.Y = DAxis2.Z = 0;
-        v3r DAxis3;
+        v3r32 DAxis3;
         DAxis3.X = DAxis3.Y = DAxis3.Z = 0;
         
         for(s32 Sign = -1;
             Sign < 2;
             Sign += 2)
         {
-            Dir[Axis1] = Sign;
+            Dir.E[Axis1] = Sign;
             
-            for(Pos[Axis1] = 0;
-                Pos[Axis1] < ChunkSize[Axis1];
-                ++Pos[Axis1])
+            for(Pos.E[Axis1] = 0;
+                Pos.E[Axis1] < ChunkSize.E[Axis1];
+                ++Pos.E[Axis1])
             {
                 b08 Empty = TRUE;
                 
-                for(Pos[Axis2] = 0;
-                    Pos[Axis2] < ChunkSize[Axis2];
-                    ++Pos[Axis2])
+                for(Pos.E[Axis2] = 0;
+                    Pos.E[Axis2] < ChunkSize.E[Axis2];
+                    ++Pos.E[Axis2])
                 {
-                    for(Pos[Axis3] = 0;
-                        Pos[Axis3] < ChunkSize[Axis3];
-                        ++Pos[Axis3])
+                    for(Pos.E[Axis3] = 0;
+                        Pos.E[Axis3] < ChunkSize.E[Axis3];
+                        ++Pos.E[Axis3])
                     {
-                        block Block1 = GetBlockFromRelativePos(World, Chunk->Pos, V3s32(Pos.X,
-                                                                                        Pos.Y,
-                                                                                        Pos.Z));
-                        block Block2 = GetBlockFromRelativePos(World, Chunk->Pos, V3s32(Pos.X + Dir.X,
-                                                                                        Pos.Y + Dir.Y,
-                                                                                        Pos.Z + Dir.Z));
+                        block Block1 = GetBlockFromRelativePos(World, Chunk->Pos, V3s32_1_1_1(Pos.X, Pos.Y, Pos.Z));
+                        block Block2 = GetBlockFromRelativePos(World, Chunk->Pos, V3s32_1_1_1(Pos.X + Dir.X, Pos.Y + Dir.Y, Pos.Z + Dir.Z));
                         
                         if(Block1.Color.W > EPSILON32)
                         {
@@ -346,14 +342,11 @@ BuildChunk(world *World, chunk *Chunk, render_data RenderData)
                             
                             if(Block1.Color.W - Block2.Color.W > EPSILON32)
                             {
-                                Faces[FaceOffsets[Axis1] +
-                                      Index2d(Pos[Axis2], Pos[Axis3], ChunkSize[Axis2])] =
-                                    Block1.Color;
+                                Faces[FaceOffsets.E[Axis1] + Index2d(Pos.E[Axis2], Pos.E[Axis3], ChunkSize.E[Axis2])] = Block1.Color;
                                 continue;
                             }
                         }
-                        Faces[FaceOffsets[Axis1] +
-                              Index2d(Pos[Axis2], Pos[Axis3], ChunkSize[Axis2])] = V4r32(0.0f);
+                        Faces[FaceOffsets.E[Axis1] + Index2d(Pos.E[Axis2], Pos.E[Axis3], ChunkSize.E[Axis2])] = V4r32_1(0.0f);
                     }
                 }
                 
@@ -363,81 +356,64 @@ BuildChunk(world *World, chunk *Chunk, render_data RenderData)
                 }
                 
                 for(u32 A3Index = 0;
-                    A3Index < ChunkSize[Axis3];
+                    A3Index < ChunkSize.E[Axis3];
                     ++A3Index)
                 {
                     for(u32 A2Index = 0;
-                        A2Index < ChunkSize[Axis2];
+                        A2Index < ChunkSize.E[Axis2];
                         )
                     {
                         u32 Width = 1;
                         u32 Height = 1;
                         
-                        if(Faces[FaceOffsets[Axis1] + 
-                                 Index2d(A2Index, A3Index, ChunkSize[Axis2])].W)
+                        if(Faces[FaceOffsets.E[Axis1] + Index2d(A2Index, A3Index, ChunkSize.E[Axis2])].W)
                         {
-#if 1
-                            while(A2Index + Width < ChunkSize[Axis2] &&
-                                  Faces[FaceOffsets[Axis1] +
-                                        Index2d(A2Index + Width, A3Index, ChunkSize[Axis2])].W &&
-                                  Faces[FaceOffsets[Axis1] +
-                                        Index2d(A2Index + Width, A3Index, ChunkSize[Axis2])] ==
-                                  Faces[FaceOffsets[Axis1] +
-                                        Index2d(A2Index, A3Index, ChunkSize[Axis2])])
+                            while(A2Index + Width < ChunkSize.E[Axis2] &&
+                                  Faces[FaceOffsets.E[Axis1] + Index2d(A2Index + Width, A3Index, ChunkSize.E[Axis2])].W &&
+                                  V4r32_Equal(Faces[FaceOffsets.E[Axis1] + Index2d(A2Index + Width, A3Index, ChunkSize.E[Axis2])],
+                                              Faces[FaceOffsets.E[Axis1] + Index2d(A2Index, A3Index, ChunkSize.E[Axis2])]))
                             {
                                 Width++;
                             }
                             
                             for(;
-                                A3Index + Height < ChunkSize[Axis3];
+                                A3Index + Height < ChunkSize.E[Axis3];
                                 ++Height)
                             {
                                 for(u32 GreedyWidth = 0;
                                     GreedyWidth < Width;
                                     ++GreedyWidth)
                                 {
-                                    if(!Faces[FaceOffsets[Axis1] +
-                                              Index2d(A2Index + GreedyWidth,
-                                                      A3Index + Height,
-                                                      ChunkSize[Axis2])].W ||
-                                       Faces[FaceOffsets[Axis1] +
-                                             Index2d(A2Index + GreedyWidth,
-                                                     A3Index + Height,
-                                                     ChunkSize[Axis2])] !=
-                                       Faces[FaceOffsets[Axis1] +
-                                             Index2d(A2Index,
-                                                     A3Index,
-                                                     ChunkSize[Axis2])])
+                                    if(!Faces[FaceOffsets.E[Axis1] + Index2d(A2Index + GreedyWidth, A3Index + Height, ChunkSize.E[Axis2])].W ||
+                                       V4r32_NotEqual(Faces[FaceOffsets.E[Axis1] + Index2d(A2Index + GreedyWidth, A3Index + Height, ChunkSize.E[Axis2])],
+                                                      Faces[FaceOffsets.E[Axis1] + Index2d(A2Index, A3Index, ChunkSize.E[Axis2])]))
                                     {
                                         goto done;
                                     }
                                 }
                             }
                             done:
-#endif
                             
-                            v4r Color = Faces[FaceOffsets[Axis1] +
-                                              Index2d(A2Index,
-                                                      A3Index,
-                                                      ChunkSize[Axis2])] / 255.0f;
+                            v4r32 Color = V4r32_DivideS(Faces[FaceOffsets.E[Axis1] + Index2d(A2Index, A3Index, ChunkSize.E[Axis2])], 255.0f);
                             
-                            v3r FPos;
-                            FPos[Axis1] = Pos[Axis1] * BlockSize[Axis1];
-                            FPos[Axis2] = A2Index * BlockSize[Axis2];
-                            FPos[Axis3] = A3Index * BlockSize[Axis3];
+                            v3r32 FPos;
+                            FPos.E[Axis1] = Pos.E[Axis1] * BlockSize.E[Axis1];
+                            FPos.E[Axis2] = A2Index * BlockSize.E[Axis2];
+                            FPos.E[Axis3] = A3Index * BlockSize.E[Axis3];
                             
-                            DAxis2[Axis2] = Width * BlockSize[Axis2];
-                            DAxis3[Axis3] = Height * BlockSize[Axis3];
+                            DAxis2.E[Axis2] = Width * BlockSize.E[Axis2];
+                            DAxis3.E[Axis3] = Height * BlockSize.E[Axis3];
                             
                             if(Sign > 0)
                             {
-                                FPos[Axis1] += BlockSize[Axis1];
+                                FPos.E[Axis1] += BlockSize.E[Axis1];
                             }
                             
-                            v3r GreedyVertices[] = {FPos,
-                                                    FPos + DAxis2,
-                                                    FPos + DAxis2 + DAxis3,
-                                                    FPos + DAxis3};
+                            v3r32 GreedyVertices[4];
+                            GreedyVertices[0] = FPos;
+                            GreedyVertices[1] = V3r32_Add(FPos, DAxis2);
+                            GreedyVertices[2] = V3r32_Add(FPos, V3r32_Add(DAxis2, DAxis3));
+                            GreedyVertices[3] = V3r32_Add(FPos, DAxis3);
                             
                             u32 FaceIndices[] = {0, 1, 2, 0, 2, 3, 0, 3, 2, 0, 2, 1};
                             
@@ -466,11 +442,8 @@ BuildChunk(world *World, chunk *Chunk, render_data RenderData)
                                 GreedyHeight < Height;
                                 ++GreedyHeight)
                             {
-                                SetMemory(&Faces[FaceOffsets[Axis1] +
-                                                 Index2d(A2Index,
-                                                         A3Index + GreedyHeight,
-                                                         ChunkSize[Axis2])],
-                                          0, Width * sizeof(v4r));
+                                SetMemory(&Faces[FaceOffsets.E[Axis1] + Index2d(A2Index, A3Index + GreedyHeight, ChunkSize.E[Axis2])],
+                                          0, Width * sizeof(v4r32));
                             }
                         }
                         
@@ -481,7 +454,7 @@ BuildChunk(world *World, chunk *Chunk, render_data RenderData)
         }
     }
     
-    //TODO(andrew): Collapse IndexVertices into the above loop?
+    //TODO: Collapse IndexVertices into the above loop?
     
     OData->Indices = ResizeMemory(OData->Indices, OIndex * sizeof(u16));
     //TIndices = ResizeMemoryHandle(TIndices, TIndex * sizeof(u16));
@@ -495,7 +468,7 @@ local_func world
 CreateWorld(memory_handle *Handle, config Config, render_data RenderData)
 {
     world World;
-    v3u Size = Config.RenderDistance;
+    v3u32 Size = Config.RenderDistance;
     u32 RenderVolume = Size.X * Size.Y * Size.Z;
     World.Chunks = AllocateMemory(GetHandlePool(Handle), RenderVolume * sizeof(chunk));
     World.ChunksBuiltThisTick = 0;
@@ -504,11 +477,11 @@ CreateWorld(memory_handle *Handle, config Config, render_data RenderData)
 
 local_func void
 RenderWorld(memory_handle *Handle, world *World, config Config,
-            random_data *RandomData, render_data RenderData)
+            random *Random, render_data RenderData)
 {
     World->ChunksBuiltThisTick = 0;
     
-    v3u Size = Config.RenderDistance;
+    v3u32 Size = Config.RenderDistance;
     
     for(u32 X = 0;
         X < Size.X;
@@ -527,7 +500,7 @@ RenderWorld(memory_handle *Handle, world *World, config Config,
                 {
                     if(!Chunk->IsInitialized)
                     {
-                        *Chunk = CreateChunk(Handle, Config, RandomData, V3u32(X, Y, Z));
+                        *Chunk = CreateChunk(Handle, Config, Random, V3u32_1_1_1(X, Y, Z));
                         Chunk->IsInitialized = TRUE;
                     }
                     

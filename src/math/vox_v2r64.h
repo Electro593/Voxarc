@@ -23,7 +23,7 @@ V2r64_1(r32 N)
 }
 
 inline v2r64
-V2r64_2(r32 X, r32 Y)
+V2r64_1_1(r32 X, r32 Y)
 {
     v2r64 Result;
     Result.X = X;
@@ -74,30 +74,6 @@ V2r64_DivideS(v2r64 V, r32 S)
     Result.X = V.X / S;
     Result.Y = V.Y / S;
     return Result;
-}
-
-inline void
-V2r64_AddEqual(v2r64 *A, v2r64 B)
-{
-    *A = V2r64_Add(*A, B);
-}
-
-inline void
-V2r64_SubtractEqual(v2r64 *A, v2r64 B)
-{
-    *A = V2r64_Subtract(*A, B);
-}
-
-inline void
-V2r64_MultiplyEqual(v2r64 *A, v2r64 B)
-{
-    *A = V2r64_Multiply(*A, B);
-}
-
-inline void
-V2r64_DivideEqual(v2r64 *A, v2r64 B)
-{
-    *A = V2r64_Divide(*A, B);
 }
 
 inline r32

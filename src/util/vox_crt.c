@@ -2,7 +2,7 @@
 
 #include "util/vox_defines.h"
 
-//NOTE(andrew): CRT Math
+//NOTE: CRT Math
 
 #ifdef _M_IX86
 #define CRT_LOWORD(x) dword ptr [x+0]
@@ -937,7 +937,7 @@ RETZERO:
 #undef CRT_HIWORD
 #endif
 
-//NOTE(andrew): CRT Float
+//NOTE: CRT Float
 
 s32 _fltused;
 

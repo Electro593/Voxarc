@@ -31,7 +31,7 @@ V3u32_1(u32 N)
 }
 
 inline v3u32
-V3u32_2(v2u XY, u32 Z)
+V3u32_2_1(v2u XY, u32 Z)
 {
     v3u32 Result;
     Result.XY = XY;
@@ -40,7 +40,7 @@ V3u32_2(v2u XY, u32 Z)
 }
 
 inline v3u32
-V3u32_3(u32 X, u32 Y, u32 Z)
+V3u32_1_1_1(u32 X, u32 Y, u32 Z)
 {
     v3u32 Result;
     Result.X = X;
@@ -117,36 +117,6 @@ V3u32_DivideS(v3u32 V, u32 S)
     Result.Y = V.Y / S;
     Result.Z = V.Z / S;
     return Result;
-}
-
-inline void
-V3u32_AddEqual(v3u32 *A, v3u32 B)
-{
-    *A = V3u32_Add(*A, B);
-}
-
-inline void
-V3u32_AddEqualS(v3u32 *A, u32 B)
-{
-    *A = V3u32_AddS(*A, B);
-}
-
-inline void
-V3u32_SubtractEqual(v3u32 *A, v3u32 B)
-{
-    *A = V3u32_Subtract(*A, B);
-}
-
-inline void
-V3u32_MultiplyEqual(v3u32 *A, v3u32 B)
-{
-    *A = V3u32_Multiply(*A, B);
-}
-
-inline void
-V3u32_DivideEqual(v3u32 *A, v3u32 B)
-{
-    *A = V3u32_Divide(*A, B);
 }
 
 inline u32

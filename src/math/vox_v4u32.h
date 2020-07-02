@@ -67,7 +67,7 @@ V4u32_2_2(v2u32 XY, v2u32 ZW)
 }
 
 inline v4u32
-V4u32_4(u32 X, u32 Y, u32 Z, u32 W)
+V4u32_1_1_1_1(u32 X, u32 Y, u32 Z, u32 W)
 {
     v4u32 Result;
     Result.X = X;

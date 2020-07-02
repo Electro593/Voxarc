@@ -177,10 +177,10 @@ V4r32_Normalize(v4r32 V)
 inline b08
 V4r32_Equal(v4r32 A, v4r32 B)
 {
-    if(AbsR(A.X - B.X) < EPSILON32 &&
-       AbsR(A.Y - B.Y) < EPSILON32 &&
-       AbsR(A.Z - B.Z) < EPSILON32 &&
-       AbsR(A.W - B.W) < EPSILON32)
+    if(R32_Abs(A.X - B.X) < EPSILON32 &&
+       R32_Abs(A.Y - B.Y) < EPSILON32 &&
+       R32_Abs(A.Z - B.Z) < EPSILON32 &&
+       R32_Abs(A.W - B.W) < EPSILON32)
     {
         return TRUE;
     }
@@ -190,10 +190,10 @@ V4r32_Equal(v4r32 A, v4r32 B)
 inline b08
 V4r32_NotEqual(v4r32 A, v4r32 B)
 {
-    if(AbsR(A.X - B.X) < EPSILON32 &&
-       AbsR(A.Y - B.Y) < EPSILON32 &&
-       AbsR(A.Z - B.Z) < EPSILON32 &&
-       AbsR(A.W - B.W) < EPSILON32)
+    if(R32_Abs(A.X - B.X) < EPSILON32 &&
+       R32_Abs(A.Y - B.Y) < EPSILON32 &&
+       R32_Abs(A.Z - B.Z) < EPSILON32 &&
+       R32_Abs(A.W - B.W) < EPSILON32)
     {
         return FALSE;
     }

@@ -16,8 +16,10 @@ typedef struct game_state
     config Config;
     render_data RenderData;
     player Player;
+    world World;
     u32 Program3DID;
     r32 WindowAspectRatio;
+    v2s32 PrevCursorPos;
 } game_state;
 
 typedef struct platform_flags

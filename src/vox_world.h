@@ -30,7 +30,7 @@ typedef struct mesh_data
 typedef struct mesh
 {
     mesh_data Data;
-    m4r ModelMatrix;
+    m4x4r32 ModelMatrix;
     u32 VertexBufferID;
     u32 ColorBufferID;
     u32 ElementBufferID;
@@ -48,18 +48,18 @@ typedef struct render_data
     s32 ChannelRangeID;
     s32 ChannelRangeShiftID;
     s32 ChannelShiftID;
-    m4r ViewMatrix;
-    m4r ProjectionMatrix;
+    m4x4r32 ViewMatrix;
+    m4x4r32 ProjectionMatrix;
 } render_data;
 
 typedef struct block
 {
-    v4r Color;
+    v4r32 Color;
 } block;
 
 typedef struct chunk
 {
-    v3u Pos;
+    v3u32 Pos;
     block Blocks[CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z];
     u32 MaxVertices;
     mesh OpaqueMesh;

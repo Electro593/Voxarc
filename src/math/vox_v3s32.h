@@ -40,7 +40,7 @@ V3s32_2_1(v2s XY, s32 Z)
 }
 
 inline v3s32
-V3s32_3(s32 X, s32 Y, s32 Z)
+V3s32_1_1_1(s32 X, s32 Y, s32 Z)
 {
     v3s32 Result;
     Result.X = X;

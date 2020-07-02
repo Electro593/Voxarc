@@ -13,7 +13,7 @@
 #include "util/vox_file_io.c"
 
 #include "vox_world.c"
-// #include "vox_entity.cpp"
+#include "vox_entity.c"
 
 #include "voxarc.h"
 
@@ -49,9 +49,9 @@ InitGame(game_state *State)
     State->RenderData.ChannelRangeShiftID = glGetUniformLocation(State->Program3DID, "ChannelRangeShift");
     State->RenderData.ChannelShiftID = glGetUniformLocation(State->Program3DID, "ChannelShift");
     
-    State->Player.Pos = V3r32_3((r32)(WORLD_SIZE_X * CHUNK_SIZE_X) / 2.0f,
-                                (r32)(WORLD_SIZE_Y * CHUNK_SIZE_Y) / 2.0f,
-                                (r32)(WORLD_SIZE_Z * CHUNK_SIZE_Z) / 2.0f),
+    State->Player.Pos = V3r32_1_1_1((r32)(WORLD_SIZE_X * CHUNK_SIZE_X) / 2.0f,
+                                    (r32)(WORLD_SIZE_Y * CHUNK_SIZE_Y) / 2.0f,
+                                    (r32)(WORLD_SIZE_Z * CHUNK_SIZE_Z) / 2.0f),
     State->Player.Yaw = -PI / 2;
     State->Player.Pitch = 0.0f;
     State->Player.Speed = 6.0f;
@@ -67,7 +67,6 @@ InitGame(game_state *State)
     
     State->World = CreateWorld(ChunksMemoryHandle, State->Config, State->RenderData);
     
-#if 0
     u32 ChannelRange = 1;
     for(u32 ChannelRangeIndex = 0;
         ChannelRangeIndex < State->Config.VisionBitsPerChannel;
@@ -77,15 +76,15 @@ InitGame(game_state *State)
     }
     ChannelRange -= 1;
     
-    v4u ChannelShift = V4u32(3U * State->Config.VisionBitsPerChannel,
-                             2U * State->Config.VisionBitsPerChannel,
-                             1U * State->Config.VisionBitsPerChannel,
-                             0U * State->Config.VisionBitsPerChannel);
+    v4u ChannelShift = V4u32_1_1_1_1(3U * State->Config.VisionBitsPerChannel,
+                                     2U * State->Config.VisionBitsPerChannel,
+                                     1U * State->Config.VisionBitsPerChannel,
+                                     0U * State->Config.VisionBitsPerChannel);
     
-    v4u ChannelRangeShift = V4u32(ChannelRange << ChannelShift.X,
-                                  ChannelRange << ChannelShift.Y,
-                                  ChannelRange << ChannelShift.Z,
-                                  ChannelRange << ChannelShift.W);
+    v4u ChannelRangeShift = V4u32_1_1_1_1(ChannelRange << ChannelShift.X,
+                                          ChannelRange << ChannelShift.Y,
+                                          ChannelRange << ChannelShift.Z,
+                                          ChannelRange << ChannelShift.W);
     
     u32 ChannelMask = ((State->Config.VisionChannelBinary & 8U) ? ChannelRangeShift.X : 0U) |
                       ((State->Config.VisionChannelBinary & 4U) ? ChannelRangeShift.Y : 0U) |
@@ -102,54 +101,50 @@ InitGame(game_state *State)
                                                         ChannelRangeShift.Z,
                                                         ChannelRangeShift.W);
     glUniform1ui(State->RenderData.ChannelMaskID, ChannelMask);
-#endif
 }
 
 local_func void
 UpdateGame(game_input *Input, game_state *State, platform_flags *Flags)
 {
-#if 0
-    if(Events->AspectRatioChanged)
+    if(Flags->AspectRatioChanged)
     {
-        State->RenderData.ProjectionMatrix = Perspective(Radians((r32)State->Config.FOV),
-                                                         State->WindowAspectRatio, 0.1f, 100.0f);
-        Events->AspectRatioChanged = FALSE;
+        State->RenderData.ProjectionMatrix = M4x4r32_Perspective(Radians((r32)State->Config.FOV),
+                                                                 State->WindowAspectRatio, 0.1f, 100.0f);
+        Flags->AspectRatioChanged = FALSE;
     }
     
-    if(State->CursorIsCaptured)
+    if(Flags->CursorIsCaptured)
     {
-        if(Input->Escape)
+        if(Input->Keys[VK_ESCAPE])
         {
-            State->CursorIsCaptured = FALSE;
+            Flags->CursorIsCaptured = FALSE;
         }
         else
         {
-            v2s DeltaMouse = State->PrevMousePos - Input->CursorPos;
+            v2s32 DeltaMouse = V2s32_Subtract(State->PrevCursorPos, Input->CursorPos);
             UpdatePlayer(&State->Player, &State->RenderData.ViewMatrix, DeltaMouse,
-                        State->Config.Sensitivity, Input);
-            State->PrevMousePos = Input->CursorPos;
+                         State->Config.Sensitivity, Input, &State->Config);
+            State->PrevCursorPos = Input->CursorPos;
         }
     }
-    else if(Input->ButtonLeft)
+    else if(Input->Keys[VK_LBUTTON])
     {
-        State->CursorIsCaptured = TRUE;
-        State->PrevMousePos = Input->CursorPos;
+        Flags->CursorIsCaptured = TRUE;
+        State->PrevCursorPos = Input->CursorPos;
     }
-#endif
+    
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-#if 0
     glUseProgram(State->Program3DID);
     
-    glUniformMatrix4fv(State->RenderData.ViewMatrixID, 1, FALSE, &State->RenderData.ViewMatrix[0][0]);
+    glUniformMatrix4fv(State->RenderData.ViewMatrixID, 1, FALSE, &State->RenderData.ViewMatrix.M[0][0]);
     
-    v3r LightPos = V3r32(30.0f);
+    v3r LightPos = V3r32_1(30.0f);
     glUniform3f(State->RenderData.LightPositionID, LightPos.X, LightPos.Y, LightPos.Z);
     glUniform3f(State->RenderData.LightColorID, 1, 1, 1);
     glUniform1ui(State->RenderData.LightPowerID, 2000);
     
     RenderWorld(State->ChunksHandlePool->Handles, &State->World, State->Config,
-                &State->RandomData, State->RenderData);
+                &State->Random, State->RenderData);
     
-    //TODO(andrew): "F3" Screen
-#endif
+    //TODO: "F3" Screen
 }

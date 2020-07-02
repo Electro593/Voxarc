@@ -10,7 +10,7 @@
 #define Index2d(X, Y, MaxX) ((X) + ((Y) * (MaxX)))
 #define Index3d(X, Y, Z, MaxX, MaxY) ((X) + ((MaxX) * ((Y) + ((Z) *( MaxY)))))
 
-//NOTE(andrew): Scalar
+//NOTE: Scalar
 
 typedef union r32_to_s32
 {
@@ -19,7 +19,7 @@ typedef union r32_to_s32
 } r32_to_s32;
 
 inline r32
-AbsR(r32 N)
+R32_Abs(r32 N)
 {
     r32_to_s32 RTS_N;
     RTS_N.R32 = N;
@@ -29,7 +29,7 @@ AbsR(r32 N)
 }
 
 inline s32
-AbsS(s32 N)
+S32_Abs(s32 N)
 {
     s32 Result = N * ((N > 0) - (N < 0));
     return Result;
@@ -52,14 +52,14 @@ Floor(r32 N)
 }
 
 inline r32
-RLerp(r32 A, r32 B, r32 T)
+R32_Lerp(r32 A, r32 B, r32 T)
 {
     r32 Result = A + (T * (B - A));
     return Result;
 }
 
 inline r32
-SLerp(s32 A, s32 B, r32 T)
+S32_Lerp(s32 A, s32 B, r32 T)
 {
     r32 Result = (r32)A + (T * (r32)(B - A));
     return Result;

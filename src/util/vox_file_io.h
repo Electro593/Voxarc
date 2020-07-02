@@ -9,6 +9,12 @@ typedef struct config
     u32 FOV;
     r32 Sensitivity;
     v3u RenderDistance;
+    u32 MoveLeft;
+    u32 MoveForward;
+    u32 MoveRight;
+    u32 MoveBack;
+    u32 MoveUp;
+    u32 MoveDown;
 } config;
 
 #define UTIL_VOX_FILE_IO_H_

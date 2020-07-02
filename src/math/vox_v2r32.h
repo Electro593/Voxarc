@@ -23,7 +23,7 @@ V2r32_1(r32 N)
 }
 
 inline v2r32
-V2r32_2(r32 X, r32 Y)
+V2r32_1_1(r32 X, r32 Y)
 {
     v2r32 Result;
     Result.X = X;
@@ -76,30 +76,6 @@ V2r32_DivideS(v2r32 V, r32 S)
     return Result;
 }
 
-inline void
-V2r32_AddEqual(v2r32 *A, v2r32 B)
-{
-    *A = V2r32_Add(*A, B);
-}
-
-inline void
-V2r32_SubtractEqual(v2r32 *A, v2r32 B)
-{
-    *A = V2r32_Subtract(*A, B);
-}
-
-inline void
-V2r32_MultiplyEqual(v2r32 *A, v2r32 B)
-{
-    *A = V2r32_Multiply(*A, B);
-}
-
-inline void
-V2r32_DivideEqual(v2r32 *A, v2r32 B)
-{
-    *A = V2r32_Divide(*A, B);
-}
-
 inline r32
 V2r32_Dot(v2r32 A, v2r32 B)
 {
@@ -124,8 +100,8 @@ V2r32_Normalize(v2r32 V)
 inline b08
 V2r32_Equal(v2r32 A, v2r32 B)
 {
-    if(AbsR(A.X - B.X) < EPSILON32 &&
-       AbsR(A.Y - B.Y) < EPSILON32)
+    if(R32_Abs(A.X - B.X) < EPSILON32 &&
+       R32_Abs(A.Y - B.Y) < EPSILON32)
     {
         return TRUE;
     }

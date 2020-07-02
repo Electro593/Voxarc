@@ -56,7 +56,7 @@ SetMemory(vptr Dest, u32 Data, size Size)
         Size--;
         *Dest08++ = Data08;
     }
-    //TODO(andrew): Make this in assembly?
+    //TODO: Make this in assembly?
     // https://github.com/macmade/LibC-String-Optimisations/blob/master/source/memset.64.s
 }
 

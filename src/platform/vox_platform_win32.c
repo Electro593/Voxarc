@@ -190,7 +190,7 @@ Win32GetFileSize(memory_handle *FileHandle)
     Size.QuadPart = 0;
     if(GetFileSizeEx(*(vptr*)FileHandle->Base, &Size) == 0)
     {
-        //TODO(andrew): Logging
+        //TODO: Logging
     }
     return Size.QuadPart + 1;
 }
@@ -205,7 +205,7 @@ Win32ReadDataFromFile(memory_handle *Dest, memory_handle *FileHandle, size Offse
     u32 BytesRead;
     if(!ReadFile(*(vptr*)FileHandle->Base, Dest->Base, (u32)Dest->Size - 1, &BytesRead, &Overlapped))
     {
-        //TODO(andrew): Logging
+        //TODO: Logging
     }
     u08 *NullTerminator = (u08*)Dest->Base + Dest->Size - 1;
     NullTerminator = '\0';
@@ -216,7 +216,7 @@ Win32CloseFile(memory_handle *FileHandle)
 {
     if(!CloseHandle(*(vptr*)FileHandle->Base))
     {
-        //TODO(andrew): Logging
+        //TODO: Logging
     }
     FreeMemory(FileHandle);
 }
@@ -326,11 +326,11 @@ Win32WindowCallback(vptr Window,
         } break;
         case WM_MOUSEMOVE:
         {
-            v2s32 CursorPos = V2s32_2(LOW16(LParam), HIGH16(LParam));
+            v2s32 CursorPos = V2s32_1_1(LOW16(LParam), HIGH16(LParam));
             
             if(Data.Flags.CursorIsCaptured)
             {
-                V2s32_AddEqual(&Data.Input.CursorPos, V2s32_Subtract(CursorPos, Data.PrevCursorPos));
+                Data.Input.CursorPos = V2s32_Add(Data.Input.CursorPos, V2s32_Subtract(CursorPos, Data.PrevCursorPos));
             }
             else
             {
@@ -420,7 +420,7 @@ WinMain(vptr Instance,
             
             while(Data.Flags.GameIsRunning)
             {
-                //TODO(andrew): This hogs the CPU, put it to sleep
+                //TODO: This hogs the CPU, put it to sleep
                 
                 win32_message Message;
                 while(PeekMessageA(&Message, Window, 0, 0, PM_REMOVE))
@@ -450,12 +450,12 @@ WinMain(vptr Instance,
         }
         else
         {
-            //TODO(andrew): Logging
+            //TODO: Logging
         }
     }
     else
     {
-        //TODO(andrew): Logging
+        //TODO: Logging
     }
     
     return 0;
