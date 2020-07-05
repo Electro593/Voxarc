@@ -5,8 +5,8 @@
 #include "util/vox_file_io.h"
 #include "math/vox_v2s32.h"
 #include "math/vox_random.h"
-#include "vox_world.h"
-#include "vox_entity.h"
+#include "game/vox_world.h"
+#include "game/vox_entity.h"
 
 typedef struct game_state
 {

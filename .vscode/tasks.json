@@ -13,6 +13,13 @@
         },
         {
             "type": "shell",
+            "label": "assets",
+            "command": "./do assets",
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "type": "shell",
             "label": "run",
             "command": "./build/Voxarc.exe",
             "group": {

@@ -15,6 +15,18 @@
             "environment": [],
             "externalConsole": false,
             "preLaunchTask": ""
+        },
+        {
+            "name": "Debug AssetBuilder.exe",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "build/AssetBuilder.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "preLaunchTask": ""
         }
     ]
 }

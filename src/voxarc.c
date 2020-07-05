@@ -12,8 +12,8 @@
 #include "util/vox_crt.c"
 #include "util/vox_file_io.c"
 
-#include "vox_world.c"
-#include "vox_entity.c"
+#include "game/vox_world.c"
+#include "game/vox_entity.c"
 
 #include "voxarc.h"
 
@@ -101,6 +101,8 @@ InitGame(game_state *State)
     glUniform1ui(State->RenderData.ChannelMaskID, ChannelMask);
 }
 
+#include <stdio.h>
+
 local_func void
 UpdateGame(game_input *Input, game_state *State, platform_flags *Flags)
 {
@@ -141,8 +143,8 @@ UpdateGame(game_input *Input, game_state *State, platform_flags *Flags)
     glUniform3f(State->RenderData.LightColorID, 1, 1, 1);
     glUniform1ui(State->RenderData.LightPowerID, 2000);
     
-    // RenderWorld(State->ChunksHandlePool->Handles, &State->World, State->Config,
-    //             &State->Random, State->RenderData);
+    RenderWorld(State->ChunksHandlePool->Handles, &State->World, State->Config,
+                &State->Random, State->RenderData);
     
     //TODO: "F3" Screen
 }
