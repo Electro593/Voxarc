@@ -70,7 +70,5 @@ typedef const          void *    cvptr;
 
 #define Align16(Num) (((Num) + 15) & ~15)
 
-#define FILENAME_FONTS "fonts"
-
 #define VOX_DEFINES_H_
 #endif

@@ -1,6 +1,11 @@
 #include <intrin.h>
 
 #include "util/vox_defines.h"
+
+#if _VOX_GEN_ASSETS
+#include "tools/vox_asset_builder.c"
+#endif
+
 #include "voxarc.h"
 #include "platform/vox_platform_win32.h"
 #include "platform/vox_platform_shared.h"
@@ -172,17 +177,6 @@ Win32InitOpenGLFunctions(vptr DeviceContext)
     return RenderContext;
 }
 
-local_func void
-Win32OpenFile(memory_handle *FileHandle, c08 *FileName)
-{
-    vptr GivenHandle = CreateFileA(FileName, GENERIC_READ, FILE_SHARE_READ,
-                                     0, OPEN_EXISTING, 0, 0);
-    if(GivenHandle != INVALID_HANDLE_VALUE)
-    {
-        *(vptr*)FileHandle->Base = *(vptr*)(&GivenHandle);
-    }
-}
-
 local_func size
 Win32GetFileSize(memory_handle *FileHandle)
 {
@@ -193,6 +187,78 @@ Win32GetFileSize(memory_handle *FileHandle)
         //TODO: Logging
     }
     return Size.QuadPart + 1;
+}
+
+local_func void
+Win32CloseFile(memory_handle *FileHandle)
+{
+    CloseHandle(*(vptr*)FileHandle->Base);
+}
+
+local_func void
+Win32CloseFileType(memory_handle *FindHandle)
+{
+    FindClose(*(vptr*)FindHandle);
+}
+
+local_func void
+Win32OpenFile(memory_handle *FileHandle, c16 *FileName)
+{
+    vptr GivenHandle = CreateFileW(FileName, GENERIC_READ, FILE_SHARE_READ,
+                                   0, OPEN_EXISTING, 0, 0);
+    if(GivenHandle != INVALID_HANDLE_VALUE)
+    {
+        *(vptr*)FileHandle->Base = *(vptr*)(&GivenHandle);
+    }
+    else
+    {
+        *(vptr*)FileHandle->Base = NULL;
+    }
+}
+
+local_func void
+Win32OpenFileType(memory_handle *FileHandle, memory_handle *FindHandle, file_type FileType)
+{
+    c16 *Wildcard = L"*.*";
+    
+    switch(FileType)
+    {
+        case FileType_Bitmap:
+        {
+            Wildcard = ASSETS_DIR L"*.bmp";
+        } break;
+        default:
+        {
+            Assert(FALSE);
+        }
+    }
+    
+    win32_find_data FindData;
+    vptr GivenFindHandle = FindFirstFileW(Wildcard, &FindData);
+    if(GivenFindHandle != INVALID_HANDLE_VALUE)
+    {
+        *(vptr*)FindHandle->Base = *(vptr*)(&GivenFindHandle);
+        Win32OpenFile(FileHandle, FindData.FileName);
+    }
+    else
+    {
+        *(vptr*)FileHandle->Base = NULL;
+        *(vptr*)FindHandle->Base = NULL;
+    }
+}
+
+local_func void
+Win32OpenNextFile(memory_handle *FileHandle, memory_handle *FindHandle)
+{
+    win32_find_data FindData;
+    if(FindNextFileW(*(vptr*)FindHandle->Base, &FindData))
+    {
+        Win32OpenFile(FileHandle, FindData.FileName);
+    }
+    else
+    {
+        *(vptr*)FileHandle->Base = NULL;
+    }
 }
 
 local_func void
@@ -212,13 +278,9 @@ Win32ReadDataFromFile(memory_handle *Dest, memory_handle *FileHandle, size Offse
 }
 
 local_func void
-Win32CloseFile(memory_handle *FileHandle)
+WIn32ReleaseMemory(vptr Base)
 {
-    if(!CloseHandle(*(vptr*)FileHandle->Base))
-    {
-        //TODO: Logging
-    }
-    FreeMemory(FileHandle);
+    VirtualFree(Base, 0, MEM_RELEASE);
 }
 
 local_func vptr
@@ -381,9 +443,13 @@ WinMain(vptr Instance,
     WindowClass.ClassName = "VoxarcWindowClass";
     
     GetFileSize = Win32GetFileSize;
+    CloseFileType = Win32CloseFileType;
     CloseFile = Win32CloseFile;
     OpenFile = Win32OpenFile;
+    OpenFileType = Win32OpenFileType;
+    OpenNextFile = Win32OpenNextFile;
     ReadDataFromFile = Win32ReadDataFromFile;
+    ReleaseMemory = WIn32ReleaseMemory;
     ReserveMemory = Win32ReserveMemory;
     
     if(RegisterClassA(&WindowClass))
@@ -401,6 +467,12 @@ WinMain(vptr Instance,
             vptr RenderContext = Win32InitOpenGLFunctions(DeviceContext);
             
             Data.Window = Window;
+            
+#if _VOX_GEN_ASSETS
+            s32 MaxSize = 0;
+            glGetIntegerv(GL_MAX_TEXTURE_SIZE, &MaxSize);
+            GenAssetPacks(MaxSize);
+#endif
             
             win32_large_integer PerformanceCount;
             QueryPerformanceCounter(&PerformanceCount);

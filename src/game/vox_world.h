@@ -38,6 +38,11 @@ typedef struct mesh
 
 typedef struct render_data
 {
+    u32 Program3DID;
+    u32 Program2DID;
+    
+    u32 TextureID;
+    
     s32 ModelMatrixID;
     s32 ViewMatrixID;
     s32 MVPMatrixID;

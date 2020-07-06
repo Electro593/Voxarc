@@ -290,6 +290,7 @@
 #define GL_VERTEX_SHADER            0x8B31
 #define GL_LINK_STATUS              0x8B82
 #define GL_INFO_LOG_LENGTH          0x8B84
+#define GL_MAX_TEXTURE_SIZE         0x0D33
 
 #define GL_PROCS \
     PROC(s32,  glGetUniformLocation,       u32 Program, const c08 *Name) \
@@ -324,8 +325,12 @@
 #define PLATFORM_PROCS \
     PROC(size, GetFileSize,      memory_handle *FileHandle) \
     PROC(void, CloseFile,        memory_handle *FileHandle) \
+    PROC(void, CloseFileType,    memory_handle *FindHandle) \
     PROC(void, OpenFile,         memory_handle *FileHandle, c08 *FileName) \
+    PROC(void, OpenFileType,     memory_handle *FileHandle, memory_handle *FindHandle, file_type FileType) \
+    PROC(void, OpenNextFile,     memory_handle *FileHandle, memory_handle *FindHandle) \
     PROC(void, ReadDataFromFile, memory_handle *Dest, memory_handle *FileHandle, size Offset) \
+    PROC(void, ReleaseMemory,    vptr Base) \
     PROC(vptr, ReserveMemory,    size Size) \
 
 #define PROC(ReturnType, Name, ...) \

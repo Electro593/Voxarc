@@ -12,12 +12,12 @@ typedef struct game_state
 {
     handle_pool *ChunksHandlePool;
     handle_pool *UtilHandlePool;
+    memory_handle *GlyphTextureInfo;
     random Random;
     config Config;
     render_data RenderData;
     player Player;
     world World;
-    u32 Program3DID;
     r32 WindowAspectRatio;
     v2s32 PrevCursorPos;
 } game_state;

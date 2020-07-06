@@ -10,6 +10,7 @@ VoxReadFile(memory_handle *Handle, c08 *FilePath)
     memory_handle *Text = AllocateMemory(HandlePool, GetFileSize(FileHandle));
     ReadDataFromFile(Text, FileHandle, 0);
     CloseFile(FileHandle);
+    FreeMemory(FileHandle);
     return Text;
 }
 
@@ -143,6 +144,7 @@ LoadShaders(memory_handle *Handle, c08 *VertexShaderFilePath, c08 *FragmentShade
         //TODO: Logging
     }
     FreeMemory(VertexShaderErrorMessage);
+    FreeMemory(VertexShaderCode);
     
     u32 FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
     memory_handle *FragmentShaderCode = VoxReadFile(Handle, FragmentShaderFilePath);
@@ -158,6 +160,7 @@ LoadShaders(memory_handle *Handle, c08 *VertexShaderFilePath, c08 *FragmentShade
         //TODO: Logging
     }
     FreeMemory(FragmentShaderErrorMessage);
+    FreeMemory(VertexShaderCode);
     
     u32 ProgramID = glCreateProgram();
     glAttachShader(ProgramID, VertexShaderID);
@@ -179,6 +182,7 @@ LoadShaders(memory_handle *Handle, c08 *VertexShaderFilePath, c08 *FragmentShade
     return ProgramID;
 }
 
+#if 0
 local_func u32
 LoadBMP(memory_handle *Handle, c08 *ImagePath)
 {
@@ -223,3 +227,4 @@ LoadBMP(memory_handle *Handle, c08 *ImagePath)
     
     return TextureID;
 }
+#endif

@@ -30,22 +30,24 @@ InitGame(game_state *State)
     memory_handle *ChunksMemoryHandle = State->ChunksHandlePool->Handles;
     
     State->Config = ReadConfig(UtilMemoryHandle, "config.cfg");
-    State->Program3DID = LoadShaders(UtilMemoryHandle, "shaders/shader3d.vert", "shaders/shader3d.frag");
-    glUseProgram(State->Program3DID);
+    State->GlyphTextureInfo = VoxReadFile(UtilMemoryHandle, GLYPHS_INFO);
+    State->RenderData.Program3DID = LoadShaders(UtilMemoryHandle, "shaders/shader3d.vert", "shaders/shader3d.frag");
+    State->RenderData.Program2DID = LoadShaders(UtilMemoryHandle, "shaders/shader2d.vert", "shaders/shader2d.frag");
+    glUseProgram(State->RenderData.Program2DID);
     
-    State->RenderData.MVPMatrixID = glGetUniformLocation(State->Program3DID, "MVPMatrix");
-    State->RenderData.ViewMatrixID = glGetUniformLocation(State->Program3DID, "ViewMatrix");
-    State->RenderData.ModelMatrixID = glGetUniformLocation(State->Program3DID, "ModelMatrix");
+    State->RenderData.MVPMatrixID = glGetUniformLocation(State->RenderData.Program3DID, "MVPMatrix");
+    State->RenderData.ViewMatrixID = glGetUniformLocation(State->RenderData.Program3DID, "ViewMatrix");
+    State->RenderData.ModelMatrixID = glGetUniformLocation(State->RenderData.Program3DID, "ModelMatrix");
     State->RenderData.ViewMatrix = M4x4r32_0();
     State->RenderData.ProjectionMatrix = M4x4r32_0();
     
-    State->RenderData.LightPositionID = glGetUniformLocation(State->Program3DID, "LightPosition_worldspace");
-    State->RenderData.LightPowerID = glGetUniformLocation(State->Program3DID, "LightPower");
-    State->RenderData.LightColorID = glGetUniformLocation(State->Program3DID, "LightColor");
-    State->RenderData.ChannelMaskID = glGetUniformLocation(State->Program3DID, "ChannelMask");
-    State->RenderData.ChannelRangeID = glGetUniformLocation(State->Program3DID, "ChannelRange");
-    State->RenderData.ChannelRangeShiftID = glGetUniformLocation(State->Program3DID, "ChannelRangeShift");
-    State->RenderData.ChannelShiftID = glGetUniformLocation(State->Program3DID, "ChannelShift");
+    State->RenderData.LightPositionID = glGetUniformLocation(State->RenderData.Program3DID, "LightPosition_worldspace");
+    State->RenderData.LightPowerID = glGetUniformLocation(State->RenderData.Program3DID, "LightPower");
+    State->RenderData.LightColorID = glGetUniformLocation(State->RenderData.Program3DID, "LightColor");
+    State->RenderData.ChannelMaskID = glGetUniformLocation(State->RenderData.Program3DID, "ChannelMask");
+    State->RenderData.ChannelRangeID = glGetUniformLocation(State->RenderData.Program3DID, "ChannelRange");
+    State->RenderData.ChannelRangeShiftID = glGetUniformLocation(State->RenderData.Program3DID, "ChannelRangeShift");
+    State->RenderData.ChannelShiftID = glGetUniformLocation(State->RenderData.Program3DID, "ChannelShift");
     
     State->Player.Pos = V3r32_1_1_1((r32)(WORLD_SIZE_X * CHUNK_SIZE_X) / 2.0f,
                                     (r32)(WORLD_SIZE_Y * CHUNK_SIZE_Y) / 2.0f,
@@ -53,6 +55,10 @@ InitGame(game_state *State)
     State->Player.Yaw = -PI / 2;
     State->Player.Pitch = 0.0f;
     State->Player.Speed = 6.0f;
+    
+    // glGenTextures(1, &State->RenderData.TextureID);
+    // glBindTexture(GL_TEXTURE_2D, State->RenderData.TextureID);
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, , , 0, GL_RGBA, GL_UNSIGNED_BYTE, );
     
     u32 VertexArrayID;
     glGenVertexArrays(1, &VertexArrayID);
@@ -134,7 +140,7 @@ UpdateGame(game_input *Input, game_state *State, platform_flags *Flags)
     }
     
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-    glUseProgram(State->Program3DID);
+    glUseProgram(State->RenderData.Program3DID);
     
     glUniformMatrix4fv(State->RenderData.ViewMatrixID, 1, FALSE, &State->RenderData.ViewMatrix.M[0][0]);
     

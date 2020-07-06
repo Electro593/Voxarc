@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "cl.exe build and debug active file",
+            "name": "Debug Voxarc.exe",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "build/Voxarc.exe",

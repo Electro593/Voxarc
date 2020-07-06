@@ -17,7 +17,7 @@ if not exist build mkdir build
 pushd build
 set compilerSwitches=/Od /MTd /nologo /fp:fast /fp:except- /Gm- /GR- /EHa- /Zo /Oi /WX /W4 /FC /Zi /GS- /Gs9999999 /std:c++17
 set compilerSwitches=/wd4100 /wd4189 /wd4201 /wd4505 %compilerSwitches%
-set compilerSwitches=/D_VOX_DEBUG=1 /D_VOX_WIN32=1 %compilerSwitches%
+set compilerSwitches=/D_VOX_DEBUG=1 /D_VOX_WIN32=1 /D_VOX_GEN_ASSETS=1 %compilerSwitches%
 set linkerSwitches=/incremental:no /opt:ref /nodefaultlib /subsystem:windows /stack:0x100000,0x100000 /machine:x64
 del *.pdb > NUL 2> NUL
 echo WAITING FOR PDB > lock.tmp
@@ -34,7 +34,7 @@ pushd build
 set compilerSwitches=/Od /MTd /nologo /fp:fast /fp:except- /Gm- /GR- /EHa- /Zo /Oi /WX /W4 /FC /Zi /std:c++17 /D_CRT_SECURE_NO_WARNINGS
 set compilerSwitches=/wd4100 /wd4189 /wd4201 /wd4505 /wd4456 %compilerSwitches%
 set linkerSwitches=/incremental:no /opt:ref
-cl %compilerSwitches% /I ..\src\ ..\src\tools\vox_asset_builder.c /link %linkerSwitches% /out:AssetBuilder.exe
+cl %compilerSwitches% /I ..\src\ ..\src\tools\vox_ttf_unpacker.c /link %linkerSwitches% /out:AssetBuilder.exe
 popd
 exit /b 0
 

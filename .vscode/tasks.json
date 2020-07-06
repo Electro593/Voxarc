@@ -3,7 +3,7 @@
     "tasks": [
         {
             "type": "shell",
-            "label": "build",
+            "label": "Build Voxarc",
             "command": "./do build",
             "group": {
                 "kind": "build",
@@ -13,19 +13,25 @@
         },
         {
             "type": "shell",
-            "label": "assets",
+            "label": "Build Assets",
             "command": "./do assets",
             "group": "build",
             "problemMatcher": "$msCompile"
         },
         {
             "type": "shell",
-            "label": "run",
+            "label": "Run Voxarc",
             "command": "./build/Voxarc.exe",
             "group": {
                 "kind": "test",
                 "isDefault": true
             }
+        },
+        {
+            "type": "shell",
+            "label": "Run Assets",
+            "command": "./build/AssetBuilder.exe",
+            "group": "test"
         }
     ]
 }
