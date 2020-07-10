@@ -1,10 +1,8 @@
 #include "vox_file_io.h"
 
 local_func memory_handle *
-VoxReadFile(memory_handle *Handle, c08 *FilePath)
+VoxReadFile(handle_pool *HandlePool, c08 *FilePath)
 {
-    handle_pool *HandlePool = GetHandlePool(Handle);
-    
     memory_handle *FileHandle = AllocateMemory(HandlePool, sizeof(vptr));
     OpenFile(FileHandle, FilePath);
     memory_handle *Text = AllocateMemory(HandlePool, GetFileSize(FileHandle));
@@ -24,7 +22,7 @@ ReadConfig(memory_handle *Handle, c08 *ConfigFilePath)
     config Config;
     SetMemory(&Config, 0, sizeof(Config));
     
-    memory_handle *ConfigText = VoxReadFile(Handle, ConfigFilePath);
+    memory_handle *ConfigText = VoxReadFile(HandlePool, ConfigFilePath);
     memory_handle *Buffer = AllocateMemory(HandlePool, 256);
     memory_handle *TypeName = AllocateMemory(HandlePool, 256);
     
@@ -131,7 +129,7 @@ LoadShaders(memory_handle *Handle, c08 *VertexShaderFilePath, c08 *FragmentShade
     handle_pool *HandlePool = GetHandlePool(Handle);
     
     u32 VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
-    memory_handle *VertexShaderCode = VoxReadFile(Handle, VertexShaderFilePath);
+    memory_handle *VertexShaderCode = VoxReadFile(HandlePool, VertexShaderFilePath);
     glShaderSource(VertexShaderID, 1, &(const c08*)VertexShaderCode->Base, 0);
     glCompileShader(VertexShaderID);
     
@@ -147,7 +145,7 @@ LoadShaders(memory_handle *Handle, c08 *VertexShaderFilePath, c08 *FragmentShade
     FreeMemory(VertexShaderCode);
     
     u32 FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
-    memory_handle *FragmentShaderCode = VoxReadFile(Handle, FragmentShaderFilePath);
+    memory_handle *FragmentShaderCode = VoxReadFile(HandlePool, FragmentShaderFilePath);
     glShaderSource(FragmentShaderID, 1, &(const c08*)FragmentShaderCode->Base, 0);
     glCompileShader(FragmentShaderID);
     

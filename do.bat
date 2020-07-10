@@ -2,7 +2,7 @@
 setlocal
 
 if "%1"=="build" call :build
-if "%1"=="assets" call :build_asset_packer
+if "%1"=="tools" call :build_tool %2 %3
 if "%1"=="shell" call :shell
 if "%1"=="debug" call :debug
 if "%1"=="kwd" call :check_keyword %~2
@@ -27,14 +27,16 @@ cl %compilerSwitches% /I ..\src\ ..\src\platform\vox_platform_win32.c /link %lin
 popd
 exit /b 0
 
-:build_asset_packer
+:build_tool
 call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat" x64
 if not exist build mkdir build
 pushd build
 set compilerSwitches=/Od /MTd /nologo /fp:fast /fp:except- /Gm- /GR- /EHa- /Zo /Oi /WX /W4 /FC /Zi /std:c++17 /D_CRT_SECURE_NO_WARNINGS
+set compilerSwitches=/D_VOX_DEBUG=1 %compilerSwitches%
 set compilerSwitches=/wd4100 /wd4189 /wd4201 /wd4505 /wd4456 %compilerSwitches%
 set linkerSwitches=/incremental:no /opt:ref
-cl %compilerSwitches% /I ..\src\ ..\src\tools\vox_ttf_unpacker.c /link %linkerSwitches% /out:AssetBuilder.exe
+rem cl %compilerSwitches% /I ..\src\ ..\src\tools\vox_asset_packer.c /link %linkerSwitches% /out:AssetPacker.exe
+cl %compilerSwitches% /I ..\src\ ..\src\tools\%1 /link %linkerSwitches% /out:%2
 popd
 exit /b 0
 

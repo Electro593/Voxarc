@@ -30,7 +30,7 @@ InitGame(game_state *State)
     memory_handle *ChunksMemoryHandle = State->ChunksHandlePool->Handles;
     
     State->Config = ReadConfig(UtilMemoryHandle, "config.cfg");
-    State->GlyphTextureInfo = VoxReadFile(UtilMemoryHandle, GLYPHS_INFO);
+    // State->GlyphTextureInfo = VoxReadFile(UtilMemoryHandle, GLYPHS_INFO);
     State->RenderData.Program3DID = LoadShaders(UtilMemoryHandle, "shaders/shader3d.vert", "shaders/shader3d.frag");
     State->RenderData.Program2DID = LoadShaders(UtilMemoryHandle, "shaders/shader2d.vert", "shaders/shader2d.frag");
     glUseProgram(State->RenderData.Program2DID);

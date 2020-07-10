@@ -13,8 +13,15 @@
         },
         {
             "type": "shell",
-            "label": "Build Assets",
-            "command": "./do assets",
+            "label": "Build Asset Packer",
+            "command": "./do tools vox_asset_packer.c AssetPacker.exe",
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "type": "shell",
+            "label": "Build Font Unpacker",
+            "command": "./do tools vox_ttf_unpacker.c FontUnpacker.exe",
             "group": "build",
             "problemMatcher": "$msCompile"
         },
@@ -29,8 +36,14 @@
         },
         {
             "type": "shell",
-            "label": "Run Assets",
-            "command": "./build/AssetBuilder.exe",
+            "label": "Run Asset Packer",
+            "command": "./build/AssetPacker.exe",
+            "group": "test"
+        },
+        {
+            "type": "shell",
+            "label": "Run Font Unpacker",
+            "command": "./build/FontUnpacker.exe",
             "group": "test"
         }
     ]

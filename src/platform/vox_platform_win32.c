@@ -2,10 +2,6 @@
 
 #include "util/vox_defines.h"
 
-#if _VOX_GEN_ASSETS
-#include "tools/vox_asset_builder.c"
-#endif
-
 #include "voxarc.h"
 #include "platform/vox_platform_win32.h"
 #include "platform/vox_platform_shared.h"
@@ -202,9 +198,9 @@ Win32CloseFileType(memory_handle *FindHandle)
 }
 
 local_func void
-Win32OpenFile(memory_handle *FileHandle, c16 *FileName)
+Win32OpenFile(memory_handle *FileHandle, c08 *FileName)
 {
-    vptr GivenHandle = CreateFileW(FileName, GENERIC_READ, FILE_SHARE_READ,
+    vptr GivenHandle = CreateFileA(FileName, GENERIC_READ, FILE_SHARE_READ,
                                    0, OPEN_EXISTING, 0, 0);
     if(GivenHandle != INVALID_HANDLE_VALUE)
     {
@@ -219,13 +215,13 @@ Win32OpenFile(memory_handle *FileHandle, c16 *FileName)
 local_func void
 Win32OpenFileType(memory_handle *FileHandle, memory_handle *FindHandle, file_type FileType)
 {
-    c16 *Wildcard = L"*.*";
+    c08 *Wildcard = "*.*";
     
     switch(FileType)
     {
         case FileType_Bitmap:
         {
-            Wildcard = ASSETS_DIR L"*.bmp";
+            Wildcard = "assets/*.bmp";
         } break;
         default:
         {
@@ -234,7 +230,7 @@ Win32OpenFileType(memory_handle *FileHandle, memory_handle *FindHandle, file_typ
     }
     
     win32_find_data FindData;
-    vptr GivenFindHandle = FindFirstFileW(Wildcard, &FindData);
+    vptr GivenFindHandle = FindFirstFileA(Wildcard, &FindData);
     if(GivenFindHandle != INVALID_HANDLE_VALUE)
     {
         *(vptr*)FindHandle->Base = *(vptr*)(&GivenFindHandle);
@@ -251,7 +247,7 @@ local_func void
 Win32OpenNextFile(memory_handle *FileHandle, memory_handle *FindHandle)
 {
     win32_find_data FindData;
-    if(FindNextFileW(*(vptr*)FindHandle->Base, &FindData))
+    if(FindNextFileA(*(vptr*)FindHandle->Base, &FindData))
     {
         Win32OpenFile(FileHandle, FindData.FileName);
     }
@@ -467,12 +463,6 @@ WinMain(vptr Instance,
             vptr RenderContext = Win32InitOpenGLFunctions(DeviceContext);
             
             Data.Window = Window;
-            
-#if _VOX_GEN_ASSETS
-            s32 MaxSize = 0;
-            glGetIntegerv(GL_MAX_TEXTURE_SIZE, &MaxSize);
-            GenAssetPacks(MaxSize);
-#endif
             
             win32_large_integer PerformanceCount;
             QueryPerformanceCounter(&PerformanceCount);

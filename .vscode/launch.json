@@ -17,10 +17,22 @@
             "preLaunchTask": ""
         },
         {
-            "name": "Debug AssetBuilder.exe",
+            "name": "Debug AssetPacker.exe",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "build/AssetBuilder.exe",
+            "program": "build/AssetPacker.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "preLaunchTask": ""
+        },
+        {
+            "name": "Debug FontUnpacker.exe",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "build/FontUnpacker.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

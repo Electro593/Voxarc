@@ -203,8 +203,8 @@ typedef struct win32_find_data
     u32 FileSizeLow;
     u32 Reserved0;
     u32 Reserved1;
-    c16 FileName[MAX_PATH];
-    c16 AlternateFileName[14];
+    c08 FileName[MAX_PATH];
+    c08 AlternateFileName[14];
 } win32_find_data;
 
 #define WIN32_PROCS \
@@ -214,14 +214,14 @@ typedef struct win32_find_data
     PROCM(Gdi32,    s32,  DescribePixelFormat,        vptr DeviceContext, s32 PixelFormat, u32 BytesCount, win32_pixel_format_descriptor *PixelFormatDescriptor) \
     PROCM(Kernel32, b08,  CloseHandle,                vptr Object) \
     PROCM(Kernel32, b08,  FindClose,                  vptr FindFile) \
-    PROCM(Kernel32, vptr, FindFirstFileW,             c16 *FileName, win32_find_data *FindFileData) \
-    PROCM(Kernel32, b08,  FindNextFileW,              vptr FindFile, win32_find_data *FindFileData) \
+    PROCM(Kernel32, b08,  FindNextFileA,              vptr FindFile, win32_find_data *FindFileData) \
     PROCM(Kernel32, b08,  GetFileSizeEx,              vptr File, win32_large_integer *FileSize) \
     PROCM(Kernel32, b08,  QueryPerformanceCounter,    win32_large_integer *PerformanceCount) \
     PROCM(Kernel32, b08,  ReadFile,                   vptr File, vptr Buffer, u32 NumberOfBytesToRead, u32 *NumberOfBytesRead, win32_overlapped *OVerlapped) \
     PROCM(Kernel32, void, ExitProcess,                u32 ExitCode) \
     PROCM(Kernel32, void, OutputDebugStringA,         cc08 *OutputString) \
-    PROCM(Kernel32, vptr, CreateFileW,                cc16 *FileName, u32 DesiredAccess, u32 ShareMode, win32_security_attributes *SecurityAttributes, u32 CreationDisposition, u32 FlagsAndAttributes, vptr TemplateFile) \
+    PROCM(Kernel32, vptr, CreateFileA,                cc08 *FileName, u32 DesiredAccess, u32 ShareMode, win32_security_attributes *SecurityAttributes, u32 CreationDisposition, u32 FlagsAndAttributes, vptr TemplateFile) \
+    PROCM(Kernel32, vptr, FindFirstFileA,             c08 *FileName, win32_find_data *FindFileData) \
     PROCM(Kernel32, vptr, GetModuleHandleA,           cc08 *ModuleName) \
     PROCM(Kernel32, vptr, VirtualAlloc,               vptr Address, size Size, u32 AllocationType, u32 Protect) \
     PROCM(Kernel32, b08,  VirtualFree,                vptr Address, size Size, u32 FreeType) \

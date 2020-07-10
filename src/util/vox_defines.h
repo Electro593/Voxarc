@@ -57,6 +57,7 @@ typedef const          void *    cvptr;
 
 #ifdef _VOX_DEBUG
 #define Assert(Condition) if(!(Condition)) (*(int*)0 = 0)
+#define NOP {u32 _Breakpoint_ = 0;}
 #else
 #define Assert(Condition)
 #endif
