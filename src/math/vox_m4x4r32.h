@@ -1,19 +1,18 @@
 #ifndef MATH_VOX_M4X4R32_H_
 
 #include "util/vox_defines.h"
-#include "util/vox_memory.h"
-#include "vox_v4r32.h"
-#include "vox_v3r32.h"
+#include "math/vox_v4r32.h"
+#include "math/vox_v3r32.h"
 
-typedef union m4x4r32
+union m4x4r32
 {
     v4r32 V[4];
     r32 M[4][4];
     r32 E[16];
-} m4x4r32, m4r;
+};
 
 inline m4x4r32
-M4x4r32_0()
+M4x4r32_0(void)
 {
     m4x4r32 Result;
     SetMemory(&Result, 0, sizeof(m4x4r32));
@@ -25,7 +24,10 @@ M4x4r32_0()
 }
 
 inline m4x4r32
-M4x4r32_4_4_4_4(v4r32 Col1, v4r32 Col2, v4r32 Col3, v4r32 Col4)
+M4x4r32_4_4_4_4(v4r32 Col1,
+                v4r32 Col2,
+                v4r32 Col3,
+                v4r32 Col4)
 {
     m4x4r32 Result;
     Result.V[0] = Col1;
@@ -36,7 +38,8 @@ M4x4r32_4_4_4_4(v4r32 Col1, v4r32 Col2, v4r32 Col3, v4r32 Col4)
 }
 
 inline m4x4r32
-M4x4r32_Multiply(m4x4r32 A, m4x4r32 B)
+M4x4r32_Multiply(m4x4r32 A,
+                 m4x4r32 B)
 {
     m4x4r32 Result;
     Result.E[ 0] = A.E[ 0]*B.E[ 0] + A.E[ 4]*B.E[ 1] + A.E[ 8]*B.E[ 2] + A.E[12]*B.E[ 3];
@@ -59,7 +62,8 @@ M4x4r32_Multiply(m4x4r32 A, m4x4r32 B)
 }
 
 inline v4r32
-M4x4r32_MultiplyV(m4x4r32 M, v4r32 V)
+M4x4r32_MultiplyV(m4x4r32 M,
+                  v4r32 V)
 {
     v4r32 Result;
     Result.E[0] = M.M[0][0]*V.E[0] + M.M[1][0]*V.E[1] + M.M[2][0]*V.E[2] + M.M[3][0]*V.E[3];
@@ -123,7 +127,10 @@ M4x4r32_Inverse(m4x4r32 M)
 }
 
 inline m4x4r32
-M4x4r32_Translate(m4x4r32 M, r32 X, r32 Y, r32 Z)
+M4x4r32_Translate(m4x4r32 M,
+                  r32 X,
+                  r32 Y,
+                  r32 Z)
 {
     m4x4r32 Result;
     Result.M[0][0] = M.E[ 0]+X*M.E[12];
@@ -146,7 +153,9 @@ M4x4r32_Translate(m4x4r32 M, r32 X, r32 Y, r32 Z)
 }
 
 inline m4x4r32
-M4x4r32_Translation(r32 X, r32 Y, r32 Z)
+M4x4r32_Translation(r32 X,
+                    r32 Y,
+                    r32 Z)
 {
     m4x4r32 Result = M4x4r32_0();
     Result.M[3][0] = X;
@@ -156,7 +165,8 @@ M4x4r32_Translation(r32 X, r32 Y, r32 Z)
 }
 
 inline m4x4r32
-M4x4r32_RotateX(m4x4r32 M, r32 T)
+M4x4r32_RotateX(m4x4r32 M,
+                r32 T)
 {
     r32 C = Cos(T);
     r32 S = Sin(T);
@@ -182,7 +192,8 @@ M4x4r32_RotateX(m4x4r32 M, r32 T)
 }
 
 inline m4x4r32
-M4x4r32_RotateY(m4x4r32 M, r32 T)
+M4x4r32_RotateY(m4x4r32 M,
+                r32 T)
 {
     r32 C = Cos(T);
     r32 S = Sin(T);
@@ -208,12 +219,15 @@ M4x4r32_RotateY(m4x4r32 M, r32 T)
 }
 
 inline m4x4r32
-M4x4r32_Perspective(r32 FOV, r32 AspectRatio, r32 ZNear, r32 ZFar)
+M4x4r32_Perspective(r32 FOV,
+                    r32 AspectRatio,
+                    r32 ZNear,
+                    r32 ZFar)
 {
     r32 R = ZFar - ZNear;
     r32 F = 1.0f / Tan(FOV / 2);
     m4x4r32 Result;
-    SetMemory(&Result, 0, sizeof(Result));
+    SetMemory(&Result, 0, sizeof(m4x4r32));
     Result.M[0][0] = F / AspectRatio;
     Result.M[1][1] = F;
     Result.M[2][2] = -(ZFar + ZNear) / R;
@@ -223,7 +237,26 @@ M4x4r32_Perspective(r32 FOV, r32 AspectRatio, r32 ZNear, r32 ZFar)
 }
 
 inline m4x4r32
-M4x4r32_LookAt(v3r32 Position, v3r32 Target, v3r32 WorldUp)
+M4x4r32_Orthographic(r32 Left,
+                     r32 Right,
+                     r32 Bottom,
+                     r32 Top)
+{
+    m4x4r32 Result;
+    SetMemory(&Result, 0, sizeof(m4x4r32));
+    Result.M[0][0] = 2.0f / (Right - Left);
+    Result.M[1][1] = 2.0f / (Top - Bottom);
+    Result.M[2][2] = -1.0f;
+    Result.M[3][0] = -(Right + Left) / (Right - Left);
+    Result.M[3][1] = -(Top + Bottom) / (Top - Bottom);
+    Result.M[3][3] = 1.0f;
+    return Result;
+}
+
+inline m4x4r32
+M4x4r32_LookAt(v3r32 Position,
+               v3r32 Target,
+               v3r32 WorldUp)
 {
     v3r32 ZAxis = V3r32_Normalize(V3r32_Subtract(Position, Target));
     v3r32 XAxis = V3r32_Normalize(V3r32_Cross(V3r32_Normalize(WorldUp), ZAxis));

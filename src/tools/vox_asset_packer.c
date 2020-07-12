@@ -100,12 +100,13 @@ WriteFiles(gen_data Data)
     voxai_header Header = {0};
     Header.MagicNumber = VOXAI_MAGIC_NUMBER;
     Header.Version = VOXAI_VERSION;
+    Header.AtlasDim = MAX_ATLAS_DIM;
     Header.TypeCount = Data.TotalTypes;
     
-    size HeaderSize = sizeof(voxai_header);
-    size TypeTableSize = Data.TotalTypes * sizeof(voxai_type);
-    size AssetTableSize = Data.TotalAssets * sizeof(voxai_asset);
-    size TagTableSize = Data.TotalTags * sizeof(voxai_tag);
+    u32 HeaderSize = sizeof(voxai_header);
+    u32 TypeTableSize = Data.TotalTypes * sizeof(voxai_type);
+    u32 AssetTableSize = Data.TotalAssets * sizeof(voxai_asset);
+    u32 TagTableSize = Data.TotalTags * sizeof(voxai_tag);
     
     FILE *VOXAI = fopen(ASSET_INFO_FILENAME, "wb");
     if(!VOXAI)
@@ -115,7 +116,7 @@ WriteFiles(gen_data Data)
     
     fwrite(&Header, sizeof(voxai_header), 1, VOXAI);
     
-    size AssetOffset = 0;
+    u32 AssetOffset = 0;
     for(u32 TypeIndex = 0;
         TypeIndex < Data.TotalTypes;
         ++TypeIndex)
@@ -128,8 +129,8 @@ WriteFiles(gen_data Data)
         fwrite(&Type, sizeof(voxai_type), 1, VOXAI);
     }
     
-    size TagsOffset = 0;
-    size DataOffset = 0;
+    u32 TagsOffset = 0;
+    u32 DataOffset = 0;
     for(u32 AssetIndex = 0;
         AssetIndex < Data.TotalAssets;
         ++AssetIndex)
@@ -170,15 +171,13 @@ WriteFiles(gen_data Data)
         return;
     }
     
-#define MAX_ATLAS_DIM 512
-#define MAX_ATLAS_BYTES (MAX_ATLAS_DIM * MAX_ATLAS_DIM * BYTES_PER_PIXEL)
-    
     packer Packer = {0};
     Packer.Nodes = calloc(MAX_ASSETS * 4, sizeof(packer_node));
     Packer.Nodes[0].Width = MAX_ATLAS_DIM;
     Packer.Nodes[0].Height = MAX_ATLAS_DIM;
     ++Packer.NodeCount;
     
+#if _VOX_AP_BITMAP
     bitmap_header BMPHeader = {0};
     BMPHeader.Signature[0] = 'B';
     BMPHeader.Signature[1] = 'M';
@@ -191,6 +190,7 @@ WriteFiles(gen_data Data)
     BMPHeader.Width = MAX_ATLAS_DIM;
     BMPHeader.Height = MAX_ATLAS_DIM;
     fwrite(&BMPHeader, sizeof(bitmap_header), 1, VOXAA);
+#endif
     
     u08 *Atlas = calloc(MAX_ATLAS_BYTES, 1);
     
@@ -455,6 +455,7 @@ main()
 <File Header>
   Magic Number
   Version
+  Atlas Dim
   Type Count
 
 <Type Table> (x Types Count)
@@ -475,9 +476,13 @@ main()
       3 = Undefined
     32-bit Value
 
-<Data> (x Asset Count)
-  Data Header
-  Data Body
+<Data Table> (x Asset Count)
+  Union:
+    Bitmap
+      Width
+      Height
+      Offset X
+      Offset Y
 
 
 --PROCEDURE--

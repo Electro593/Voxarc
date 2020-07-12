@@ -1,7 +1,6 @@
 #ifndef VOX_PLATFORM_WIN32_H_
 
 #include "util/vox_defines.h"
-#include "math/vox_v2s32.h"
 
 #define WINAPIENTRY __stdcall
 #define VOXAPIENTRY WINAPIENTRY
@@ -225,17 +224,22 @@ typedef struct win32_find_data
     PROCM(Kernel32, vptr, GetModuleHandleA,           cc08 *ModuleName) \
     PROCM(Kernel32, vptr, VirtualAlloc,               vptr Address, size Size, u32 AllocationType, u32 Protect) \
     PROCM(Kernel32, b08,  VirtualFree,                vptr Address, size Size, u32 FreeType) \
+    PROCM(Opengl32, b08,  glViewport,                 s32 X, s32 Y, s32 Width, s32 Height) \
     PROCM(Opengl32, b08,  wglDeleteContext,           vptr RenderContext) \
     PROCM(Opengl32, b08,  wglMakeCurrent,             vptr DeviceContext, vptr RenderContext) \
+    PROCM(Opengl32, void, glBindTexture,              u32 Target, u32 Texture) \
+    PROCM(Opengl32, void, glBlendFunc,                u32 SFactor, u32 DFactor) \
+    PROCM(Opengl32, void, glClear,                    u32 Mask) \
+    PROCM(Opengl32, void, glClearColor,               r32 Red, r32 Green, r32 Blue, r32 Alpha) \
+    PROCM(Opengl32, void, glDrawArrays,               u32 Mode, s32 First, s32 Count) \
+    PROCM(Opengl32, void, glDrawElements,             u32 Mode, s32 Count, u32 Type, const vptr Indices) \
+    PROCM(Opengl32, void, glEnable,                   u32 Cap) \
+    PROCM(Opengl32, void, glGenTextures,              s32 N, u32 *Textures) \
+    PROCM(Opengl32, void, glGetIntegerv,              u32 Name, s32 *Data) \
+    PROCM(Opengl32, void, glTexImage2D,               u32 Target, s32 Level, s32 InternalFormat, s32 Width, s32 Height, s32 Border, u32 Format, u32 Type, const vptr Data) \
+    PROCM(Opengl32, void, glTexParameteri,            u32 Target, u32 Name, s32 Param) \
     PROCM(Opengl32, vptr, wglCreateContext,           vptr DeviceContext) \
     PROCM(Opengl32, vptr, wglGetProcAddress,          cc08 *Process) \
-    PROCM(Opengl32, b08,  glViewport,                 s32 X, s32 Y, s32 Width, s32 Height) \
-    PROCM(Opengl32, void, glTexParameteri,            u32 Target, u32 Name, s32 Param) \
-    PROCM(Opengl32, void, glTexImage2D,               u32 Target, s32 Level, s32 InternalFormat, s32 Width, s32 Height, s32 Border, u32 Format, u32 Type, const vptr Data) \
-    PROCM(Opengl32, void, glClearColor,               r32 Red, r32 Green, r32 Blue, r32 Alpha) \
-    PROCM(Opengl32, void, glClear,                    u32 Mask) \
-    PROCM(Opengl32, void, glEnable,                   u32 Cap) \
-    PROCM(Opengl32, void, glGetIntegerv,              u32 Name, s32 *Data) \
     PROCM(User32,   b08,  ClientToScreen,             vptr Window, win32_point *Point) \
     PROCM(User32,   b08,  DestroyWindow,              vptr Window) \
     PROCM(User32,   b08,  GetClientRect,              vptr Window, win32_rect *Rect) \
@@ -294,16 +298,6 @@ WGL_PROCS
 #define WGL_CONTEXT_PROFILE_MASK_ARB            0x9126
 #define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB  0x0002
 #define WGL_CONTEXT_CORE_PROFILE_BIT_ARB        0x00000001
-
-typedef struct win32_data
-{
-    vptr Window;
-    win32_rect WindowRect;
-    game_state State;
-    game_input Input;
-    platform_flags Flags;
-    v2s32 PrevCursorPos;
-} win32_data;
 
 typedef struct win32_ldr_data_entry
 {

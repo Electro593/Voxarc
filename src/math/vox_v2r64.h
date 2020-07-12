@@ -1,9 +1,8 @@
 #ifndef MATH_VOX_V2R64_H_
 
 #include "util/vox_defines.h"
-#include "vox_math.h"
 
-typedef union v2r64
+union v2r64
 {
     struct
     {
@@ -11,7 +10,7 @@ typedef union v2r64
         r32 Y;
     };
     r32 E[2];
-} v2r64;
+};
 
 inline v2r64
 V2r64_1(r32 N)
@@ -23,7 +22,8 @@ V2r64_1(r32 N)
 }
 
 inline v2r64
-V2r64_1_1(r32 X, r32 Y)
+V2r64_1_1(r32 X,
+          r32 Y)
 {
     v2r64 Result;
     Result.X = X;
@@ -32,7 +32,8 @@ V2r64_1_1(r32 X, r32 Y)
 }
 
 inline v2r64
-V2r64_Add(v2r64 A, v2r64 B)
+V2r64_Add(v2r64 A,
+          v2r64 B)
 {
     v2r64 Result;
     Result.X = A.X + B.X;
@@ -41,7 +42,8 @@ V2r64_Add(v2r64 A, v2r64 B)
 }
 
 inline v2r64
-V2r64_Subtract(v2r64 A, v2r64 B)
+V2r64_Subtract(v2r64 A,
+               v2r64 B)
 {
     v2r64 Result;
     Result.X = A.X - B.X;
@@ -50,7 +52,8 @@ V2r64_Subtract(v2r64 A, v2r64 B)
 }
 
 inline v2r64
-V2r64_Multiply(v2r64 A, v2r64 B)
+V2r64_Multiply(v2r64 A,
+               v2r64 B)
 {
     v2r64 Result;
     Result.X = A.X * B.X;
@@ -59,7 +62,8 @@ V2r64_Multiply(v2r64 A, v2r64 B)
 }
 
 inline v2r64
-V2r64_Divide(v2r64 A, v2r64 B)
+V2r64_Divide(v2r64 A,
+             v2r64 B)
 {
     v2r64 Result;
     Result.X = A.X / B.X;
@@ -68,7 +72,8 @@ V2r64_Divide(v2r64 A, v2r64 B)
 }
 
 inline v2r64
-V2r64_DivideS(v2r64 V, r32 S)
+V2r64_DivideS(v2r64 V,
+              r32 S)
 {
     v2r64 Result;
     Result.X = V.X / S;
@@ -77,7 +82,8 @@ V2r64_DivideS(v2r64 V, r32 S)
 }
 
 inline r32
-V2r64_Dot(v2r64 A, v2r64 B)
+V2r64_Dot(v2r64 A,
+          v2r64 B)
 {
     return A.X*B.X + A.Y*B.Y;
 }
@@ -98,7 +104,8 @@ V2r64_Normalize(v2r64 V)
 }
 
 inline b08
-V2r64_Equal(v2r64 A, v2r64 B)
+V2r64_Equal(v2r64 A,
+            v2r64 B)
 {
     if(A.X == B.X &&
        A.Y == B.Y)
@@ -109,7 +116,8 @@ V2r64_Equal(v2r64 A, v2r64 B)
 }
 
 inline b08
-V2r64_LessThan(v2r64 A, v2r64 B)
+V2r64_LessThan(v2r64 A,
+               v2r64 B)
 {
     if(V2r64_Length(A) < V2r64_Length(B))
     {
@@ -119,7 +127,8 @@ V2r64_LessThan(v2r64 A, v2r64 B)
 }
 
 inline b08
-V2r64_GreaterThan(v2r64 A, v2r64 B)
+V2r64_GreaterThan(v2r64 A,
+                  v2r64 B)
 {
     if(V2r64_Length(A) > V2r64_Length(B))
     {

@@ -1,36 +1,39 @@
-#ifndef VOX_MEMORY_H_
+#ifndef UTIL_VOX_MEMORY_H_
 
 #include "vox_defines.h"
-#include <intrin.h>
+
+// #include <intrin.h>
 
 #define HANDLES_PER_MEGABYTE 8
 
-typedef struct memory_handle
+struct memory_handle
 {
     size Size;
     vptr Base;
     u32 HandleIndex;
     u32 _Unused[3];
-} memory_handle;
+};
 
-typedef struct data_pool
+struct data_pool
 {
     vptr Base;
     size Used;
     size Size;
     u32 _Unused[2];
-} data_pool;
+};
 
-typedef struct handle_pool
+struct handle_pool
 {
     memory_handle *Handles;
     data_pool *DataPool;
     u32 HandleCount;
     u32 _Unused[3];
-} handle_pool;
+};
 
 inline void
-SetMemory(vptr Dest, u32 Data, size Size)
+SetMemory(vptr Dest,
+          u32 Data,
+          size Size)
 {
     u08 Data08 = (u08)Data;
     __m128i Data128 = _mm_set1_epi8(Data08);
@@ -61,7 +64,9 @@ SetMemory(vptr Dest, u32 Data, size Size)
 }
 
 inline void
-CopyMemory(vptr Dest, cvptr Src, size Size)
+CopyMemory(vptr Dest,
+           cvptr Src,
+           size Size)
 {
     size Alignment = Align16(Size - 15);
     u08 *Src08 = (u08*)Src;
@@ -96,7 +101,8 @@ GetHandlePool(memory_handle *Handle)
 }
 
 inline void
-CopyHandles(memory_handle *Dest, memory_handle *Src)
+CopyHandles(memory_handle *Dest,
+            memory_handle *Src)
 {
     Assert(Dest->Size >= Src->Size);
     Assert(Dest->Base && Src->Base);
@@ -104,7 +110,7 @@ CopyHandles(memory_handle *Dest, memory_handle *Src)
 }
 
 inline handle_pool *
-CreateHandlePool(vptr Base, size Size)
+CreateHandlePool(size Size)
 {
     u32 MemoryHandleCount = (u32)((Size * HANDLES_PER_MEGABYTE) / (1024*1024));
     if(MemoryHandleCount < 4)
@@ -112,7 +118,8 @@ CreateHandlePool(vptr Base, size Size)
         MemoryHandleCount = 4;
     }
     size HandlePoolSize = MemoryHandleCount * sizeof(memory_handle) + sizeof(handle_pool);
-    size DataPoolSize = Size - HandlePoolSize - sizeof(data_pool);
+    size DataPoolSize = Size + sizeof(data_pool);
+    vptr Base = ReserveMemory(HandlePoolSize + DataPoolSize);
     
     handle_pool *HandlePool = (handle_pool*)Base;
     HandlePool->Handles = (memory_handle*)(HandlePool + 1);
@@ -180,7 +187,8 @@ DefragmentMemoryPools(handle_pool *HandlePool)
 }
 
 inline vptr
-FindFreeMemory(handle_pool *HandlePool, size Size)
+FindFreeMemory(handle_pool *HandlePool,
+               size Size)
 {
     data_pool *DataPool = HandlePool->DataPool;
     vptr Base = 0;
@@ -210,7 +218,8 @@ FindUnusedHandle(handle_pool *HandlePool)
 }
 
 inline memory_handle *
-AllocateMemory(handle_pool *HandlePool, size Size)
+AllocateMemory(handle_pool *HandlePool,
+               size Size)
 {
     vptr Base = FindFreeMemory(HandlePool, Size);
     memory_handle *UnusedHandle = FindUnusedHandle(HandlePool);
@@ -249,7 +258,8 @@ FreeMemory(memory_handle *Handle)
 }
 
 inline memory_handle *
-ResizeMemory(memory_handle *Handle, size Size)
+ResizeMemory(memory_handle *Handle,
+             size Size)
 {
     handle_pool *HandlePool = GetHandlePool(Handle);
     
@@ -271,7 +281,9 @@ ResizeMemory(memory_handle *Handle, size Size)
 }
 
 inline s32
-CompareMemory(vptr A, vptr B, size Size)
+CompareMemory(vptr A,
+              vptr B,
+              size Size)
 {
     u08 *ByteA = (u08*)A;
     u08 *ByteB = (u08*)B;
@@ -284,7 +296,8 @@ CompareMemory(vptr A, vptr B, size Size)
 }
 
 inline s32
-CompareArrays(c08 *A, c08 *B)
+CompareArrays(c08 *A,
+              c08 *B)
 {
     while(*A && *B && *A == *B)
     {
@@ -307,5 +320,5 @@ PointerCount(void *Ptr)
     return Size;
 }
 
-#define VOX_MEMORY_H_
+#define UTIL_VOX_MEMORY_H_
 #endif

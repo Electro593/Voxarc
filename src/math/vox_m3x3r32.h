@@ -1,18 +1,16 @@
 #ifndef MATH_VOX_M3X3R32_H_
 
 #include "util/vox_defines.h"
-#include "util/vox_memory.h"
-#include "vox_v3r32.h"
 
-typedef union m3x3r32
+union m3x3r32
 {
     v3r32 V[3];
     r32 M[3][3];
     r32 E[9];
-} m3x3r32, m3r;
+};
 
 inline m3x3r32
-M3x3r32_0()
+M3x3r32_0(void)
 {
     m3x3r32 Result;
     SetMemory(&Result, 0, sizeof(m3x3r32));
@@ -23,7 +21,9 @@ M3x3r32_0()
 }
 
 inline m3x3r32
-M3x3r32_3(v3r32 Col1, v3r32 Col2, v3r32 Col3)
+M3x3r32_3(v3r32 Col1,
+          v3r32 Col2,
+          v3r32 Col3)
 {
     m3x3r32 Result;
     Result.V[0] = Col1;
@@ -33,7 +33,8 @@ M3x3r32_3(v3r32 Col1, v3r32 Col2, v3r32 Col3)
 }
 
 inline v3r32
-M3x3r32_Multiply(m3x3r32 M, v3r32 V)
+M3x3r32_Multiply(m3x3r32 M,
+                 v3r32 V)
 {
     v3r32 Result;
     Result.E[0] = V.E[0]*M.M[0][0] + V.E[1]*M.M[1][0] + V.E[2]*M.M[2][0];

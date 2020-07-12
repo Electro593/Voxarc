@@ -1,127 +1,8 @@
-#include "vox_world.h"
-
+#include "util/vox_defines.h"
+#include "game/vox_world.h"
+#include "math/vox_v3r32.h"
 #include "math/vox_v3s32.h"
-
-local_func mesh
-CreateMesh(mesh_data Data, v3u32 Pos)
-{
-    mesh Mesh = {0};
-    Mesh.Data = Data;
-    
-    glGenBuffers(1, &Mesh.VertexBufferID);
-    glBindBuffer(GL_ARRAY_BUFFER, Mesh.VertexBufferID);
-    
-    glGenBuffers(1, &Mesh.ColorBufferID);
-    glBindBuffer(GL_ARRAY_BUFFER, Mesh.ColorBufferID);
-    
-    glGenBuffers(1, &Mesh.ElementBufferID);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Mesh.ElementBufferID);
-    
-    Mesh.ModelMatrix = M4x4r32_Translate(M4x4r32_0(), (r32)Pos.X * CHUNK_SIZE_X,
-                                                      (r32)Pos.Y * CHUNK_SIZE_Y,
-                                                      (r32)Pos.Z * CHUNK_SIZE_Z);
-    
-    return Mesh;
-}
-
-/* Cube meshData setup
-    Vertices:
-        -1, -1, -1
-        -1, -1,  1
-        -1,  1, -1
-        -1,  1,  1
-         1, -1, -1
-         1, -1,  1
-         1,  1, -1
-         1,  1,  1
-    
-    Normals:
-        -1,  0,  0,
-         0, -1,  0,
-         0,  0, -1,
-         1,  0,  0,
-         0,  1,  0,
-         0,  0,  1,
-    
-    UVs:
-        ( 0.0+0.5)/96.0, (32.0+0.5)/96.0,
-        ( 0.0+0.5)/96.0, (63.0+0.5)/96.0,
-        (31.0+0.5)/96.0, (32.0+0.5)/96.0,
-        (31.0+0.5)/96.0, (63.0+0.5)/96.0,
-        (32.0+0.5)/96.0, ( 0.0+0.5)/96.0,
-        (32.0+0.5)/96.0, (31.0+0.5)/96.0,
-        (32.0+0.5)/96.0, (32.0+0.5)/96.0,
-        (32.0+0.5)/96.0, (63.0+0.5)/96.0,
-        (32.0+0.5)/96.0, (64.0+0.5)/96.0,
-        (32.0+0.5)/96.0, (95.0+0.5)/96.0,
-        (63.0+0.5)/96.0, ( 0.0+0.5)/96.0,
-        (63.0+0.5)/96.0, (31.0+0.5)/96.0,
-        (63.0+0.5)/96.0, (32.0+0.5)/96.0,
-        (63.0+0.5)/96.0, (63.0+0.5)/96.0,
-        (63.0+0.5)/96.0, (64.0+0.5)/96.0,
-        (63.0+0.5)/96.0, (95.0+0.5)/96.0,
-        (64.0+0.5)/96.0, ( 0.0+0.5)/96.0,
-        (64.0+0.5)/96.0, (31.0+0.5)/96.0,
-        (64.0+0.5)/96.0, (32.0+0.5)/96.0,
-        (64.0+0.5)/96.0, (63.0+0.5)/96.0,
-        (95.0+0.5)/96.0, ( 0.0+0.5)/96.0,
-        (95.0+0.5)/96.0, (31.0+0.5)/96.0,
-        (95.0+0.5)/96.0, (32.0+0.5)/96.0,
-        (95.0+0.5)/96.0, (63.0+0.5)/96.0
-    
-    Faces:
-        Right
-        6, 3, 23,  7, 3, 19,  5, 3, 18,
-        6, 3, 23,  5, 3, 18,  4, 3, 22,
-        Top
-        6, 4, 15,  2, 4, 9,  3, 4, 8,
-        6, 4, 15,  3, 4, 8,  7, 4, 14,
-        Front
-        1, 5, 6,  5, 5, 12,  7, 5, 13,
-        1, 5, 6,  7, 5, 13,  3, 5, 7,
-        Left
-        1, 0, 2,  3, 0, 3,  2, 0, 1,
-        1, 0, 2,  2, 0, 1,  0, 0, 0,
-        Bottom
-        1, 1, 5,  0, 1, 4,  4, 1, 10,
-        1, 1, 5,  4, 1, 10,  5, 1, 11,
-        Back
-        6, 2, 17,  4, 2, 16,  0, 2, 20,
-        6, 2, 17,  0, 2, 20,  2, 2, 21
-*/
-
-local_func void
-RenderMesh(mesh Mesh, render_data RenderData)
-{
-    glUniformMatrix4fv(RenderData.ModelMatrixID, 1, FALSE, &Mesh.ModelMatrix.M[0][0]);
-    m4x4r32 MVPMatrix = M4x4r32_Multiply(RenderData.ProjectionMatrix, M4x4r32_Multiply(RenderData.ViewMatrix, Mesh.ModelMatrix));
-    glUniformMatrix4fv(RenderData.MVPMatrixID, 1, FALSE, &MVPMatrix.M[0][0]);
-    
-    //TODO: Try moving VertexAttribPointer to CreateMesh
-    //TODO: Make colors a series of unsigned bytes
-    //TODO: Store normals as INT_2_10_10_10_REV (store something in 2 bit segment?)
-    //TODO: Mode glBufferData to CreateMesh, it only changes after a chunk update
-    //TODO: Interleave or pack the VBOs?
-    
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, Mesh.VertexBufferID);
-    glBufferData(GL_ARRAY_BUFFER, Mesh.Data.Vertices->Size, Mesh.Data.Vertices->Base, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, FALSE, 0, 0);
-    
-    glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, Mesh.ColorBufferID);
-    glBufferData(GL_ARRAY_BUFFER, Mesh.Data.Colors->Size, Mesh.Data.Colors->Base, GL_STATIC_DRAW);
-    glVertexAttribPointer(1, 4, GL_FLOAT, FALSE, 0, 0);
-    
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Mesh.ElementBufferID);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, Mesh.Data.Indices->Size, Mesh.Data.Indices->Base, GL_STATIC_DRAW);
-    glDrawElements(GL_TRIANGLES, (s32)(Mesh.Data.Indices->Size / sizeof(u16)),
-                   GL_UNSIGNED_SHORT, 0);
-    //glDrawArrays(GL_TRIANGLES, 0, (GLsizei)(Mesh.Data.Vertices->Size / sizeof(v3r)));
-    
-    glDisableVertexAttribArray(0);
-    glDisableVertexAttribArray(1);
-}
+#include "util/vox_file_io.h"
 
 local_func block
 CreateBlock(v4r32 Color)
@@ -133,7 +14,9 @@ CreateBlock(v4r32 Color)
 }
 
 local_func block
-GetBlockFromRelativePos(world *World, v3u32 ChunkPos, v3s32 BlockPos)
+GetBlockFromRelativePos(world *World,
+                        v3u32 ChunkPos,
+                        v3s32 BlockPos)
 {
     v3s32 Direction = V3s32_1_1_1((s32)Floor((r32)BlockPos.X / (r32)CHUNK_SIZE_X),
                                 (s32)Floor((r32)BlockPos.Y / (r32)CHUNK_SIZE_Y),
@@ -173,7 +56,10 @@ GetBlockFromRelativePos(world *World, v3u32 ChunkPos, v3s32 BlockPos)
 }
 
 local_func chunk
-CreateChunk(memory_handle *Handle, config Config, random *Random, v3u32 Pos)
+CreateChunk(memory_handle *Handle,
+            config Config,
+            random *Random,
+            v3u32 Pos)
 {
     //u32 VertexCount = 6 * 2 * 3 * CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z;
     
@@ -214,9 +100,9 @@ CreateChunk(memory_handle *Handle, config Config, random *Random, v3u32 Pos)
     
     handle_pool *HandlePool = GetHandlePool(Handle);
     
-    Chunk.OpaqueMesh.Data.Vertices = AllocateMemory(HandlePool, MaxVertices * sizeof(v3r));
-    Chunk.OpaqueMesh.Data.Colors = AllocateMemory(HandlePool, MaxVertices * sizeof(v4r));
-    Chunk.OpaqueMesh.Data.Indices = AllocateMemory(HandlePool, 1);
+    Chunk.OpaqueMesh.Vertices = AllocateMemory(HandlePool, MaxVertices * sizeof(v3r32));
+    Chunk.OpaqueMesh.Colors = AllocateMemory(HandlePool, MaxVertices * sizeof(v4r32));
+    Chunk.OpaqueMesh.Indices = AllocateMemory(HandlePool, 1);
     //Chunk.TransparentMesh.Data.Vertices = AllocateMemory(Handle, MaxTVertices * sizeof(v3r));
     //Chunk.TransparentMesh.Data.Colors = AllocateMemory(Handle, MaxTVertices * sizeof(v4r));
     //Chunk.TransparentMesh.Data.Indices = AllocateMemory(Handle, 1);
@@ -225,62 +111,14 @@ CreateChunk(memory_handle *Handle, config Config, random *Random, v3u32 Pos)
 }
 
 local_func void
-IndexVertices(memory_handle *Vertices, memory_handle *Colors, memory_handle *Indices)
-{
-    u32 IndicesSize = 0;
-    u16 OutSize = 0;
-    u32 Size = (u32)(Indices->Size / sizeof(u16));
-    
-    for(u16 Index = 0;
-        Index < Size;
-        ++Index)
-    {
-        b08 Found = FALSE;
-        u16 PrevIndex = 0;
-        v3r32 *VertexData = (v3r*)Vertices->Base;
-        v4r32 *ColorData = (v4r*)Colors->Base;
-        for(;
-            PrevIndex < OutSize;
-            ++PrevIndex)
-        {
-            if(R32_Abs((VertexData + Index)->X - (VertexData + PrevIndex)->X) < EPSILON32 &&
-               R32_Abs((VertexData + Index)->Y - (VertexData + PrevIndex)->Y) < EPSILON32 &&
-               R32_Abs((VertexData + Index)->Z - (VertexData + PrevIndex)->Z) < EPSILON32 &&
-               R32_Abs((ColorData + Index)->X - (ColorData + PrevIndex)->X) < EPSILON32 &&
-               R32_Abs((ColorData + Index)->Y - (ColorData + PrevIndex)->Y) < EPSILON32 &&
-               R32_Abs((ColorData + Index)->Z - (ColorData + PrevIndex)->Z) < EPSILON32 &&
-               R32_Abs((ColorData + Index)->W - (ColorData + PrevIndex)->W) < EPSILON32)
-            {
-                Found = TRUE;
-                break;
-            }
-        }
-        
-        u16 *Word = (u16*)Indices->Base + IndicesSize++;
-        if(Found)
-        {
-            *Word = PrevIndex;
-        }
-        else
-        {
-            VertexData += OutSize;
-            *VertexData = *((v3r*)Vertices->Base + Index);
-            ColorData += OutSize;
-            *ColorData = *((v4r*)Colors->Base + Index);
-            *Word = OutSize++;
-        }
-    }
-    Vertices = ResizeMemory(Vertices, OutSize * sizeof(v3r));
-    Colors = ResizeMemory(Colors, OutSize * sizeof(v4r));
-}
-
-local_func void
-BuildChunk(world *World, chunk *Chunk, render_data RenderData)
+BuildChunk(world *World,
+           chunk *Chunk,
+           render_data_3d *RenderData)
 {
     //TODO: Calcualte this
     u32 MaxIndices = 6 * 2 * 3 * CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z;
     
-    mesh_data *OData = &Chunk->OpaqueMesh.Data;
+    mesh_data_3d *OData = &Chunk->OpaqueMesh;
     //mesh_data *TData = &Chunk->TransparentMesh.Data;
     u16 OIndex = 0;
     //u16 TIndex = 0;
@@ -423,10 +261,10 @@ BuildChunk(world *World, chunk *Chunk, render_data RenderData)
                             {
                                 if(Color.A > (1.0f - EPSILON32))
                                 {
-                                    *((v3r*)OData->Vertices->Base + OIndex) = GreedyVertices[FaceIndices[(Sign > 0) ?
+                                    *((v3r32*)OData->Vertices->Base + OIndex) = GreedyVertices[FaceIndices[(Sign > 0) ?
                                                                                            0 + VertexIndex :
                                                                                            6 + VertexIndex]];
-                                    *((v4r*)OData->Colors->Base + OIndex) = Color;
+                                    *((v4r32*)OData->Colors->Base + OIndex) = Color;
                                     ++OIndex;
                                 }
                                 else
@@ -458,14 +296,17 @@ BuildChunk(world *World, chunk *Chunk, render_data RenderData)
     
     OData->Indices = ResizeMemory(OData->Indices, OIndex * sizeof(u16));
     //TIndices = ResizeMemoryHandle(TIndices, TIndex * sizeof(u16));
-    IndexVertices(OData->Vertices, OData->Colors, OData->Indices);
+    Index3DVertices(OData->Vertices, OData->Colors, OData->Indices);
     //IndexVertices(TData->Vertices, TColors, TIndices);
-    Chunk->OpaqueMesh = CreateMesh(Chunk->OpaqueMesh.Data, Chunk->Pos);
+    Chunk->OpaqueMesh.ModelMatrix = M4x4r32_Translate(M4x4r32_0(), (r32)Pos.X * CHUNK_SIZE_X,
+                                                                   (r32)Pos.Y * CHUNK_SIZE_Y,
+                                                                   (r32)Pos.Z * CHUNK_SIZE_Z);
     //Chunk->TransparentMesh = CreateMesh(Chunk->TransparentMesh.Data, Chunk->Pos);
 }
 
 local_func world
-CreateWorld(memory_handle *Handle, config Config, render_data RenderData)
+CreateWorld(memory_handle *Handle,
+            config Config)
 {
     world World;
     v3u32 Size = Config.RenderDistance;
@@ -476,8 +317,11 @@ CreateWorld(memory_handle *Handle, config Config, render_data RenderData)
 }
 
 local_func void
-RenderWorld(memory_handle *Handle, world *World, config Config,
-            random *Random, render_data RenderData)
+RenderWorld(memory_handle *Handle,
+            world *World,
+            config Config,
+            random *Random,
+            render_data_3d *RenderData)
 {
     World->ChunksBuiltThisTick = 0;
     
@@ -513,7 +357,7 @@ RenderWorld(memory_handle *Handle, world *World, config Config,
                 }
                 if(Chunk->IsInitialized)
                 {
-                    RenderMesh(Chunk->OpaqueMesh, RenderData);
+                    Render3DMesh(RenderData, &Chunk->OpaqueMesh);
                 }
             }
         }

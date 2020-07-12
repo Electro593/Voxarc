@@ -1,11 +1,10 @@
 #ifndef UTIL_VOX_STRING_H_
 
 #include "util/vox_defines.h"
-#include "util/vox_memory.h"
-#include "math/vox_v3u32.h"
 
 inline b08
-String_EqualC(memory_handle *A, c08 *B)
+String_EqualC(memory_handle *A,
+              c08 *B)
 {
     b08 Result = TRUE;
     u32 SizeA = PointerCount(A->Base);
@@ -29,7 +28,8 @@ String_EqualC(memory_handle *A, c08 *B)
 }
 
 inline b08
-String_Equal(memory_handle *A, memory_handle *B)
+String_Equal(memory_handle *A,
+             memory_handle *B)
 {
     u32 SizeA = PointerCount(A->Base);
     u32 SizeB = PointerCount(B->Base);
@@ -219,14 +219,15 @@ String_ToR32(vptr Base)
     return Value;
 }
 
-inline v3u
+inline v3u32
 String_ToV3u32(vptr Base)
 {
     return V3u32_1(String_ToU32(Base));
 }
 
 inline memory_handle *
-String_Contatenate(memory_handle *A, memory_handle *B)
+String_Contatenate(memory_handle *A,
+                   memory_handle *B)
 {
     c08 *CharA = (c08*)A->Base;
     while(*CharA != '\0')
@@ -258,7 +259,8 @@ String_Contatenate(memory_handle *A, memory_handle *B)
 }
 
 inline memory_handle *
-String_ContatenateCS(char *A, memory_handle *B)
+String_ContatenateCS(char *A,
+                     memory_handle *B)
 {
     c08 *CharA = A;
     while(*CharA != '\0')

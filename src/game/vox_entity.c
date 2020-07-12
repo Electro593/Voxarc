@@ -1,9 +1,15 @@
-#include "vox_entity.h"
-
-#include "math/vox_v2s32.h"
+#include "util/vox_defines.h"
+#include "game/vox_entity.h"
+#include "util/vox_file_io.h"
+#include "voxarc.h"
 
 local_func void
-UpdatePlayer(player *Player, m4x4r32 *ViewMatrix, v2s32 DeltaMouse, r32 Sensitivity, game_input *Input, config *Config)
+UpdatePlayer(player *Player,
+             m4x4r32 *ViewMatrix,
+             v2s32 DeltaMouse,
+             r32 Sensitivity,
+             game_input *Input,
+             config *Config)
 {
     //TODO: DeltaTime?
     

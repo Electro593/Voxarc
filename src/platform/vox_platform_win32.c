@@ -1,11 +1,21 @@
 #include <intrin.h>
 
 #include "util/vox_defines.h"
-
-#include "voxarc.h"
 #include "platform/vox_platform_win32.h"
 #include "platform/vox_platform_shared.h"
+
+// #include "voxarc.h"
 #include "voxarc.c"
+
+typedef struct win32_data
+{
+    vptr Window;
+    win32_rect WindowRect;
+    game_state State;
+    game_input Input;
+    platform_flags Flags;
+    v2s32 PrevCursorPos;
+} win32_data;
 
 global_var win32_data Data = {0};
 
@@ -405,7 +415,7 @@ Win32WindowCallback(vptr Window,
         } break;
         case WM_SIZING:
         {
-            Data.Flags.AspectRatioChanged = TRUE;
+            Data.Flags.DimensionsChanged = TRUE;
             Data.WindowRect = *(win32_rect*)LParam;
         } break;
         case WM_ERASEBKGND:
@@ -450,11 +460,14 @@ WinMain(vptr Instance,
     
     if(RegisterClassA(&WindowClass))
     {
+        Data.WindowRect = (win32_rect){0, 0, 1280, 800};
+        
         vptr Window = CreateWindowExA(0, WindowClass.ClassName, "Voxarc",
                                       WS_OVERLAPPED|WS_MAXIMIZEBOX|WS_MINIMIZEBOX|
                                       WS_THICKFRAME|WS_SYSMENU|WS_CAPTION|WS_VISIBLE,
                                       CW_USEDEFAULT, CW_USEDEFAULT,
-                                      1280, 800,
+                                      Data.WindowRect.Right - Data.WindowRect.Left,
+                                      Data.WindowRect.Bottom - Data.WindowRect.Top,
                                       0, 0, Instance, 0);
         
         if(Window)
@@ -472,6 +485,7 @@ WinMain(vptr Instance,
             
             Data.Flags.GameIsRunning = TRUE;
             Data.Flags.GameIsFocused = TRUE;
+            Data.Flags.DimensionsChanged = TRUE;
             b08 WasCursorCaptured = FALSE;
             
             while(Data.Flags.GameIsRunning)
@@ -500,11 +514,12 @@ WinMain(vptr Instance,
                 
                 if(Data.Flags.GameIsFocused)
                 {
-                    if(Data.Flags.AspectRatioChanged)
+                    if(Data.Flags.DimensionsChanged)
                     {
                         s32 WindowWidth = Data.WindowRect.Right - Data.WindowRect.Left;
                         s32 WindowHeight = Data.WindowRect.Bottom - Data.WindowRect.Top;
-                        Data.State.WindowAspectRatio = (r32)WindowWidth / (r32)WindowHeight;
+                        Data.State.WindowDimensions.X = WindowWidth;
+                        Data.State.WindowDimensions.Y = WindowHeight;
                     }
                     
                     UpdateGame(&Data.Input, &Data.State, &Data.Flags);

@@ -1,6 +1,6 @@
-#include "intrin.h"
-
 #include "util/vox_defines.h"
+
+#include "intrin.h"
 
 //NOTE: CRT Math
 

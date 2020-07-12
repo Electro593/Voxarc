@@ -1,7 +1,6 @@
 #ifndef VOX_PLATFORM_SHARED_H_
 
 #include "util/vox_defines.h"
-#include "util/vox_memory.h"
 
 #define VK_LBUTTON        0x01
 #define VK_RBUTTON        0x02
@@ -266,14 +265,18 @@
 #define GL_TRIANGLES                0x0004
 #define GL_DEPTH_BUFFER_BIT     0x00000100
 #define GL_LESS                     0x0201
+#define GL_SRC_ALPHA                0x0302
+#define GL_ONE_MINUS_SRC_ALPHA      0x0303
 #define GL_CULL_FACE                0x0B44
 #define GL_DEPTH_TEST               0x0B71
+#define GL_BLEND                    0x0BE2
 #define GL_TEXTURE_2D               0x0DE1
 #define GL_UNSIGNED_SHORT           0x1403
 #define GL_FLOAT                    0x1406
 #define GL_UNSIGNED_BYTE            0x1401
 #define GL_RGBA                     0x1908
 #define GL_NEAREST                  0x2600
+#define GL_LINEAR                   0x2601
 #define GL_TEXTURE_MAG_FILTER       0x2800
 #define GL_TEXTURE_MIN_FILTER       0x2801
 #define GL_TEXTURE_WRAP_S           0x2802
@@ -281,9 +284,12 @@
 #define GL_CLAMP                    0x2900
 #define GL_COLOR_BUFFER_BIT     0x00004000
 #define GL_BGRA                     0x80E1
+#define GL_CLAMP_TO_EDGE            0x812F
 #define GL_NUM_EXTENSIONS           0x821D
+#define GL_TEXTURE0                 0x84C0
 #define GL_ARRAY_BUFFER             0x8892
 #define GL_STATIC_DRAW              0x88E4
+#define GL_DYNAMIC_DRAW             0x88E8
 #define GL_COMPILE_STATUS           0x8B81
 #define GL_ELEMENT_ARRAY_BUFFER     0x8893
 #define GL_FRAGMENT_SHADER          0x8B30
@@ -296,18 +302,17 @@
     PROC(s32,  glGetUniformLocation,       u32 Program, const c08 *Name) \
     PROC(u32,  glCreateShader,             u32 ShaderType) \
     PROC(u32,  glCreateProgram)            \
+    PROC(void, glActiveTexture,            u32 Texture) \
     PROC(void, glAttachShader,             u32 Program, u32 Shader) \
     PROC(void, glBindBuffer,               u32 Target, u32 Buffer) \
-    PROC(void, glBindTexture,              u32 Target, u32 Texture) \
     PROC(void, glBindVertexArray,          u32 Array) \
     PROC(void, glBufferData,               u32 Target, u64 Size, vptr Data, u32 Usage) \
+    PROC(void, glBufferSubData,            u32 Target, s64 Offset, s64 Size, cvptr Data) \
     PROC(void, glCompileShader,            u32 Shader) \
     PROC(void, glDeleteShader,             u32 Shader) \
     PROC(void, glDisableVertexAttribArray, u32 Index) \
-    PROC(void, glDrawElements,             u32 Mode, s32 Count, u32 Type, const vptr Indices) \
     PROC(void, glEnableVertexAttribArray,  u32 Index) \
     PROC(void, glGenBuffers,               s32 N, u32 *Buffers) \
-    PROC(void, glGenTextures,              s32 N, u32 *Textures) \
     PROC(void, glGenVertexArrays,          s32 N, u32 *Arrays) \
     PROC(void, glGetProgramInfoLog,        u32 Program, s32 MaxLength, s32 *Length, c08 *InfoLog) \
     PROC(void, glGetProgramiv,             u32 Program, u32 Name, s32 *Params) \
@@ -317,6 +322,7 @@
     PROC(void, glShaderSource,             u32 Shader, s32 Count, const c08 **String, const s32 *Length) \
     PROC(void, glUniformMatrix4fv,         s32 Location, s32 Count, s08 Transpose, const r32 *Value) \
     PROC(void, glUseProgram,               u32 Program) \
+    PROC(void, glUniform1i,                s32 Location, s32 V0) \
     PROC(void, glUniform1ui,               s32 Location, u32 V0) \
     PROC(void, glUniform3f,                s32 Location, r32 V0, r32 V1, r32 V2) \
     PROC(void, glUniform4ui,               s32 Location, u32 V0, u32 V1, u32 V2, u32 V3) \

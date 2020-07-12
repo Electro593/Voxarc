@@ -1,34 +1,11 @@
 #ifndef VOX_ASSET_PACKER_H_
 
 #include "util/vox_defines.h"
+#include "util/vox_assets.h"
 
 #define MAX_ASSETS 256
 #define MAX_TAGS 256
-#define MAX_PATH_SIZE 256
-#define BYTES_PER_PIXEL 4
-#define ASSET_DIR "assets/"
-#define ASSET_INFO_FILENAME "assets/info.voxai"
-#define ASSET_ATLAS_FILENAME "assets/atlas0.bmp"
-#define VOXAI_MAGIC_NUMBER (((u32)('v') << 0) | ((u32)('a') << 8) | ((u32)('a') << 16) | ((u32)('i') << 24))
-#define VOXAI_VERSION 0
-
-#define ASSETS_DIR "assets/"
-
-typedef enum asset_type
-{
-    AssetType_Bitmap,
-    
-    AssetType_Count,
-} asset_type;
-
-typedef enum asset_tag
-{
-    //NOTE: Fonts
-    AssetTag_Codepoint,
-    AssetTag_IsMonospace,
-    
-    AssetTag_Count,
-} asset_tag;
+#define MAX_ATLAS_BYTES (MAX_ATLAS_DIM * MAX_ATLAS_DIM * BYTES_PER_PIXEL)
 
 typedef struct packer_node
 {
@@ -67,47 +44,6 @@ typedef struct bitmap_header
     u32 ColorsUsed;
     u32 ImportantColors;
 } bitmap_header;
-
-typedef struct voxai_header
-{
-    u32 MagicNumber;
-    u32 Version;
-    
-    u32 TypeCount;
-} voxai_header;
-
-typedef struct voxai_type
-{
-    asset_type ID;
-    u32 AssetCount;
-    size AssetsOffset;
-} voxai_type;
-
-typedef struct voxai_tag
-{
-    unsigned ID     :31;
-    unsigned Format :1;
-    union
-    {
-        s32 Value_S32; // 0
-        r32 Value_R32; // 1
-    };
-} voxai_tag;
-
-typedef struct voxai_asset
-{
-    u32 TagsCount;
-    size TagsOffset;
-    size DataOffset;
-} voxai_asset;
-
-typedef struct voxai_bitmap
-{
-    u32 Width;
-    u32 Height;
-    u32 OffsetX;
-    u32 OffsetY;
-} voxai_bitmap;
 
 #pragma pack(pop)
 

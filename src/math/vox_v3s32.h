@@ -4,7 +4,7 @@
 #include "vox_math.h"
 #include "vox_v2s32.h"
 
-typedef union v3s32
+union v3s32
 {
     struct
     {
@@ -18,7 +18,7 @@ typedef union v3s32
         s32 _XYUnused;
     };
     s32 E[3];
-} v3s32, v3s;
+};
 
 inline v3s32
 V3s32_1(s32 N)
@@ -31,7 +31,8 @@ V3s32_1(s32 N)
 }
 
 inline v3s32
-V3s32_2_1(v2s XY, s32 Z)
+V3s32_2_1(v2s32 XY,
+          s32 Z)
 {
     v3s32 Result;
     Result.XY = XY;
@@ -40,7 +41,9 @@ V3s32_2_1(v2s XY, s32 Z)
 }
 
 inline v3s32
-V3s32_1_1_1(s32 X, s32 Y, s32 Z)
+V3s32_1_1_1(s32 X,
+            s32 Y,
+            s32 Z)
 {
     v3s32 Result;
     Result.X = X;
@@ -50,7 +53,8 @@ V3s32_1_1_1(s32 X, s32 Y, s32 Z)
 }
 
 inline v3s32
-V3s32_Add(v3s32 A, v3s32 B)
+V3s32_Add(v3s32 A,
+          v3s32 B)
 {
     v3s32 Result;
     Result.X = A.X + B.X;
@@ -60,7 +64,8 @@ V3s32_Add(v3s32 A, v3s32 B)
 }
 
 inline v3s32
-V3s32_Subtract(v3s32 A, v3s32 B)
+V3s32_Subtract(v3s32 A,
+               v3s32 B)
 {
     v3s32 Result;
     Result.X = A.X - B.X;
@@ -70,7 +75,8 @@ V3s32_Subtract(v3s32 A, v3s32 B)
 }
 
 inline v3s32
-V3s32_Multiply(v3s32 A, v3s32 B)
+V3s32_Multiply(v3s32 A,
+               v3s32 B)
 {
     v3s32 Result;
     Result.X = A.X * B.X;
@@ -80,7 +86,8 @@ V3s32_Multiply(v3s32 A, v3s32 B)
 }
 
 inline v3s32
-V3s32_MultiplyS(v3s32 V, s32 S)
+V3s32_MultiplyS(v3s32 V,
+                s32 S)
 {
     v3s32 Result;
     Result.X = V.X * S;
@@ -90,7 +97,8 @@ V3s32_MultiplyS(v3s32 V, s32 S)
 }
 
 inline v3s32
-V3s32_Divide(v3s32 A, v3s32 B)
+V3s32_Divide(v3s32 A,
+             v3s32 B)
 {
     v3s32 Result;
     Result.X = A.X / B.X;
@@ -100,7 +108,8 @@ V3s32_Divide(v3s32 A, v3s32 B)
 }
 
 inline v3s32
-V3s32_DivideS(v3s32 V, s32 S)
+V3s32_DivideS(v3s32 V,
+              s32 S)
 {
     v3s32 Result;
     Result.X = V.X / S;
@@ -110,7 +119,8 @@ V3s32_DivideS(v3s32 V, s32 S)
 }
 
 inline s32
-V3s32_Dot(v3s32 A, v3s32 B)
+V3s32_Dot(v3s32 A,
+          v3s32 B)
 {
     return A.X*B.X +
            A.Y*B.Y +
@@ -118,7 +128,8 @@ V3s32_Dot(v3s32 A, v3s32 B)
 }
 
 inline v3s32
-V3s32_Cross(v3s32 A, v3s32 B)
+V3s32_Cross(v3s32 A,
+            v3s32 B)
 {
     v3s32 Result;
     Result.X = A.Y*B.Z - A.Z*B.Y;
@@ -143,7 +154,8 @@ V3s32_Normalize(v3s32 V)
 }
 
 inline b08
-V3s32_Equal(v3s32 A, v3s32 B)
+V3s32_Equal(v3s32 A,
+            v3s32 B)
 {
     if(A.X == B.X &&
        A.Y == B.Y &&
@@ -155,7 +167,8 @@ V3s32_Equal(v3s32 A, v3s32 B)
 }
 
 inline b08
-V3s32_LessThan(v3s32 A, v3s32 B)
+V3s32_LessThan(v3s32 A,
+               v3s32 B)
 {
     if(V3s32_Length(A) < V3s32_Length(B))
     {
@@ -165,7 +178,8 @@ V3s32_LessThan(v3s32 A, v3s32 B)
 }
 
 inline b08
-V3s32_GreaterThan(v3s32 A, v3s32 B)
+V3s32_GreaterThan(v3s32 A,
+                  v3s32 B)
 {
     if(V3s32_Length(A) > V3s32_Length(B))
     {

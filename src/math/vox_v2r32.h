@@ -1,9 +1,9 @@
 #ifndef MATH_VOX_V2R32_H_
 
 #include "util/vox_defines.h"
-#include "vox_math.h"
+#include "math/vox_math.h"
 
-typedef union v2r32
+union v2r32
 {
     struct
     {
@@ -11,7 +11,7 @@ typedef union v2r32
         r32 Y;
     };
     r32 E[2];
-} v2r32, v2r;
+};
 
 inline v2r32
 V2r32_1(r32 N)
@@ -23,7 +23,8 @@ V2r32_1(r32 N)
 }
 
 inline v2r32
-V2r32_1_1(r32 X, r32 Y)
+V2r32_1_1(r32 X,
+          r32 Y)
 {
     v2r32 Result;
     Result.X = X;
@@ -32,7 +33,8 @@ V2r32_1_1(r32 X, r32 Y)
 }
 
 inline v2r32
-V2r32_Add(v2r32 A, v2r32 B)
+V2r32_Add(v2r32 A,
+          v2r32 B)
 {
     v2r32 Result;
     Result.X = A.X + B.X;
@@ -41,7 +43,8 @@ V2r32_Add(v2r32 A, v2r32 B)
 }
 
 inline v2r32
-V2r32_Subtract(v2r32 A, v2r32 B)
+V2r32_Subtract(v2r32 A,
+               v2r32 B)
 {
     v2r32 Result;
     Result.X = A.X - B.X;
@@ -50,7 +53,8 @@ V2r32_Subtract(v2r32 A, v2r32 B)
 }
 
 inline v2r32
-V2r32_Multiply(v2r32 A, v2r32 B)
+V2r32_Multiply(v2r32 A,
+               v2r32 B)
 {
     v2r32 Result;
     Result.X = A.X * B.X;
@@ -59,7 +63,8 @@ V2r32_Multiply(v2r32 A, v2r32 B)
 }
 
 inline v2r32
-V2r32_Divide(v2r32 A, v2r32 B)
+V2r32_Divide(v2r32 A,
+             v2r32 B)
 {
     v2r32 Result;
     Result.X = A.X / B.X;
@@ -68,7 +73,8 @@ V2r32_Divide(v2r32 A, v2r32 B)
 }
 
 inline v2r32
-V2r32_DivideS(v2r32 V, r32 S)
+V2r32_DivideS(v2r32 V,
+              r32 S)
 {
     v2r32 Result;
     Result.X = V.X / S;
@@ -77,7 +83,8 @@ V2r32_DivideS(v2r32 V, r32 S)
 }
 
 inline r32
-V2r32_Dot(v2r32 A, v2r32 B)
+V2r32_Dot(v2r32 A,
+          v2r32 B)
 {
     return A.X*B.X + A.Y*B.Y;
 }
@@ -98,7 +105,8 @@ V2r32_Normalize(v2r32 V)
 }
 
 inline b08
-V2r32_Equal(v2r32 A, v2r32 B)
+V2r32_Equal(v2r32 A,
+            v2r32 B)
 {
     if(R32_Abs(A.X - B.X) < EPSILON32 &&
        R32_Abs(A.Y - B.Y) < EPSILON32)
@@ -109,7 +117,8 @@ V2r32_Equal(v2r32 A, v2r32 B)
 }
 
 inline b08
-V2r32_LessThan(v2r32 A, v2r32 B)
+V2r32_LessThan(v2r32 A,
+               v2r32 B)
 {
     if(V2r32_Length(A) < V2r32_Length(B))
     {
@@ -119,7 +128,8 @@ V2r32_LessThan(v2r32 A, v2r32 B)
 }
 
 inline b08
-V2r32_GreaterThan(v2r32 A, v2r32 B)
+V2r32_GreaterThan(v2r32 A,
+                  v2r32 B)
 {
     if(V2r32_Length(A) > V2r32_Length(B))
     {

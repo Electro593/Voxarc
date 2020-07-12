@@ -1,5 +1,11 @@
-#ifndef VOX_WORLD_H_
-#define VOX_WORLD_H_
+#ifndef GAME_VOX_WORLD_H_
+
+#include "util/vox_defines.h"
+#include "util/vox_memory.h"
+#include "util/vox_render.h"
+#include "math/vox_m4x4r32.h"
+#include "math/vox_v4r32.h"
+#include "math/vox_v3u32.h"
 
 #define WORLD_SIZE_X 4
 #define WORLD_SIZE_Y 4
@@ -15,69 +21,29 @@
 
 #define CHUNKS_BUILT_PER_TICK 1
 
-#include "util/vox_defines.h"
-#include "math/vox_v3u32.h"
-#include "math/vox_v4r32.h"
-#include "math/vox_m4x4r32.h"
+//TODO: Greedy mesh with textures
 
-typedef struct mesh_data
-{
-    memory_handle *Vertices;
-    memory_handle *Colors;
-    memory_handle *Indices;
-} mesh_data;
-
-typedef struct mesh
-{
-    mesh_data Data;
-    m4x4r32 ModelMatrix;
-    u32 VertexBufferID;
-    u32 ColorBufferID;
-    u32 ElementBufferID;
-} mesh;
-
-typedef struct render_data
-{
-    u32 Program3DID;
-    u32 Program2DID;
-    
-    u32 TextureID;
-    
-    s32 ModelMatrixID;
-    s32 ViewMatrixID;
-    s32 MVPMatrixID;
-    s32 LightPositionID;
-    s32 LightPowerID;
-    s32 LightColorID;
-    s32 ChannelMaskID;
-    s32 ChannelRangeID;
-    s32 ChannelRangeShiftID;
-    s32 ChannelShiftID;
-    m4x4r32 ViewMatrix;
-    m4x4r32 ProjectionMatrix;
-} render_data;
-
-typedef struct block
+struct block
 {
     v4r32 Color;
-} block;
+};
 
-typedef struct chunk
+struct chunk
 {
     v3u32 Pos;
     block Blocks[CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z];
     u32 MaxVertices;
-    mesh OpaqueMesh;
-    mesh TransparentMesh;
+    mesh_data_3d OpaqueMesh;
+    mesh_data_3d TransparentMesh;
     b08 Changed;
     b08 IsInitialized;
-} chunk;
+};
 
-typedef struct world
+struct world
 {
     u32 ChunksBuiltThisTick;
     memory_handle *Chunks;
-} world;
+};
 
 /*                         2 _____________________________ 6
                            /  _______________________    /  
@@ -110,4 +76,5 @@ typedef struct world
                                                             
                                                             */
 
+#define GAME_VOX_WORLD_H_
 #endif

@@ -5,11 +5,11 @@
 #define POLYNOMIAL_MASK32 0xB4BCD35C
 #define POLYNOMIAL_MASK31 0x7A5BC2E3
 
-typedef struct random
+struct random
 {
     u32 LFSR32;
     u32 LFSR31;
-} random;
+};
 
 inline random
 InitRand(u32 Seed)
@@ -50,7 +50,9 @@ RandInt(random *Random)
 }
 
 inline s32
-RandRange(random *Random, s32 Min, s32 Max)
+RandRange(random *Random,
+          s32 Min,
+          s32 Max)
 {
     return RandInt(Random) % (Max - Min) + Min;
 }

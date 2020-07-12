@@ -1,4 +1,4 @@
-#ifndef VOX_MATH_H_
+#ifndef MATH_VOX_MATH_H_
 
 #define EPSILON32 .0000001192092896F
 #define TAU 6.283185307179586476925286766559‬0
@@ -12,18 +12,18 @@
 
 //NOTE: Scalar
 
-typedef union r32_to_s32
+typedef union convert_r32_s32
 {
     r32 R32;
     s32 S32;
-} r32_to_s32;
+} convert_r32_s32;
 
 inline r32
 R32_Abs(r32 N)
 {
-    r32_to_s32 RTS_N;
+    convert_r32_s32 RTS_N;
     RTS_N.R32 = N;
-    r32_to_s32 RTS_Z = {-0.0f};
+    convert_r32_s32 RTS_Z = {-0.0f};
     RTS_N.S32 = RTS_N.S32 & ~RTS_Z.S32;
     return RTS_N.R32;
 }
@@ -52,14 +52,18 @@ Floor(r32 N)
 }
 
 inline r32
-R32_Lerp(r32 A, r32 B, r32 T)
+R32_Lerp(r32 A,
+         r32 B,
+         r32 T)
 {
     r32 Result = A + (T * (B - A));
     return Result;
 }
 
 inline r32
-S32_Lerp(s32 A, s32 B, r32 T)
+S32_Lerp(s32 A,
+         s32 B,
+         r32 T)
 {
     r32 Result = (r32)A + (T * (r32)(B - A));
     return Result;
@@ -307,7 +311,8 @@ Tan(r32 R)
 }
 
 inline r32
-SqrtP(r32 N, u32 Precision)
+SqrtP(r32 N,
+      u32 Precision)
 {
     r32 X = 50.0f;
     while(Precision--)
@@ -325,5 +330,5 @@ Sqrt(r32 N)
     return Result;
 }
 
-#define VOX_MATH_H_
+#define MATH_VOX_MATH_H_
 #endif

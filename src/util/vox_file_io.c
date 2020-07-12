@@ -1,7 +1,9 @@
-#include "vox_file_io.h"
+#include "util/vox_defines.h"
+#include "util/vox_file_io.h"
 
 local_func memory_handle *
-VoxReadFile(handle_pool *HandlePool, c08 *FilePath)
+VoxReadFile(handle_pool *HandlePool,
+            c08 *FilePath)
 {
     memory_handle *FileHandle = AllocateMemory(HandlePool, sizeof(vptr));
     OpenFile(FileHandle, FilePath);
@@ -13,7 +15,8 @@ VoxReadFile(handle_pool *HandlePool, c08 *FilePath)
 }
 
 local_func config
-ReadConfig(memory_handle *Handle, c08 *ConfigFilePath)
+ReadConfig(memory_handle *Handle,
+           c08 *ConfigFilePath)
 {
     //TODO: Implement type specifiers (U32:, V3S:, etc)
     
@@ -121,7 +124,9 @@ ReadConfig(memory_handle *Handle, c08 *ConfigFilePath)
 }
 
 local_func u32
-LoadShaders(memory_handle *Handle, c08 *VertexShaderFilePath, c08 *FragmentShaderFilePath)
+LoadShaders(memory_handle *Handle,
+            c08 *VertexShaderFilePath,
+            c08 *FragmentShaderFilePath)
 {
     s32 Result = FALSE;
     s32 InfoLogLength;
@@ -139,6 +144,7 @@ LoadShaders(memory_handle *Handle, c08 *VertexShaderFilePath, c08 *FragmentShade
     glGetShaderInfoLog(VertexShaderID, InfoLogLength, 0, (c08*)VertexShaderErrorMessage->Base);
     if(!Result)
     {
+        OutputDebugStringA(VertexShaderErrorMessage->Base);
         //TODO: Logging
     }
     FreeMemory(VertexShaderErrorMessage);
@@ -155,6 +161,7 @@ LoadShaders(memory_handle *Handle, c08 *VertexShaderFilePath, c08 *FragmentShade
     glGetShaderInfoLog(FragmentShaderID, InfoLogLength, 0, (c08*)FragmentShaderErrorMessage->Base);
     if(!Result)
     {
+        OutputDebugStringA(FragmentShaderErrorMessage->Base);
         //TODO: Logging
     }
     FreeMemory(FragmentShaderErrorMessage);
@@ -170,6 +177,7 @@ LoadShaders(memory_handle *Handle, c08 *VertexShaderFilePath, c08 *FragmentShade
     glGetProgramInfoLog(ProgramID, InfoLogLength, 0, (c08*)ProgramErrorMessage->Base);
     if(!Result)
     {
+        OutputDebugStringA(ProgramErrorMessage->Base);
         //TODO: Logging
     }
     FreeMemory(ProgramErrorMessage);

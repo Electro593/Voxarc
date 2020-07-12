@@ -1,40 +1,45 @@
 #ifndef VOXARC_H_
 
 #include "util/vox_defines.h"
-#include "util/vox_memory.h"
-#include "util/vox_file_io.h"
-#include "math/vox_v2s32.h"
 #include "math/vox_random.h"
-#include "game/vox_world.h"
-#include "game/vox_entity.h"
+#include "util/vox_assets.h"
+#include "util/vox_render.h"
+#include "util/vox_debug.h"
 
-typedef struct game_state
+struct game_state
 {
     handle_pool *ChunksHandlePool;
+    handle_pool *DebugHandlePool;
+    handle_pool *AssetsHandlePool;
+    handle_pool *TagSearchHandlePool;
     handle_pool *UtilHandlePool;
-    memory_handle *GlyphTextureInfo;
+    
     random Random;
     config Config;
-    render_data RenderData;
+    asset_memory AssetMemory;
+    render_data_3d RenderData3D;
+    render_data_2d RenderData2D;
+    debug_data DebugData;
     player Player;
     world World;
-    r32 WindowAspectRatio;
+    
+    v2u32 WindowDimensions;
     v2s32 PrevCursorPos;
-} game_state;
+};
 
-typedef struct platform_flags
+struct platform_flags
 {
     b08 GameIsRunning;
     b08 GameIsFocused;
-    b08 AspectRatioChanged;
+    b08 DimensionsChanged;
     b08 CursorIsCaptured;
-} platform_flags;
+};
 
-typedef struct game_input
+struct game_input
 {
     b08 Keys[256];
     v2s32 CursorPos;
-} game_input;
+};
 
 #define VOXARC_H_
 #endif

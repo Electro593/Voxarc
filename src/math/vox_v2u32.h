@@ -1,9 +1,8 @@
 #ifndef MATH_VOX_V2U32_H_
 
 #include "util/vox_defines.h"
-#include "vox_math.h"
 
-typedef union v2u32
+union v2u32
 {
     struct
     {
@@ -11,7 +10,7 @@ typedef union v2u32
         u32 Y;
     };
     u32 E[2];
-} v2u32, v2u;
+};
 
 inline v2u32
 V2u32_1(u32 N)
@@ -23,7 +22,8 @@ V2u32_1(u32 N)
 }
 
 inline v2u32
-V2u32_1_1(u32 X, u32 Y)
+V2u32_1_1(u32 X,
+          u32 Y)
 {
     v2u32 Result;
     Result.X = X;
@@ -32,7 +32,8 @@ V2u32_1_1(u32 X, u32 Y)
 }
 
 inline u32
-V2u32_Dot(v2u32 A, v2u32 B)
+V2u32_Dot(v2u32 A,
+          v2u32 B)
 {
     return A.X*B.X + A.Y*B.Y;
 }
@@ -44,7 +45,8 @@ V2u32_Length(v2u32 V)
 }
 
 inline b08
-V2u32_Equal(v2u32 A, v2u32 B)
+V2u32_Equal(v2u32 A,
+            v2u32 B)
 {
     if(A.X == B.X &&
        A.Y == B.Y)
@@ -55,7 +57,8 @@ V2u32_Equal(v2u32 A, v2u32 B)
 }
 
 inline b08
-V2u32_LessThan(v2u32 A, v2u32 B)
+V2u32_LessThan(v2u32 A,
+               v2u32 B)
 {
     if(V2u32_Length(A) < V2u32_Length(B))
     {
@@ -65,7 +68,8 @@ V2u32_LessThan(v2u32 A, v2u32 B)
 }
 
 inline b08
-V2u32_GreaterThan(v2u32 A, v2u32 B)
+V2u32_GreaterThan(v2u32 A,
+                  v2u32 B)
 {
     if(V2u32_Length(A) > V2u32_Length(B))
     {
@@ -75,7 +79,8 @@ V2u32_GreaterThan(v2u32 A, v2u32 B)
 }
 
 inline v2u32
-V2u32_Add(v2u32 A, v2u32 B)
+V2u32_Add(v2u32 A,
+          v2u32 B)
 {
     v2u32 Result;
     Result.X = A.X + B.X;
@@ -84,7 +89,8 @@ V2u32_Add(v2u32 A, v2u32 B)
 }
 
 inline v2u32
-V2u32_Subtract(v2u32 A, v2u32 B)
+V2u32_Subtract(v2u32 A,
+               v2u32 B)
 {
     v2u32 Result;
     Result.X = A.X - B.X;
@@ -93,7 +99,8 @@ V2u32_Subtract(v2u32 A, v2u32 B)
 }
 
 inline v2u32
-V2u32_Multiply(v2u32 A, v2u32 B)
+V2u32_Multiply(v2u32 A,
+               v2u32 B)
 {
     v2u32 Result;
     Result.X = A.X * B.X;
@@ -102,7 +109,8 @@ V2u32_Multiply(v2u32 A, v2u32 B)
 }
 
 inline v2u32
-V2u32_Divide(v2u32 A, v2u32 B)
+V2u32_Divide(v2u32 A,
+             v2u32 B)
 {
     v2u32 Result;
     Result.X = A.X / B.X;
@@ -111,7 +119,8 @@ V2u32_Divide(v2u32 A, v2u32 B)
 }
 
 inline v2u32
-V2u32_DivideS(v2u32 V, u32 S)
+V2u32_DivideS(v2u32 V,
+              u32 S)
 {
     v2u32 Result;
     Result.X = V.X / S;

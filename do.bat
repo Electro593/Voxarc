@@ -16,7 +16,7 @@ call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Aux
 if not exist build mkdir build
 pushd build
 set compilerSwitches=/Od /MTd /nologo /fp:fast /fp:except- /Gm- /GR- /EHa- /Zo /Oi /WX /W4 /FC /Zi /GS- /Gs9999999 /std:c++17
-set compilerSwitches=/wd4100 /wd4189 /wd4201 /wd4505 %compilerSwitches%
+set compilerSwitches=/wd4100 /wd4189 /wd4204 /wd4201 /wd4505 %compilerSwitches%
 set compilerSwitches=/D_VOX_DEBUG=1 /D_VOX_WIN32=1 /D_VOX_GEN_ASSETS=1 %compilerSwitches%
 set linkerSwitches=/incremental:no /opt:ref /nodefaultlib /subsystem:windows /stack:0x100000,0x100000 /machine:x64
 del *.pdb > NUL 2> NUL
@@ -32,10 +32,9 @@ call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Aux
 if not exist build mkdir build
 pushd build
 set compilerSwitches=/Od /MTd /nologo /fp:fast /fp:except- /Gm- /GR- /EHa- /Zo /Oi /WX /W4 /FC /Zi /std:c++17 /D_CRT_SECURE_NO_WARNINGS
-set compilerSwitches=/D_VOX_DEBUG=1 %compilerSwitches%
+set compilerSwitches=/D_VOX_DEBUG=1 /D_VOX_AP_BITMAP=0 %compilerSwitches%
 set compilerSwitches=/wd4100 /wd4189 /wd4201 /wd4505 /wd4456 %compilerSwitches%
 set linkerSwitches=/incremental:no /opt:ref
-rem cl %compilerSwitches% /I ..\src\ ..\src\tools\vox_asset_packer.c /link %linkerSwitches% /out:AssetPacker.exe
 cl %compilerSwitches% /I ..\src\ ..\src\tools\%1 /link %linkerSwitches% /out:%2
 popd
 exit /b 0
