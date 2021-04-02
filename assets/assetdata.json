@@ -1,0 +1,579 @@
+{
+	"0": {
+		"Data": {
+			"Ascent": 26.456895808,
+			"Descent": -9.543103202,
+			"LineGap": 0.000000000
+		},
+		"": {
+			"Codepoint": 32,
+			"Advance": 19.070690152,
+			"BearingX": 0.000000000,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/33.bmp": {
+			"Codepoint": 33,
+			"Advance": 19.070690152,
+			"BearingX": 7.618965568,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/34.bmp": {
+			"Codepoint": 34,
+			"Advance": 19.070690152,
+			"BearingX": 4.127586360,
+			"BearingY": 10.000000000
+		},
+		"assets/cour/35.bmp": {
+			"Codepoint": 35,
+			"Advance": 19.070690152,
+			"BearingX": 2.901724186,
+			"BearingY": -3.000000000
+		},
+		"assets/cour/36.bmp": {
+			"Codepoint": 36,
+			"Advance": 19.070690152,
+			"BearingX": 3.537930964,
+			"BearingY": -3.000000000
+		},
+		"assets/cour/37.bmp": {
+			"Codepoint": 37,
+			"Advance": 19.070690152,
+			"BearingX": 2.901724186,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/38.bmp": {
+			"Codepoint": 38,
+			"Advance": 19.070690152,
+			"BearingX": 3.941379468,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/39.bmp": {
+			"Codepoint": 39,
+			"Advance": 19.070690152,
+			"BearingX": 7.463793380,
+			"BearingY": 10.000000000
+		},
+		"assets/cour/40.bmp": {
+			"Codepoint": 40,
+			"Advance": 19.070690152,
+			"BearingX": 9.387930980,
+			"BearingY": -5.000000000
+		},
+		"assets/cour/41.bmp": {
+			"Codepoint": 41,
+			"Advance": 19.070690152,
+			"BearingX": 4.670689526,
+			"BearingY": -5.000000000
+		},
+		"assets/cour/42.bmp": {
+			"Codepoint": 42,
+			"Advance": 19.070690152,
+			"BearingX": 3.506896566,
+			"BearingY": 8.000000000
+		},
+		"assets/cour/43.bmp": {
+			"Codepoint": 43,
+			"Advance": 19.070690152,
+			"BearingX": 2.234482784,
+			"BearingY": 1.000000000
+		},
+		"assets/cour/44.bmp": {
+			"Codepoint": 44,
+			"Advance": 19.070690152,
+			"BearingX": 4.639655040,
+			"BearingY": -5.000000000
+		},
+		"assets/cour/45.bmp": {
+			"Codepoint": 45,
+			"Advance": 19.070690152,
+			"BearingX": 2.886206988,
+			"BearingY": 8.000000000
+		},
+		"assets/cour/46.bmp": {
+			"Codepoint": 46,
+			"Advance": 19.070690152,
+			"BearingX": 7.153448112,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/47.bmp": {
+			"Codepoint": 47,
+			"Advance": 19.070690152,
+			"BearingX": 3.568965440,
+			"BearingY": -3.000000000
+		},
+		"assets/cour/48.bmp": {
+			"Codepoint": 48,
+			"Advance": 19.070690152,
+			"BearingX": 3.553448202,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/49.bmp": {
+			"Codepoint": 49,
+			"Advance": 19.070690152,
+			"BearingX": 3.537930964,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/50.bmp": {
+			"Codepoint": 50,
+			"Advance": 19.070690152,
+			"BearingX": 2.653448404,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/51.bmp": {
+			"Codepoint": 51,
+			"Advance": 19.070690152,
+			"BearingX": 3.025861978,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/52.bmp": {
+			"Codepoint": 52,
+			"Advance": 19.070690152,
+			"BearingX": 3.320689706,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/53.bmp": {
+			"Codepoint": 53,
+			"Advance": 19.070690152,
+			"BearingX": 3.041379212,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/54.bmp": {
+			"Codepoint": 54,
+			"Advance": 19.070690152,
+			"BearingX": 4.251724224,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/55.bmp": {
+			"Codepoint": 55,
+			"Advance": 19.070690152,
+			"BearingX": 3.274137984,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/56.bmp": {
+			"Codepoint": 56,
+			"Advance": 19.070690152,
+			"BearingX": 3.584482604,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/57.bmp": {
+			"Codepoint": 57,
+			"Advance": 19.070690152,
+			"BearingX": 4.267241504,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/58.bmp": {
+			"Codepoint": 58,
+			"Advance": 19.070690152,
+			"BearingX": 7.153448112,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/59.bmp": {
+			"Codepoint": 59,
+			"Advance": 19.070690152,
+			"BearingX": 4.841379126,
+			"BearingY": -4.000000000
+		},
+		"assets/cour/60.bmp": {
+			"Codepoint": 60,
+			"Advance": 19.070690152,
+			"BearingX": 1.520689568,
+			"BearingY": 1.000000000
+		},
+		"assets/cour/61.bmp": {
+			"Codepoint": 61,
+			"Advance": 19.070690152,
+			"BearingX": 1.567241442,
+			"BearingY": 6.000000000
+		},
+		"assets/cour/62.bmp": {
+			"Codepoint": 62,
+			"Advance": 19.070690152,
+			"BearingX": 2.296551722,
+			"BearingY": 1.000000000
+		},
+		"assets/cour/63.bmp": {
+			"Codepoint": 63,
+			"Advance": 19.070690152,
+			"BearingX": 4.267241504,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/64.bmp": {
+			"Codepoint": 64,
+			"Advance": 19.070690152,
+			"BearingX": 3.336206980,
+			"BearingY": -3.000000000
+		},
+		"assets/cour/65.bmp": {
+			"Codepoint": 65,
+			"Advance": 19.070690152,
+			"BearingX": 0.263793104,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/66.bmp": {
+			"Codepoint": 66,
+			"Advance": 19.070690152,
+			"BearingX": 1.350000042,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/67.bmp": {
+			"Codepoint": 67,
+			"Advance": 19.070690152,
+			"BearingX": 1.970689784,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/68.bmp": {
+			"Codepoint": 68,
+			"Advance": 19.070690152,
+			"BearingX": 2.451724042,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/69.bmp": {
+			"Codepoint": 69,
+			"Advance": 19.070690152,
+			"BearingX": 1.365517248,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/70.bmp": {
+			"Codepoint": 70,
+			"Advance": 19.070690152,
+			"BearingX": 2.467241248,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/71.bmp": {
+			"Codepoint": 71,
+			"Advance": 19.070690152,
+			"BearingX": 1.986206988,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/72.bmp": {
+			"Codepoint": 72,
+			"Advance": 19.070690152,
+			"BearingX": 1.660344986,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/73.bmp": {
+			"Codepoint": 73,
+			"Advance": 19.070690152,
+			"BearingX": 3.553448202,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/74.bmp": {
+			"Codepoint": 74,
+			"Advance": 19.070690152,
+			"BearingX": 2.653448404,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/75.bmp": {
+			"Codepoint": 75,
+			"Advance": 19.070690152,
+			"BearingX": 1.381034528,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/76.bmp": {
+			"Codepoint": 76,
+			"Advance": 19.070690152,
+			"BearingX": 1.986206988,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/77.bmp": {
+			"Codepoint": 77,
+			"Advance": 19.070690152,
+			"BearingX": 0.372413760,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/78.bmp": {
+			"Codepoint": 78,
+			"Advance": 19.070690152,
+			"BearingX": 0.713793044,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/79.bmp": {
+			"Codepoint": 79,
+			"Advance": 19.070690152,
+			"BearingX": 1.613793206,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/80.bmp": {
+			"Codepoint": 80,
+			"Advance": 19.070690152,
+			"BearingX": 2.777586240,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/81.bmp": {
+			"Codepoint": 81,
+			"Advance": 19.070690152,
+			"BearingX": 1.613793206,
+			"BearingY": -4.000000000
+		},
+		"assets/cour/82.bmp": {
+			"Codepoint": 82,
+			"Advance": 19.070690152,
+			"BearingX": 1.365517248,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/83.bmp": {
+			"Codepoint": 83,
+			"Advance": 19.070690152,
+			"BearingX": 2.870689526,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/84.bmp": {
+			"Codepoint": 84,
+			"Advance": 19.070690152,
+			"BearingX": 2.218965520,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/85.bmp": {
+			"Codepoint": 85,
+			"Advance": 19.070690152,
+			"BearingX": 1.287931104,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/86.bmp": {
+			"Codepoint": 86,
+			"Advance": 19.070690152,
+			"BearingX": 0.248275840,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/87.bmp": {
+			"Codepoint": 87,
+			"Advance": 19.070690152,
+			"BearingX": 0.574137964,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/88.bmp": {
+			"Codepoint": 88,
+			"Advance": 19.070690152,
+			"BearingX": 1.241379242,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/89.bmp": {
+			"Codepoint": 89,
+			"Advance": 19.070690152,
+			"BearingX": 1.536206804,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/90.bmp": {
+			"Codepoint": 90,
+			"Advance": 19.070690152,
+			"BearingX": 3.305172480,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/91.bmp": {
+			"Codepoint": 91,
+			"Advance": 19.070690152,
+			"BearingX": 8.891379468,
+			"BearingY": -5.000000000
+		},
+		"assets/cour/92.bmp": {
+			"Codepoint": 92,
+			"Advance": 19.070690152,
+			"BearingX": 3.522413786,
+			"BearingY": -3.000000000
+		},
+		"assets/cour/93.bmp": {
+			"Codepoint": 93,
+			"Advance": 19.070690152,
+			"BearingX": 4.903448184,
+			"BearingY": -5.000000000
+		},
+		"assets/cour/94.bmp": {
+			"Codepoint": 94,
+			"Advance": 19.070690152,
+			"BearingX": 3.537930964,
+			"BearingY": 11.000000000
+		},
+		"assets/cour/95.bmp": {
+			"Codepoint": 95,
+			"Advance": 19.070690152,
+			"BearingX": 0.000000000,
+			"BearingY": -9.000000000
+		},
+		"assets/cour/96.bmp": {
+			"Codepoint": 96,
+			"Advance": 19.070690152,
+			"BearingX": 6.889655124,
+			"BearingY": 15.000000000
+		},
+		"assets/cour/97.bmp": {
+			"Codepoint": 97,
+			"Advance": 19.070690152,
+			"BearingX": 2.234482784,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/98.bmp": {
+			"Codepoint": 98,
+			"Advance": 19.070690152,
+			"BearingX": 0.698275924,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/99.bmp": {
+			"Codepoint": 99,
+			"Advance": 19.070690152,
+			"BearingX": 2.653448404,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/100.bmp": {
+			"Codepoint": 100,
+			"Advance": 19.070690152,
+			"BearingX": 1.955172580,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/101.bmp": {
+			"Codepoint": 101,
+			"Advance": 19.070690152,
+			"BearingX": 1.986206988,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/102.bmp": {
+			"Codepoint": 102,
+			"Advance": 19.070690152,
+			"BearingX": 3.336206980,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/103.bmp": {
+			"Codepoint": 103,
+			"Advance": 19.070690152,
+			"BearingX": 1.939655124,
+			"BearingY": -6.000000000
+		},
+		"assets/cour/104.bmp": {
+			"Codepoint": 104,
+			"Advance": 19.070690152,
+			"BearingX": 1.318965568,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/105.bmp": {
+			"Codepoint": 105,
+			"Advance": 19.070690152,
+			"BearingX": 2.932758584,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/106.bmp": {
+			"Codepoint": 106,
+			"Advance": 19.070690152,
+			"BearingX": 2.793103528,
+			"BearingY": -6.000000000
+		},
+		"assets/cour/107.bmp": {
+			"Codepoint": 107,
+			"Advance": 19.070690152,
+			"BearingX": 2.963793122,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/108.bmp": {
+			"Codepoint": 108,
+			"Advance": 19.070690152,
+			"BearingX": 2.901724186,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/109.bmp": {
+			"Codepoint": 109,
+			"Advance": 19.070690152,
+			"BearingX": 0.325862102,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/110.bmp": {
+			"Codepoint": 110,
+			"Advance": 19.070690152,
+			"BearingX": 1.675862006,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/111.bmp": {
+			"Codepoint": 111,
+			"Advance": 19.070690152,
+			"BearingX": 2.250000000,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/112.bmp": {
+			"Codepoint": 112,
+			"Advance": 19.070690152,
+			"BearingX": 0.698275924,
+			"BearingY": -6.000000000
+		},
+		"assets/cour/113.bmp": {
+			"Codepoint": 113,
+			"Advance": 19.070690152,
+			"BearingX": 1.986206988,
+			"BearingY": -6.000000000
+		},
+		"assets/cour/114.bmp": {
+			"Codepoint": 114,
+			"Advance": 19.070690152,
+			"BearingX": 2.653448404,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/115.bmp": {
+			"Codepoint": 115,
+			"Advance": 19.070690152,
+			"BearingX": 3.212069040,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/116.bmp": {
+			"Codepoint": 116,
+			"Advance": 19.070690152,
+			"BearingX": 2.265517226,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/117.bmp": {
+			"Codepoint": 117,
+			"Advance": 19.070690152,
+			"BearingX": 1.412068960,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/118.bmp": {
+			"Codepoint": 118,
+			"Advance": 19.070690152,
+			"BearingX": 0.915517204,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/119.bmp": {
+			"Codepoint": 119,
+			"Advance": 19.070690152,
+			"BearingX": 0.868965602,
+			"BearingY": -1.000000000
+		},
+		"assets/cour/120.bmp": {
+			"Codepoint": 120,
+			"Advance": 19.070690152,
+			"BearingX": 1.567241442,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/121.bmp": {
+			"Codepoint": 121,
+			"Advance": 19.070690152,
+			"BearingX": 2.312068960,
+			"BearingY": -6.000000000
+		},
+		"assets/cour/122.bmp": {
+			"Codepoint": 122,
+			"Advance": 19.070690152,
+			"BearingX": 3.677586004,
+			"BearingY": 0.000000000
+		},
+		"assets/cour/123.bmp": {
+			"Codepoint": 123,
+			"Advance": 19.070690152,
+			"BearingX": 6.284482986,
+			"BearingY": -5.000000000
+		},
+		"assets/cour/124.bmp": {
+			"Codepoint": 124,
+			"Advance": 19.070690152,
+			"BearingX": 8.875862180,
+			"BearingY": -5.000000000
+		},
+		"assets/cour/125.bmp": {
+			"Codepoint": 125,
+			"Advance": 19.070690152,
+			"BearingX": 6.268965728,
+			"BearingY": -5.000000000
+		},
+		"assets/cour/126.bmp": {
+			"Codepoint": 126,
+			"Advance": 19.070690152,
+			"BearingX": 2.901724186,
+			"BearingY": 6.000000000
+		}
+	}
+}

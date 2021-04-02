@@ -1,80 +1,72 @@
-#ifndef GAME_VOX_WORLD_H_
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
+ *                                                                         * 
+ *  Copyright (C) 2020 Andrew Seiler                                       * 
+ *                                                                         * 
+ *  This program is free software: you can redistribute it and/or modify   * 
+ *  it under the terms of the GNU General Public License as published by   * 
+ *  the Free Software Foundation, either version 3 of the License, or      * 
+ *  (at your option) any later version.                                    * 
+ *                                                                         * 
+ *  This program is distributed in the hope that it will be useful,        * 
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of         * 
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the           * 
+ *  GNU General Public License for more details.                           * 
+ *                                                                         * 
+ *  You should have received a copy of the GNU General Public License      * 
+ *  along with this program. If not, see <https://www.gnu.org/licenses/>.  * 
+ *                                                                         * 
+\* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include "util/vox_defines.h"
-#include "util/vox_memory.h"
-#include "util/vox_render.h"
-#include "math/vox_m4x4r32.h"
-#include "math/vox_v4r32.h"
-#include "math/vox_v3u32.h"
+#if !defined(GAME_VOX_WORLD_H_)
+#define      GAME_VOX_WORLD_H_
 
-#define WORLD_SIZE_X 4
-#define WORLD_SIZE_Y 4
-#define WORLD_SIZE_Z 4
 
-#define CHUNK_SIZE_X 16
-#define CHUNK_SIZE_Y 16
-#define CHUNK_SIZE_Z 16
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//      SECTION: Defines
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-#define BLOCK_SIZE_X 1
-#define BLOCK_SIZE_Y 1
-#define BLOCK_SIZE_Z 1
+//TODO: Make these configurable
 
-#define CHUNKS_BUILT_PER_TICK 1
+#define CHUNK_SIZE 8
 
-//TODO: Greedy mesh with textures
 
-struct block
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//      SECTION: Types
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+typedef enum world_chunk_flag_bits
 {
-    v4r32 Color;
-};
+    WorldChunkFlag_Dirty = 1,
+} world_chunk_flag_bits;
+typedef flag08 chunk_flags;
 
-struct chunk
+typedef struct world_block
 {
-    v3u32 Pos;
-    block Blocks[CHUNK_SIZE_X * CHUNK_SIZE_Y * CHUNK_SIZE_Z];
-    u32 MaxVertices;
-    mesh_data_3d OpaqueMesh;
-    mesh_data_3d TransparentMesh;
-    b08 Changed;
-    b08 IsInitialized;
-};
+    v4u08 Color;
+} world_block;
 
-struct world
+typedef struct world_chunk
 {
-    u32 ChunksBuiltThisTick;
-    memory_handle *Chunks;
-};
+    world_block *Blocks; // Morton + RLE Encoding
+    
+    mesh_object Object;
+    
+    chunk_flags Flags;
+} world_chunk;
+// RLE Format: <NBlocks><BlockID>[Metadata] ...
+// Metadata is an array of data, the size of each element is determined by BlockID
 
-/*                         2 _____________________________ 6
-                           /  _______________________    /  
-                         /  / ______________________/  / |  
-                       /  / /| |                  /  / / |  
-                     /  / /  | |                /  / / | |  
-                   /  / / |  | |              /  / /|  | |  
-                 /  /_/___|__|_|____________/  / /  |  | |  
-             3 /_____________________________/ /    |  | |  
-              |   _________________________ 7| |    |  | |  
-              |  | |      |  | |          |  | |    |  | |  
-              |  | |      |  | |__________|  | |____|  | |  
-              |  | |      | 0|____________|  | |____|  | |  
-              |  | |     /  / ____________|  | |____/  / / 4
-              |  | |   /  / /             |  | |   /  / /   
-              |  | | /  / /               |  | | /  / /     
-              |  | |  / /                 |  | |  / /       
-              |  | |/_/___________________|  | |/ /         
-              |  |________________________|  |  /           
-              |______________________________|/             
-              1                              5              
-                                                            
-                        y                                   
-                        |                                   
-                        |                                   
-                        |________x                          
-                       /                                    
-                     /                                      
-                   z                                        
-                                                            
-                                                            */
 
-#define GAME_VOX_WORLD_H_
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//      SECTION: Functions
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+#define GAME__WORLD__EXPORTS \
+
+#define GAME__WORLD__FUNCS \
+    PROC(void, World_Create_Temp, world_chunk *Chunks, heap *Heap) \
+
+
 #endif

@@ -4,11 +4,25 @@
         {
             "type": "shell",
             "label": "Build Voxarc",
-            "command": "./do build",
+            "command": "./do build -1 0",
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "type": "shell",
+            "label": "Build Voxarc_Game",
+            "command": "./do build 1 0",
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "type": "shell",
+            "label": "Build Voxarc_Util",
+            "command": "./do build 2 0",
+            "group": "build",
             "problemMatcher": "$msCompile"
         },
         {
@@ -21,7 +35,14 @@
         {
             "type": "shell",
             "label": "Build Font Unpacker",
-            "command": "./do tools vox_ttf_unpacker.c FontUnpacker.exe",
+            "command": "./do build -1 vox_ttf_unpacker.c FontUnpacker.exe",
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "type": "shell",
+            "label": "Build File Viewer",
+            "command": "./do tools vox_file_viewer.c FileViewer.exe",
             "group": "build",
             "problemMatcher": "$msCompile"
         },
@@ -44,6 +65,18 @@
             "type": "shell",
             "label": "Run Font Unpacker",
             "command": "./build/FontUnpacker.exe",
+            "group": "test"
+        },
+        {
+            "type": "shell",
+            "label": "Run File Viewer",
+            "command": "./build/FileViewer.exe",
+            "group": "test"
+        },
+        {
+            "type": "shell",
+            "label": "Run Test",
+            "command": "./tests/build/Test.exe",
             "group": "test"
         }
     ]

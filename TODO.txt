@@ -1,13 +1,10 @@
-Remove std libraries
-Remove GLFW
-Remove GLEW
-Remove GL (Maybe)
+Remove GL (Probably not)
 Independent coordinate systems, rotations, resizeable
 Occlusion, cull non-viewable vertices
 Stream IO
 Render distance
 Thread chunk updates and rebuilds
-Toroidal world (teleport to other side)
+Toroidal world (possibly not)
 Upgradeable player
 
 TODO:
@@ -23,6 +20,7 @@ TODO:
   - Preprocessor
   - Sound
     - Procedural MIDI?
+  - Use compute shader for procedural generation
 - Game
   - Procedural Generation
     - Toroidal?

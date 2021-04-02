@@ -6,8 +6,11 @@
                 "${workspaceFolder}/src"
             ],
             "defines": [
-                "_VOX_DEBUG",
-                "_VOX_WIN32"
+                "_VOX_ARCHITECTURE=0",
+                "_VOX_PLATFORM=0",
+                "_VOX_COMPILER=0",
+                "_VOX_BUILD_MODE=0",
+                "_VOX_INTELLISENSE=1"
             ],
             "windowsSdkVersion": "10.0.18362.0",
             "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.22.27905/bin/Hostx64/x64/cl.exe",

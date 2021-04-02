@@ -8,7 +8,7 @@
             "name": "Debug Voxarc.exe",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "build/Voxarc.exe",
+            "program": "build/Voxarc_Win32.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -38,6 +38,30 @@
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
+            "preLaunchTask": ""
+        },
+        {
+            "name": "Debug FileViewer.exe",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "build/FileViewer.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true,
+            "preLaunchTask": ""
+        },
+        {
+            "name": "Debug Test.exe",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "tests/build/Test.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true,
             "preLaunchTask": ""
         }
     ]

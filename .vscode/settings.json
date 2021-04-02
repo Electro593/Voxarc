@@ -39,10 +39,14 @@
         "math.h": "c",
         "main.h": "c",
         "stdio.h": "c",
-        "file_io.h": "c",
+        "file_json.h": "c",
         "glad.h": "c",
         "world.h": "c",
         "*.rh": "c"
     },
-    "C_Cpp.intelliSenseEngineFallback": "Disabled"
+    "C_Cpp.intelliSenseEngineFallback": "Disabled",
+    "C_Cpp.dimInactiveRegions": true,
+    "C_Cpp.errorSquiggles": "Disabled",
+    "todo-tree.tree.showCountsInTree": false,
+    "todo-tree.tree.showBadges": false
 }
