@@ -44,6 +44,7 @@ global_var global_state *__Global;
 #include "game/util/math/vox_m3x3.c"
 #include "game/util/math/vox_m4x4.c"
 
+//TODO: Make a logger
 internal void
 Game_Init(platform_state *PlatformState,
           game_state *GameState,
@@ -52,7 +53,7 @@ Game_Init(platform_state *PlatformState,
     UNUSED(Input);
     
     u32 StackSize = MEBIBYTES(2);
-    u32 GeneralHeapSize = MEBIBYTES(2);
+    u32 GeneralHeapSize = MEBIBYTES(4);
     u32 MeshHeapSize = MEBIBYTES(2);
     u32 StrHeapSize = MEBIBYTES(2);
     ASSERT(StackSize + GeneralHeapSize + MeshHeapSize + StrHeapSize <= PlatformState->AllocationSize);
@@ -102,23 +103,30 @@ Game_Init(platform_state *PlatformState,
     GL_TexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, GameState->AssetPack->AtlasSize.X,
                   GameState->AssetPack->AtlasSize.Y, GameState->AssetPack->AtlasCount,
                   0, GL_RGBA, GL_UNSIGNED_BYTE, GameState->AssetPack->Atlases);
+    GL_Uniform1ui(GameState->UIMesh.AtlasCountID, GameState->AssetPack->AtlasCount);
     GL_Uniform1i(GameState->UIMesh.SamplerID, 0);
     
     u32 ObjectCount = 2;
     mesh_object *Objects = Stack_Allocate(ObjectCount * sizeof(mesh_object));
-    str UIStr = Str_Create(NULL, "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ", 0);
+    str UIStr = Str_Create(NULL, "abcdefghijklmnopqrstuvwxyz  ABCDEFGHIJKLMNOPQRSTUVWXYZ", 0);
+    // str UIStr = Str_Create(NULL, "LY  Y", 0);
     str UIStr2 = Str_Create(NULL, "0123456789`~-_=+[{]}\\|;:\'\",<.>/?!@#$%^&*()", 0);
     UI_CreateStringObject(MeshHeap, &GameState->UIMesh, Objects, GameState->AssetPack,
                           UIStr, V3r32_3x1(-1.0f, 1.0f, 0.0f), 72.0f);
     UI_CreateStringObject(MeshHeap, &GameState->UIMesh, Objects+1, GameState->AssetPack,
                           UIStr2, V3r32_3x1(-1.0f, 0.0f, 0.0f), 72.0f);
+    // UI_CreateStringObject(MeshHeap, &GameState->UIMesh, Objects+2, GameState->AssetPack,
+    //                       UIStr3, V3r32_3x1(-1.0f, 0.0f, 0.0f), 72.0f);
     Str_Free(UIStr);
     Str_Free(UIStr2);
+    // Str_Free(UIStr3);
     
     //TODO: Mesh indexing function
     
     Mesh_AddObjects(UIMesh, ObjectCount, Objects);
     Mesh_Finalize(UIMesh);
+    
+    v3u16 TC = *(v3u16*)((u32*)UIMesh->Vertices+1); UNUSED(TC);
     
     GL_Enable(GL_CULL_FACE);
     GL_Enable(GL_DEPTH_TEST);
@@ -174,6 +182,8 @@ Game_Init(platform_state *PlatformState,
     // State->Player.Yaw = -PI / 2;
     // State->Player.Pitch = 0.0f;
     // State->Player.Speed = 6.0f;
+    
+    GameState->TestCounter = 0;
     
     Stack_Pop();
 }
@@ -320,6 +330,7 @@ Game_Load(platform_callbacks *PlatformCallbacks,
         #define PROC(ReturnType, Name, ...) \
             Functions->Name = Name;
         GAME__EXPORTS
+        GAME__MODULE__EXPORTS
         #undef PROC
     }
 }

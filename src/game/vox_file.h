@@ -43,11 +43,6 @@ typedef enum file_group
 #define ASSET_PACK_VERSION VERSION_32(0, 0, 1)
 #define ASSET_FONT_DEFAULT_HEIGHT 36.0f
 
-#define ASSET_PACK_JSON_KEY_FONT_DATA "Data"
-#define ASSET_PACK_JSON_KEY_FONT_DATA_ASCENT "Ascent"
-#define ASSET_PACK_JSON_KEY_FONT_DATA_DESCENT "Descent"
-#define ASSET_PACK_JSON_KEY_FONT_DATA_LINEGAP "LineGap"
-
 typedef enum asset_group_id
 {
     AssetGroupID_Font_Cour,
@@ -58,10 +53,11 @@ typedef enum asset_group_id
 // Strings should just be macro-enumerated, like the IDs
 typedef enum asset_tag_type
 {
-    AssetTagType_B08,
+    AssetTagType_Bool,
     AssetTagType_R32,
     AssetTagType_S32,
     AssetTagType_U32,
+    AssetTagType_Arr,
 } asset_tag_type;
 
 #define ENUM_GROUP_TAG_IDS \
@@ -71,7 +67,7 @@ typedef enum asset_tag_type
 
 #define ENUM_ASSET_TAG_IDS \
     ENUM(Codepoint, AssetTagType_S32) \
-    ENUM(Advance,   AssetTagType_R32) \
+    ENUM(Advance,   AssetTagType_Arr) \
     ENUM(BearingX,  AssetTagType_R32) \
     ENUM(BearingY,  AssetTagType_R32) \
 
@@ -99,10 +95,11 @@ typedef struct asset_tag
     asset_tag_id ID;
     union
     {
-        b08 B08;
+        b08 Bool;
         r32 R32;
         s32 S32;
         u32 U32;
+        u32 Mem; // Offset from Tags Overflow
     } Value;
 } asset_tag;
 
@@ -116,7 +113,7 @@ typedef struct asset_info
     union
     {
         asset_tag *Tags;
-        size TagsOffset;
+        u64 TagsOffset;
     };
 } asset_info;
 
@@ -125,16 +122,17 @@ typedef struct asset_group
     asset_group_id GroupID;
     u32 AssetCount;
     u32 GroupTagCount;
+    u64 GroupInfoSize;
     
     union
     {
         asset_info *Assets;
-        size AssetsOffset;
+        u64 AssetsOffset;
     };
     union
     {
         asset_tag *GroupTags;
-        size GroupTagsOffset;
+        u64 GroupTagsOffset;
     };
 } asset_group;
 
@@ -150,6 +148,7 @@ typedef struct asset_pack
     u32 GroupCount;
     u32 AssetCount;
     u32 TagCount;
+    u32 ExtraSize;
     u32 AtlasCount;
     
     v2u16 AtlasSize;
@@ -158,22 +157,27 @@ typedef struct asset_pack
     union
     {
         asset_group *Groups;
-        size GroupsOffset;
+        u64 GroupsOffset;
     };
     union
     {
         asset_info *Assets;
-        size AssetsOffset;
+        u64 AssetsOffset;
     };
     union
     {
         asset_tag *Tags;
-        size TagsOffset;
+        u64 TagsOffset;
+    };
+    union
+    {
+        mem Extra;
+        u64 ExtraOffset;
     };
     union
     {
         mem Atlases;
-        size AtlasesOffset;
+        u64 AtlasesOffset;
     };
 } asset_pack;
 
@@ -194,7 +198,7 @@ typedef struct asset_packer_asset
     union
     {
         asset_tag *Tags;
-        size TagsOffset;
+        u64 TagsOffset;
     };
     str Path;
 } asset_packer_asset;
@@ -222,17 +226,18 @@ typedef struct bitmap_header
 
 
 #define GAME__FILE__EXPORTS \
-    PROC(str,         File_Read, str FilePath, size ReadLength, size ReadOffset) \
+    PROC(str,         File_Read, str FilePath, u64 ReadLength, u64 ReadOffset) \
 
 #define GAME__FILE__FUNCS \
-    PROC(void,        File_Write, str FilePath, str Text, size WriteOffset) \
+    PROC(void,        File_Write, str FilePath, str Text, u64 WriteOffset) \
     PROC(void,        File_ReadConfig, game_config *Config, chr *ConfigFilePath) \
     PROC(u32,         File_ReadShaders, chr *VertexShaderFilePath, chr *FragmentShaderFilePath) \
     PROC(asset_pack*, File_ReadAssetPack, heap *Heap) \
     PROC(void,        File_CreateAssetPack, heap *Heap) \
     PROC(asset_info*, Asset_GetFromTags, asset_pack *Pack, asset_group_id GroupID, asset_tag *Tags, r32 *Weights, u32 TagCount) \
     PROC(asset_tag *, Asset_GetTag, asset_tag *Tag, u32 TagCount, asset_tag_id AssetTagID) \
-    PROC(void,        AssetPacker_FillTag, asset_tag *Tag, asset_tag_id TagID, str ValueStr) \
+    PROC(vptr,        Asset_GetExtra, asset_pack *Pack, asset_tag *Tag) \
+    PROC(void,        AssetPacker_FillTag, heap *Heap, asset_tag *Tag, asset_tag_id TagID, str ValueStr, mem Extra, u32 ExtraOffset) \
 
 
 /*
@@ -262,6 +267,8 @@ pack.vaa *Outdated*
   [Tags xN]
   - u32 ID
   - num Value
+  [Tags Overflox xM]
+  - mem Value
   [Atlases xN] // This will also be in pack.bmp for debug
   - mem Pixels
 */

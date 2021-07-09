@@ -21,7 +21,7 @@
 #define      GAME_VOX_MODULE_H_
 
 
-#define GAME__MODULE__FUNCS \
+#define GAME__MODULE__EXPORTS \
     PROC(void, Game_Unload, game_exports *Functions, game_state *State) \
     PROC(void, Game_Load, platform_callbacks *PlatformCallbacks, game_exports *Functions, game_state *State) \
 
@@ -91,7 +91,7 @@
 #define PROC(ReturnType, Name, ...) \
     typedef _VOX_GAME_API ReturnType _type__##Name(__VA_ARGS__);
 GAME__EXPORTS
-GAME__MODULE__FUNCS
+GAME__MODULE__EXPORTS
 #undef PROC
 
 struct game_exports
@@ -99,7 +99,7 @@ struct game_exports
     #define PROC(ReturnType, Name, ...) \
         _type__##Name *Name;
     GAME__EXPORTS
-    GAME__MODULE__FUNCS
+    GAME__MODULE__EXPORTS
     #undef PROC
 };
 
@@ -114,7 +114,7 @@ struct game_exports
     
     #define PROC(ReturnType, Name, ...) \
         external _API_EXPORT ReturnType Name(__VA_ARGS__);
-    GAME__MODULE__FUNCS
+    GAME__MODULE__EXPORTS
     #undef PROC
     
 #else
@@ -122,7 +122,7 @@ struct game_exports
     #define PROC(ReturnType, Name, ...) \
         global_var _type__##Name *Name;
     GAME__EXPORTS
-    GAME__MODULE__FUNCS
+    GAME__MODULE__EXPORTS
     #undef PROC
     
 #endif

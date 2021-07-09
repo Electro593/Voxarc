@@ -79,6 +79,8 @@ typedef struct game_state
     
     v2r32 AspectRatio;
     // v2s32 PrevCursorPos;
+    
+    u32 TestCounter;
 } game_state;
 
 typedef struct game_exports game_exports;

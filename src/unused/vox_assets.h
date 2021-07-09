@@ -72,7 +72,7 @@ typedef struct voxai_type
 {
     asset_type ID;
     u32 AssetCount;
-    size AssetsOffset;
+    u64 AssetsOffset;
 } voxai_type;
 
 typedef struct voxai_tag
@@ -84,8 +84,8 @@ typedef struct voxai_tag
 typedef struct voxai_asset
 {
     u32 TagsCount;
-    size TagsOffset;
-    size DataOffset;
+    u64 TagsOffset;
+    u64 DataOffset;
 } voxai_asset;
 
 typedef struct voxai_bitmap

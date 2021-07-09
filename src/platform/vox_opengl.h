@@ -20,6 +20,7 @@
 #if !defined(PLATFORM_VOX_OPENGL_H_)
 #define      PLATFORM_VOX_OPENGL_H_
 
+//TODO: Put these into an enum
 #define GL_FALSE                                     0
 #define GL_NO_ERROR                                  0
 #define GL_TRIANGLES                            0x0004
@@ -27,6 +28,7 @@
 #define GL_LESS                                 0x0201
 #define GL_SRC_ALPHA                            0x0302
 #define GL_ONE_MINUS_SRC_ALPHA                  0x0303
+#define GL_FRONT_AND_BACK                       0x0408
 #define GL_INVALID_ENUM                         0x0500
 #define GL_INVALID_VALUE                        0x0501
 #define GL_INVALID_OPERATION                    0x0502
@@ -46,6 +48,7 @@
 #define GL_UNSIGNED_SHORT                       0x1403
 #define GL_UNSIGNED_INT                         0x1405
 #define GL_RGBA                                 0x1908
+#define GL_LINE                                 0x1B01
 #define GL_EXTENSIONS                           0x1F03
 #define GL_NEAREST                              0x2600
 #define GL_LINEAR                               0x2601
@@ -169,6 +172,7 @@
     PROC(void, Enable, u32 Cap) \
     PROC(void, GenTextures, s32 N, u32 *Textures) \
     PROC(void, GetIntegerv, u32 Name, s32 *Data) \
+    PROC(void, PolygonMode, u32 Face, u32 Mode) \
     PROC(void, Scissor, s32 x, s32 y, s32 width, s32 height) \
     PROC(void, TexImage2D, u32 Target, s32 Level, s32 InternalFormat, s32 Width, s32 Height, s32 Border, u32 Format, u32 Type, vptr Pixels) \
     PROC(void, TexParameteri, u32 Target, u32 Name, s32 Param) \

@@ -65,7 +65,7 @@ CreateDebugString(str String,
     
     u32 StrSize = Str_Len(String);
     u32 DeltaSize = 6 * MESH2D_STRIDE;
-    size PrevSize = DebugData->MeshData.Vertices->Size;
+    u64 PrevSize = DebugData->MeshData.Vertices->Size;
     
     u32 TextureCount = 0;
     str SpaceTest = String;

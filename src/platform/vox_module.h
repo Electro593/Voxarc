@@ -39,18 +39,18 @@
 #define PLATFORM_CALLBACKS \
     PLATFORM_CALLBACKS_DEBUG \
     \
-    PROC(size, GetFileLength, vptr FileHandle) \
+    PROC(u64,  GetFileLength, vptr FileHandle) \
     PROC(void, CloseFile, vptr FileHandle) \
     PROC(void, CloseFileType, vptr FindHandle, file_data *FileData) \
     PROC(void, CreateWorkQueueEntry, platform_work_queue *WorkQueue, platform_work_queue_callback Function, vptr Parameter) \
     PROC(void, FlushWorkQueue, platform_work_queue *WorkQueue) \
-    PROC(b08,  OpenFile, vptr FileHandle, str FileName, file_mode FileMode) \
+    PROC(b08, OpenFile, vptr FileHandle, str FileName, file_mode FileMode) \
     PROC(u32,  CountFilesOfTypeInDir, file_type FileType) \
-    PROC(b08,  OpenFileType, vptr FileHandle, vptr FindHandle, file_data *FileData, file_type FileType, file_group FileGroup) \
-    PROC(b08,  OpenNextFile, vptr FileHandle, vptr FindHandle, file_data *FileData) \
-    PROC(void, ReadFile, vptr Dest, vptr FileHandle, size Length, size Offset) \
-    PROC(void, WriteFile, vptr Src, vptr FileHandle, size Length, size Offset) \
-    PROC(vptr, AllocateMemory, size Size) \
+    PROC(b08, OpenFileType, vptr FileHandle, vptr FindHandle, file_data *FileData, file_type FileType, file_group FileGroup) \
+    PROC(b08, OpenNextFile, vptr FileHandle, vptr FindHandle, file_data *FileData) \
+    PROC(void, ReadFile, vptr Dest, vptr FileHandle, u64 Length, u64 Offset) \
+    PROC(void, WriteFile, vptr Src, vptr FileHandle, u64 Length, u64 Offset) \
+    PROC(vptr, AllocateMemory, u64 Size) \
     PROC(void, FreeMemory, vptr Base) \
 
 #define PROC(ReturnType, Name, ...) \

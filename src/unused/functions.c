@@ -168,274 +168,6 @@ JSON_CreateFromTokens(json_write_data *WriteData,
 #endif
 
 #if 0
-//TODO: Reserve all memory at start
-internal stack_state *
-Stack_Create(vptr Base, u32 Size)
-{
-    ASSERT(Base);
-    ASSERT(Size > sizeof(stack_state) + sizeof(stack));
-    
-    stack_state *Stack = (stack_state*)Base;
-    Stack->Size = Size - sizeof(stack_state);
-    Stack->Cursor = 0;
-    Stack->CurrLevel = 0;
-    
-    return Stack;
-}
-
-internal void
-Stack_SetGlobal(stack_state *Stack)
-{
-    __Stack = Stack;
-}
-
-internal stack_state *
-Stack_GetGlobal(void)
-{
-    stack_state *Result;
-    
-    Result = __Stack;
-    
-    return Result;
-}
-
-internal svptr
-_Stack_Push(u32 Size,
-            b08 ShouldZeroMemory)
-{
-    ASSERT(__Stack);
-    
-    svptr Data;
-    stack *Next;
-    
-    if(__Stack->Cursor == 0) // Nothing pushed yet
-    {
-        Next = STACK_GET_BOTTOM(__Stack);
-        Next->PrevSize = 0;
-        
-        ASSERT(sizeof(stack) + Size <= __Stack->Size);
-        __Stack->Cursor = sizeof(stack);
-    }
-    else
-    {
-        stack *Top = STACK_GET_TOP(__Stack);
-        Next = STACK_GET_NEXT(Top);
-        Next->PrevSize = Top->Size;
-        
-        ASSERT(__Stack->Cursor + Top->Size + sizeof(stack) + Size <= __Stack->Size);
-        __Stack->Cursor += Top->Size + sizeof(stack);
-    }
-    
-    Next->Size = Size;
-    Next->Level = __Stack->CurrLevel;
-    
-    Data = STACK_GET_DATA(Next);
-    if(ShouldZeroMemory)
-    {
-        Mem_Zero(Data, Size);
-    }
-    
-    return Data;
-}
-
-internal void
-Stack_Pop(void)
-{
-    ASSERT(__Stack);
-    
-    stack *Top = STACK_GET_TOP(__Stack);
-    Top->Level = 0;
-    Top->Size = 0;
-    
-    if(__Stack->Cursor == sizeof(stack))
-    {
-        __Stack->Cursor = 0;
-    }
-    else
-    {
-        __Stack->Cursor -= Top->PrevSize + sizeof(stack);
-    }
-}
-
-internal void
-Stack_PushLevel(void)
-{
-    ASSERT(__Stack);
-    
-    __Stack->CurrLevel++;
-}
-
-internal void
-Stack_PopLevel(void)
-{
-    ASSERT(__Stack);
-    
-    if(__Stack->Cursor == 0)
-    {
-        return;
-    }
-    
-    __Stack->CurrLevel--;
-    
-    while(STACK_GET_TOP(__Stack)->Level > __Stack->CurrLevel)
-    {
-        Stack_Pop();
-    }
-    
-    if(__Stack->CurrLevel < 0)
-    {
-        __Stack->CurrLevel = 0;
-    }
-}
-
-
-//SUBSECTION: Stack Debug
-
-
-//TODO: Make this similar to _Heap_Print_DEBUG
-#if defined(_VOX_DEBUG)
-internal void
-_Stack_Print_DEBUG(void)
-{
-    ASSERT(__Stack);
-    
-    chr Buffer[256];
-    chr IndentBuffer[256];
-    b08 NumberBuffer[12];
-    
-    chr Header[]  = "| __ __ __ __ __ |";
-    chr Segment[] = "|                |";
-    chr Footer[]  = "|________________|";
-    
-    Platform_Print_DEBUG("\n\nStack:\n  __________________\n");
-    
-    for(u32 StateSegmentIndex = 0;
-        StateSegmentIndex < sizeof(stack_state);
-        StateSegmentIndex += sizeof(size))
-    {
-        Str_Cpy(Buffer, "  ");
-        
-        if(StateSegmentIndex >= sizeof(stack_state) - sizeof(size))
-        {
-            Str_Cat(Buffer, Footer);
-            
-            stack *Next = STACK_GET_BOTTOM(__Stack);
-            if(Next->Level > 0 &&
-               Next->Size > 0)
-            {
-                for(s32 LevelIndex = 0;
-                    LevelIndex < Next->Level;
-                    ++LevelIndex)
-                {
-                    Str_Cat(Buffer, "__");
-                }
-            }
-        }
-        else
-        {
-            Str_Cat(Buffer, Segment);
-        }
-        
-        if(StateSegmentIndex == 0)
-        {
-            Str_Cat(Buffer, " ");
-            U32_ToStr(NumberBuffer, sizeof(stack_state));
-            Str_Cat(Buffer, NumberBuffer);
-            Str_Cat(Buffer, " bytes");
-        }
-        
-        Str_Cat(Buffer, "\n");
-        Platform_Print_DEBUG(Buffer);
-    }
-    
-    if(__Stack->Cursor == 0)
-    {
-        return;
-    }
-    
-    stack *NextTop = STACK_GET_NEXT(STACK_GET_TOP(__Stack));
-    stack *Curr = STACK_GET_BOTTOM(__Stack);
-    while(Curr != NextTop)
-    {
-        Str_Clr(IndentBuffer);
-        
-        for(s32 IndentIndex = 0;
-            IndentIndex <= Curr->Level;
-            ++IndentIndex)
-        {
-            Str_Cat(IndentBuffer, "  ");
-        }
-        
-        for(u32 HeaderSegmentIndex = 0;
-            HeaderSegmentIndex < sizeof(stack);
-            HeaderSegmentIndex += sizeof(size))
-        {
-            Str_Clr(Buffer);
-            Str_Cat(Buffer, IndentBuffer);
-            
-            if(HeaderSegmentIndex >= sizeof(stack) - sizeof(size))
-            {
-                u32 NumLen = U32_ToStr(NumberBuffer, Curr->Level);
-                Str_Replace(Buffer, NumberBuffer, ((Curr->Level + 1) * 2) - 1 - NumLen);
-                
-                Str_Cat(Buffer, Header);
-                
-                Str_Cat(Buffer, " ");
-                U32_ToStr(NumberBuffer, sizeof(stack));
-                Str_Cat(Buffer, NumberBuffer);
-                Str_Cat(Buffer, " + ");
-                U32_ToStr(NumberBuffer, Curr->Size);
-                Str_Cat(Buffer, NumberBuffer);
-                Str_Cat(Buffer, " bytes");
-            }
-            else
-            {
-                Str_Cat(Buffer, Segment);
-            }
-            
-            Str_Cat(Buffer, "\n");
-            Platform_Print_DEBUG(Buffer);
-        }
-        
-        for(u32 BlockSegmentIndex = 0;
-            BlockSegmentIndex < Curr->Size;
-            BlockSegmentIndex += sizeof(size))
-        {
-            Str_Cpy(Buffer, IndentBuffer);
-            
-            if(BlockSegmentIndex >= ALIGN_DOWN_32(Curr->Size - 1, sizeof(size)))
-            {
-                Str_Cat(Buffer, Footer);
-                
-                stack *Next = STACK_GET_NEXT(Curr);
-                s32 LevelDiff = Next->Level - Curr->Level;
-                if(LevelDiff > 0 &&
-                   Next->Size > 0)
-                {
-                    for(s32 LevelIndex = 0;
-                        LevelIndex < LevelDiff;
-                        ++LevelIndex)
-                    {
-                        Str_Cat(Buffer, "__");
-                    }
-                }
-            }
-            else
-            {
-                Str_Cat(Buffer, Segment);
-            }
-            
-            Str_Cat(Buffer, "\n");
-            Platform_Print_DEBUG(Buffer);
-        }
-        
-        Curr = STACK_GET_NEXT(Curr);
-    }
-}
-#endif
-#endif
-
-#if 0
 
 #define HANDLE_COUNT(Handle, Type) (Handle->Size / sizeof(Type))
 #define HANDLE_MEMBER(Handle, Type, Index) ((Type*)Handle->Base + Index)
@@ -444,15 +176,15 @@ _Stack_Print_DEBUG(void)
 typedef struct memory_handle
 {
     vptr Base;
-    size Size;
+    u64 Size;
     u32 HandleIndex;
 } memory_handle;
 
 typedef struct data_pool
 {
     vptr Base;
-    size Used;
-    size Size;
+    u64 Used;
+    u64 Size;
 } data_pool;
 
 typedef struct handle_pool
@@ -478,11 +210,11 @@ CopyHandles(memory_handle *Dest,
 }
 
 internal handle_pool *
-CreateHandlePool(size Size,
+CreateHandlePool(u64 Size,
                  u32 HandleCount)
 {
-    size HandlePoolSize = HandleCount * sizeof(memory_handle) + sizeof(handle_pool);
-    size DataPoolSize = Size + sizeof(data_pool);
+    u64 HandlePoolSize = HandleCount * sizeof(memory_handle) + sizeof(handle_pool);
+    u64 DataPoolSize = Size + sizeof(data_pool);
 #if defined(_VOX_WINDOWS)
     vptr Base = Platform_AllocateMemory(HandlePoolSize + DataPoolSize);
 #else
@@ -562,7 +294,7 @@ DefragmentMemoryPools(handle_pool *HandlePool)
 
 internal vptr
 FindFreeMemory(handle_pool *HandlePool,
-               size Size)
+               u64 Size)
 {
     data_pool *DataPool = HandlePool->DataPool;
     vptr Base = 0;
@@ -600,7 +332,7 @@ FreeHandle(memory_handle *Handle)
 
 internal memory_handle *
 AllocateHandle(handle_pool *HandlePool,
-               size Size)
+               u64 Size)
 {
     vptr Base = FindFreeMemory(HandlePool, Size);
     memory_handle *UnusedHandle = FindUnusedHandle(HandlePool);
@@ -632,7 +364,7 @@ AllocateHandle(handle_pool *HandlePool,
 
 internal memory_handle *
 ResizeHandle(memory_handle *Handle,
-             size Size)
+             u64 Size)
 {
     handle_pool *HandlePool = GetHandlePool(Handle);
     

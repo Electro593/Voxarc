@@ -1866,20 +1866,20 @@ typedef struct win32_monitor_info
     PROC(Kernel32, b08, QueryPerformanceCounter, win32_large_integer *PerformanceCount) \
     PROC(Kernel32, b08, ReadFile, win32_handle File, vptr Buffer, u32 NumberOfBytesToRead, u32 *NumberOfBytesRead, win32_overlapped *OVerlapped) \
     PROC(Kernel32, b08, ReleaseSemaphore, win32_handle Semaphore, s32 ReleaseCount, s32 *PreviousCount) \
-    PROC(Kernel32, b08, VirtualFree, vptr Address, size Size, u32 FreeType) \
+    PROC(Kernel32, b08, VirtualFree, vptr Address, u64 Size, u32 FreeType) \
     PROC(Kernel32, b08, WriteFile, win32_handle File, vptr Buffer, u32 NumberOfBytesToWrite, u32 *NumberOfBytesWritten, win32_overlapped *Overlapped) \
     PROC(Kernel32, s32, CompareFileTime, win32_filetime *FileTime1, win32_filetime *FileTime2) \
     PROC(Kernel32, s32, WideCharToMultiByte, u32 CodePage, u32 Flags, wchr *WideCharStr, s32 WideCharCount, chr *MultiByteStr, s32 MultiByteCount, chr *DefualtChar, b08 *UsedDefaultChar) \
     PROC(Kernel32, u32, GetLastError, void) \
     PROC(Kernel32, u32, WaitForSingleObjectEx, win32_handle Handle, u32 Milliseconds, b08 Alertable) \
     PROC(Kernel32, void, ExitProcess, u32 ExitCode) \
-    PROC(Kernel32, vptr, HeapAlloc, win32_handle Heap, u32 Flags, size Bytes) \
+    PROC(Kernel32, vptr, HeapAlloc, win32_handle Heap, u32 Flags, u64 Bytes) \
     PROC(Kernel32, vptr, TlsGetValue, u32 TlsIndex) \
-    PROC(Kernel32, vptr, VirtualAlloc, vptr Address, size Size, u32 AllocationType, u32 Protect) \
+    PROC(Kernel32, vptr, VirtualAlloc, vptr Address, u64 Size, u32 AllocationType, u32 Protect) \
     PROC(Kernel32, win32_handle, CreateFileA, chr *FileName, u32 DesiredAccess, u32 ShareMode, win32_security_attributes *SecurityAttributes, u32 CreationDisposition, u32 FlagsAndAttributes, win32_handle TemplateFile) \
     PROC(Kernel32, win32_handle, CreateFileW, wchr *FileName, u32 DesiredAccess, u32 ShareMode, win32_security_attributes *SecurityAttributes, u32 CreationDisposition, u32 FlagsAndAttributes, win32_handle TemplateFile) \
     PROC(Kernel32, win32_handle, CreateSemaphoreExW, win32_security_attributes *SemaphoreAttributes, s32 InitialCount, s32 MaximumCount, wchr *Name, u32 Flags, u32 DesiredAccess) \
-    PROC(Kernel32, win32_handle, CreateThread, win32_security_attributes *ThreadAttributes, size StackSize, _type__ThreadStartRoutine StartAddress, vptr Parameter, u32 CreationFlags, u32 *ThreadId) \
+    PROC(Kernel32, win32_handle, CreateThread, win32_security_attributes *ThreadAttributes, u64 StackSize, _type__ThreadStartRoutine StartAddress, vptr Parameter, u32 CreationFlags, u32 *ThreadId) \
     PROC(Kernel32, win32_handle, FindFirstFileA, chr *FileName, win32_find_data_a *FindFileData) \
     PROC(Kernel32, win32_handle, FindFirstFileW, wchr *FileName, win32_find_data_w *FindFileData) \
     PROC(Kernel32, win32_handle, GetProcessHeap, void) \

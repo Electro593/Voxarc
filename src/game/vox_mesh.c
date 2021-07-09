@@ -30,7 +30,10 @@ Mesh_MakePosCoord(v3r32 Coords)
     //TODO: Do something better than clamping
     Coords = V3r32_Clamp(V3r32_1x1(-1.0f), Coords, V3r32_1x1(1.0f));
     v4r32 Scaled = V4r32_1x3_1x1(V3r32_Mul_V_S(Coords, MESH_POS_MAX), 0.0f);
-    Result = V4r32_ToBfs32_Round(SWIZZLE(Scaled, SWIZZLE_WZYX), BFF_1X2_3X10);
+    // Result = V4r32_ToBfs32_Round(SWIZZLE(Scaled, SWIZZLE_WZYX), BFF_1X2_3X10);
+    
+    v4r32 Swizzled = {Scaled.W, Scaled.Z, Scaled.Y, Scaled.X};
+    Result = V4r32_ToBfs32_Round(Swizzled, BFF_1X2_3X10);
     
     return Result;
 }
@@ -71,6 +74,7 @@ Mesh_Init(heap *Heap,
     GL_GenBuffers(1, &Mesh->MPMatricesID);
     
     // Vert
+    Mesh->AtlasCountID = GL_GetUniformLocation(Mesh->ProgramID, "AtlasCount");
     
     // Frag
     Mesh->SamplerID = GL_GetUniformLocation(Mesh->ProgramID, "Sampler");
@@ -78,7 +82,7 @@ Mesh_Init(heap *Heap,
     Mesh_Bind(Mesh);
     
     u32 Stride = sizeof(bfs32);
-    size Offset = 0;
+    u64 Offset = 0;
     
     if(FLAG_TEST(Flags, MESH_HAS_NORMALS))
     {
@@ -232,9 +236,9 @@ Mesh_Update(mesh *Mesh)
         DrawType = GL_STATIC_DRAW;
     }
     
-    size VertexBufferSize = Mesh->TotalVertexCount * Mesh->VertexSize;
-    size IndexBufferSize = Mesh->TotalIndexCount * sizeof(u32);
-    size StorageBufferSize = Mesh->ObjectCount * sizeof(m4x4r32);
+    u64 VertexBufferSize = Mesh->TotalVertexCount * Mesh->VertexSize;
+    u64 IndexBufferSize = Mesh->TotalIndexCount * sizeof(u32);
+    u64 StorageBufferSize = Mesh->ObjectCount * sizeof(m4x4r32);
     
     if(VertexBufferSize > Mesh->VertexBufferSize)
         GL_BufferData(GL_ARRAY_BUFFER, VertexBufferSize, Mesh->Vertices, DrawType);
@@ -271,6 +275,9 @@ Mesh_Render(mesh *Mesh,
         GL_BufferSubData(GL_SHADER_STORAGE_BUFFER, 0, Mesh->ObjectCount * sizeof(m4x4r32), MPMatrices);
     }
     
+    //TODO: Consider sending the block array over to the GPU, and having a
+    //      compute shader calculate the vertices and directly copy those to
+    //      GPU memory, so it won't have to be stored on CPU memory
     vptr *IndexOffsets = Stack_Allocate(Mesh->ObjectCount * sizeof(vptr));
     Mem_Zero(IndexOffsets, Mesh->ObjectCount * sizeof(vptr));
     

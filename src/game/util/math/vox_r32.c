@@ -258,7 +258,7 @@ internal r32
 R32_Sqrt(r32 N)
 {
     u32 Binary = FORCE_CAST(N, u32);
-    b32 IsNegative = R32_GET_SIGN(Binary);
+    u32 IsNegative = R32_GET_SIGN(Binary);
     
     if((Binary & R32_MASK_EXPONENT) == R32_HEX_INF)
     {

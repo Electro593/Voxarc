@@ -9,4 +9,7 @@ out vec4 Color;
 void main(void)
 {
     Color = texture(Sampler, FragTexture.xyz);
+    
+    if(Color.w == 0)
+        discard;
 }

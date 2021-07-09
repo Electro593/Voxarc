@@ -15,7 +15,9 @@
     #include "tools/stb_truetype.h"
 #pragma warning(pop)
 
-#define FONT_NAME "cour"
+// #define FONT_NAME "cour"
+#define FONT_NAME "arial"
+// #define FONT_NAME "Speeday-axVZa"
 
 void
 main(void)
@@ -28,10 +30,11 @@ main(void)
     win32_dll GameDll = {0};
     Win32_LoadGameDll(&GameDll, &PlatformCallbacks, &GameExports, &GameState);
     
-    size HeapSize = MEBIBYTES(1);
+    u64 HeapSize = MEBIBYTES(2);
     mem HeapBase = Win32_AllocateMemory(HeapSize);
     heap *Heap = Heap_Create(HeapBase, (u32)HeapSize);
     Str_SetHeap(Heap);
+    Str_HeapMark_DEBUG();
     
     str Names[127] = {0};
     Names[' '] = Str_Create(NULL, "", 0);
@@ -142,7 +145,8 @@ main(void)
     
     str TempStr;
     
-    str FontPath = Str_Create(NULL, "C:/Windows/Fonts/" FONT_NAME ".ttf", 0);
+    // str FontPath = Str_Create(NULL, "C:/Windows/Fonts/" FONT_NAME ".ttf", 0);
+    str FontPath = Str_Create(NULL, "D:/Andrew/Downloads/" FONT_NAME ".ttf", 0);
     str FontText = File_Read(FontPath, 0, 0);
     Str_Free(FontPath);
     
@@ -162,10 +166,10 @@ main(void)
     JSON_CreateObjectStart(&WriteData, NULL);
     JSON_CreateObjectStart(&WriteData, U32_ToStr(&TempStr, AssetGroupID_Font_Cour)); Str_Free(TempStr);
     
-    JSON_CreateObjectStart(&WriteData, Str_Create(&TempStr, ASSET_PACK_JSON_KEY_FONT_DATA, 0)); Str_Free(TempStr);
-    JSON_CreateNum(&WriteData, Str_Create(&TempStr, ASSET_PACK_JSON_KEY_FONT_DATA_ASCENT, 0), (num){TYPE_R32, .R32=Ascent}); Str_Free(TempStr);
-    JSON_CreateNum(&WriteData, Str_Create(&TempStr, ASSET_PACK_JSON_KEY_FONT_DATA_DESCENT, 0), (num){TYPE_R32, .R32=Descent}); Str_Free(TempStr);
-    JSON_CreateNum(&WriteData, Str_Create(&TempStr, ASSET_PACK_JSON_KEY_FONT_DATA_LINEGAP, 0), (num){TYPE_R32, .R32=LineGap}); Str_Free(TempStr);
+    JSON_CreateObjectStart(&WriteData, Str_Create(&TempStr, "Data", 0)); Str_Free(TempStr);
+    JSON_CreateNum(&WriteData, Str_Create(&TempStr, "Ascent", 0), (num){TYPE_R32, .R32=Ascent}); Str_Free(TempStr);
+    JSON_CreateNum(&WriteData, Str_Create(&TempStr, "Descent", 0), (num){TYPE_R32, .R32=Descent}); Str_Free(TempStr);
+    JSON_CreateNum(&WriteData, Str_Create(&TempStr, "LineGap", 0), (num){TYPE_R32, .R32=LineGap}); Str_Free(TempStr);
     JSON_CreateObjectEnd(&WriteData);
     
     #if 0 // Not worth the trouble
@@ -191,11 +195,19 @@ main(void)
     u32 FileNameInsertIndex = Str_Len(FileNameBuffer);
     Str_CatC(&FileNameBuffer, ".bmp");
     
+    u32 Glyphs[127];
     for(u32 Codepoint = 32;
         Codepoint < 127;
         ++Codepoint)
     {
-        u32 GlyphIndex = stbtt_FindGlyphIndex(&Font, Codepoint);
+        Glyphs[Codepoint] = stbtt_FindGlyphIndex(&Font, Codepoint);
+    }
+    
+    for(u32 Codepoint = 32;
+        Codepoint < 127;
+        ++Codepoint)
+    {
+        u32 GlyphIndex = Glyphs[Codepoint];
         
         v4s32 BitmapBox;
         stbtt_GetGlyphBitmapBox(&Font, GlyphIndex, Scale, Scale, &BitmapBox.X, &BitmapBox.Y, &BitmapBox.Z, &BitmapBox.W);
@@ -206,7 +218,6 @@ main(void)
         r32 Advance = (r32)SAdvance * Scale;
         r32 BearingX = (r32)SBearingX * Scale;
         
-        //TODO: Kerning table (rewatch how Casey does it)
         //TODO: That weird Valve font rendering technique
         
         str FileName;
@@ -223,9 +234,19 @@ main(void)
         JSON_CreateObjectStart(&WriteData, FileName);
         
         JSON_CreateNum(&WriteData, Str_Create(&TempStr, "Codepoint", 0), (num){TYPE_U32, .U32=Codepoint}); Str_Free(TempStr);
-        JSON_CreateNum(&WriteData, Str_Create(&TempStr, "Advance", 0),   (num){TYPE_R32, .R32=Advance});   Str_Free(TempStr);
         JSON_CreateNum(&WriteData, Str_Create(&TempStr, "BearingX", 0),  (num){TYPE_R32, .R32=BearingX});  Str_Free(TempStr);
         JSON_CreateNum(&WriteData, Str_Create(&TempStr, "BearingY", 0),  (num){TYPE_R32, .R32=BearingY});  Str_Free(TempStr);
+        
+        JSON_CreateArrayStart(&WriteData, Str_Create(&TempStr, "Advance", 0)); Str_Free(TempStr);
+        for(u32 Codepoint1 = 32;
+            Codepoint1 < 127;
+            ++Codepoint1)
+        {
+            s32 SKern = stbtt_GetGlyphKernAdvance(&Font, GlyphIndex, Glyphs[Codepoint1]);
+            r32 Kern = (r32)SKern * Scale;
+            JSON_CreateNum(&WriteData, NULL, (num){TYPE_R32, .R32=Advance + Kern});
+        }
+        JSON_CreateArrayEnd(&WriteData);
         
         JSON_CreateObjectEnd(&WriteData);
         

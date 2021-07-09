@@ -36,19 +36,8 @@ typedef enum mesh_flags
 
 typedef struct mesh_object
 {
-    union
-    {
-        struct
-        {
-            hvptr Vertices;
-            hvptr Indices;
-        };
-        struct
-        {
-            size VerticesOffset;
-            size IndicesOffset;
-        };
-    };
+    hvptr Vertices;
+    hvptr Indices;
     
     u32 VertexCount;
     s32 IndexCount;
@@ -61,23 +50,23 @@ typedef struct mesh
 {
     hmem Vertices; // bfs32_2_10_10_10_r, [bfs32_2_10_10_10_r], [v4u16], [v4u08]
     hmem Indices; // u32
-    
-    size VertexBufferSize;
-    size IndexBufferSize;
-    size StorageBufferSize;
     s32 *VertexCounts; // First element is 0
     s32 *IndexCounts;
+    m4x4r32 *MMatrices;
+    
+    u64 VertexBufferSize;
+    u64 IndexBufferSize;
+    u64 StorageBufferSize;
     s32 ObjectCount;
     u32 TotalVertexCount;
     u32 TotalIndexCount;
-    
-    m4x4r32 *MMatrices;
     
     u32 ProgramID;
     u32 VAOID;
     u32 VBOID;
     u32 EBOID;
     u32 TextureID;
+    u32 AtlasCountID;
     u32 SamplerID;
     u32 MPMatricesID;
     

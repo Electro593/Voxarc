@@ -71,7 +71,11 @@ UI_CreateStringObject(heap *Heap,
         asset_tag Tags[1] = {AssetTagID_Codepoint, *C};
         r32 Weights[1] = {1.0f};
         asset_info *Asset = Asset_GetFromTags(AssetPack, AssetGroupID_Font_Cour, Tags, Weights, 1);
-        Advance.X = (Asset_GetTag(Asset->Tags, Asset->TagCount, AssetTagID_Advance)->Value.R32 / VIRTUAL_WINDOW_SIZE_X) * SizeRatio;
+        r32 *AdvanceArr = (r32*)Asset_GetExtra(AssetPack, Asset_GetTag(Asset->Tags, Asset->TagCount, AssetTagID_Advance));
+        if(*(C+1) != '\0')
+            Advance.X = (AdvanceArr[*(C+1)-32] / VIRTUAL_WINDOW_SIZE_X) * SizeRatio;
+        else
+            Advance.X = 0;
         
         if(*C == ' ')
         {
@@ -105,7 +109,7 @@ UI_CreateStringObject(heap *Heap,
                                       Cursor.Y + PosCoords[VertexIndex].Y,
                                       0.0f);
                 *(bfs32*)VertexCursor = Mesh_MakePosCoord(Pos);
-                bfs32_1x2_3x10_d PosD = *(bfs32_1x2_3x10_d*)VertexCursor; UNUSED(PosD);
+                bfs32_1x2_3x10_d PosDEBUG = *(bfs32_1x2_3x10_d*)VertexCursor; UNUSED(PosDEBUG);
                 VertexCursor += sizeof(bfs32);
                 
                 *(v3u16*)VertexCursor = Mesh_MakeTexCoord(TexBounds, TexCoords[VertexIndex]);

@@ -228,7 +228,8 @@ typedef enum button_state
 //NOTE: Platform-to-game flags
 typedef enum update_flag_bit
 {
-    UPDATE_SIZE = 0x01,
+    UPDATE_SIZE     = 0x01,
+    UPDATE_RELOADED = 0x02,
 } update_flag_bit;
 typedef flag08 update_flags;
 
@@ -249,7 +250,7 @@ typedef flag08 cursor_flags;
 
 typedef struct file_data
 {
-    size FileSize;
+    u64 FileSize;
     str FileName;
     str RelDir;
 } file_data;
@@ -292,7 +293,7 @@ typedef struct platform_state
     
     vptr PlatformData;
     
-    size AllocationSize;
+    u64 AllocationSize;
     vptr AllocationBase;
 } platform_state;
 

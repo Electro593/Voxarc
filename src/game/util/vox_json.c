@@ -169,13 +169,13 @@ JSON_Parse(heap *Heap,
                             
                             default:
                             {
-                                STOP;
+                                BREAK;
                             }
                         }
                     }
                 }
                 
-                STOP;
+                BREAK;
                 
                 ParseStringExit:
                 
@@ -235,10 +235,17 @@ JSON_Parse(heap *Heap,
             case '7':
             case '8':
             case '9':
+                json_token_type PrimType = JSONToken_Integer;
+                goto ParsePrimitive;
             case 't': // TRUE
             case 'f': // FALSE
+                PrimType = JSONToken_Boolean;
+                goto ParsePrimitive;
             case 'n': // NULL
+                PrimType = JSONToken_Null;
             {
+                ParsePrimitive:
+                
                 if(ParentToken != -1)
                 {
                     json_token *Parent = Tokens + ParentToken;
@@ -254,6 +261,12 @@ JSON_Parse(heap *Heap,
                 {
                     switch(*C)
                     {
+                        case '.':
+                        {
+                            ASSERT(PrimType == JSONToken_Integer);
+                            PrimType = JSONToken_Float;
+                        } break;
+                        
                         case '}':
                         case ']':
                         case ',':
@@ -269,12 +282,12 @@ JSON_Parse(heap *Heap,
                     ASSERT(32 <= *C && *C <= 127);
                 }
                 
-                STOP;
+                BREAK;
                 
                 ParsePrimitiveExit:
                 
                 json_token *Token = JSON_AllocateToken(&Tokens, &NextToken);
-                Token->Type = JSONToken_Primitive;
+                Token->Type = PrimType;
                 Token->StartOffset = Start;
                 Token->EndOffset = CharIndex;
                 Token->ParentToken = ParentToken;
@@ -289,7 +302,7 @@ JSON_Parse(heap *Heap,
             
             default:
             {
-                STOP;
+                BREAK;
             }
         }
     }
@@ -513,7 +526,27 @@ JSON_CreateNum(json_write_data *WriteData,
 {
     json_token *Result;
     
-    Result = JSON_CreateNew(WriteData, JSONToken_Primitive, Key);
+    json_token_type PrimType = JSONToken_None;
+    switch(Value.Type)
+    {
+        case TYPE_U32:
+        case TYPE_S32:
+        {
+            PrimType = JSONToken_Integer;
+        } break;
+        case TYPE_R32:
+        {
+            PrimType = JSONToken_Float;
+        } break;
+        default:
+        {
+            BREAK;
+        }
+    }
+    
+    u32 Len = Str_Len(WriteData->Buffer);
+    Result = JSON_CreateNew(WriteData, PrimType, Key);
+    Len = Str_Len(WriteData->Buffer);
     Result->EndOffset = 0;
     
     str NumBuf = NULL;
@@ -534,14 +567,14 @@ JSON_CreateNum(json_write_data *WriteData,
             Str_Cat(&WriteData->Buffer, U32_ToStr(&NumBuf, Value.U32));
         } break;
         
-        case TYPE_STR:
-        { // For directly transferring a number string
-            Str_Cat(&WriteData->Buffer, Value.NumStr);
-        } break;
+        // case TYPE_STR:
+        // { // For directly transferring a number string
+        //     Str_Cat(&WriteData->Buffer, Value.NumStr);
+        // } break;
         
         default:
         {
-            STOP;
+            BREAK;
         }
     }
     Str_Free(NumBuf);

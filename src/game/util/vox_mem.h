@@ -43,11 +43,39 @@ typedef u08* mem;
 
 //SUBSECTION: Heap
 
+
 //TODO: When adding heap defragmentation, make the handle system,
 //      similar to the original version
+//      NOTE: Is defragmentation necessary?
 //TODO: Make heap allocation traverse free list from back to front,
 //      to minimize fragmentation
 
+#if 0
+#define HDATA(Handle, Type) ((Type*)Handle->Data)
+
+//TODO: Consider a binary search for freeing
+typedef struct heap1_handle
+{
+    mem Data;
+    u32 Size; // Size of data block
+    u32 Offset; // Offset from end of lower block to start of current block
+    u16 Index; // Consecutive index in handle block
+    u16 NextIndex; // Free or unmapped index, depending on State
+    u16 NextBlockIndex;
+    b08 Mapped;
+    b08 Anchored; // The data pointer can't be changed, e.g. if used in an external API
+} heap1_handle;
+
+typedef struct heap1
+{
+    mem DataCursor; // Top down
+    u64 Size; // Excluding the header
+    u16 HandleCount; // Bottom up, mapped and unmapped
+    u16 FirstMappedIndex; // From HandleCount down
+    u16 FirstUnmappedIndex;
+    u16 FirstBlockIndex; // Lowest up
+} heap1;
+#endif
 
 // For annotation purposes
 typedef vptr hvptr; // For function parameters
@@ -94,7 +122,7 @@ typedef struct stack_marker
 
 typedef struct stack
 {
-    size Size; // Includes sizeof(stack)
+    u64 Size; // Includes sizeof(stack)
     
     u08 *Cursor;
     stack_marker *NewestMarker;
@@ -132,99 +160,44 @@ typedef struct stack
 
 #define GAME_UTIL__MEM__EXPORTS \
     GAME_UTIL__MEM_DEBUG__EXPORTS \
-    PROC(vptr,         Mem_Set, vptr Dest, s32 Data, size Size) \
-    PROC(vptr,         Mem_Cpy, vptr Dest, vptr Src, size Size) \
+    PROC(vptr,         Mem_Set, vptr Dest, s32 Data, u64 Size) \
+    PROC(vptr,         Mem_Cpy, vptr Dest, vptr Src, u64 Size) \
     PROC(heap*,        Heap_Create, vptr Base, u32 Size) \
     PROC(hvptr,        Heap_AllocateAligned, heap *Heap, u32 Size, u32 Alignment, b08 ShouldZeroMemory) \
     PROC(void,         Heap_Resize, hvptr *Data, u32 Size) \
     PROC(void,         Heap_Free, hvptr Data) \
     PROC(u32,          Heap_GetSize, hvptr Data) \
-    PROC(void,         Stack_Init, vptr Base, size Size) \
+    PROC(void,         Stack_Init, vptr Base, u64 Size) \
+    
+    // PROC(heap1*,        Heap1_Create, vptr Base, u64 Size) \
+    // PROC(void,         Heap1_Defrag, heap1 *Heap1) \
+    // PROC(heap1_handle*, Heap1_Alloc, heap1 *Heap1, u32 Size) \
+    // PROC(void,         Heap1_Resize, heap1_handle *Handle, u32 Size) \
+    // PROC(void,         Heap1_Free, heap1_handle *Handle) \
 
 #define GAME_UTIL__MEM__FUNCS \
     GAME_UTIL__MEM_DEBUG__FUNCS \
-    PROC(s32,          Mem_Cmp, vptr A, vptr B, size Size) \
-    PROC(b08,          Heap_IsSentry, heap_header *Header) \
+    PROC(s32,          Mem_Cmp, vptr A, vptr B, u64 Size) \
+    PROC(b08,         Heap_IsSentry, heap_header *Header) \
     PROC(heap_header*, Heap_GetHeader, hvptr Data) \
     PROC(hvptr,        Heap_GetData, heap_header *Header) \
     PROC(heap_header*, Heap_GetNext, heap_header *Header) \
     PROC(heap_header*, Heap_GetFirst, heap *Heap) \
     PROC(heap*,        Heap_GetHeap, heap_header *Header) \
     PROC(void,         Heap_Copy, hvptr Dest, hvptr Src, b08 ShouldZeroDest) \
-    PROC(b08,          Stack_HasOverflowed, void) \
-    PROC(b08,          Stack_IsCorrupted, void) \
+    PROC(b08,         Stack_HasOverflowed, void) \
+    PROC(b08,         Stack_IsCorrupted, void) \
     PROC(void,         Stack_Push, void) \
     PROC(void,         Stack_Pop, void) \
-    PROC(svptr,        Stack_Allocate, size Size) \
+    PROC(svptr,        Stack_Allocate, u64 Size) \
+    
+    // PROC(heap1*,        Heap1_GetHeap1, heap1_handle *Handle) \
+    // PROC(heap1_handle*, Heap1_GetHandle, heap1 *Heap1, u16 HandleIndex) \
 
 
 #define Mem_Zero(Dest, Size) Mem_Set(Dest, 0, Size)
 #define Heap_AllocateZeroed(Heap, u32_Size) Heap_AllocateAligned(Heap, u32_Size, 1, TRUE)
 #define Heap_Allocate(Heap, u32_Size)       Heap_AllocateAligned(Heap, u32_Size, 1, FALSE)
-
-
-
-#if 0
-//TODO: Multithreading support
-
-//SUBSECTION: Defines
-
-#define STACK_GET_DATA(Header)  ((u08*)(Header) + sizeof(stack_header))
-#define STACK_GET_HEADER(Data)  ((stack_header*)((u08*)(Data) - sizeof(stack_header)))
-#define STACK_GET_NEXT(Header)  ((stack_header*)((u08*)(Header) + sizeof(stack_header) + (Header)->Size))
-#define STACK_GET_PREV(Header)  ((stack_header*)((u08*)(Header) - sizeof(stack_header) - (Header)->PrevSize))
-#define STACK_GET_TOP(Stack)    ((stack_header*)((u08*)(Stack) + sizeof(stack_state) + (Stack)->Cursor - sizeof(stack_header)))
-#define STACK_GET_BOTTOM(Stack) ((stack_header*)((u08*)(Stack) + sizeof(stack_state)))
-
-//SUBSECTION: Types
-
-typedef vptr svptr; //NOTE: Stack Memory
-
-typedef struct stack_header
-{
-    u32 PrevSize;
-    u32 Size;
-    s32 Level;
-} stack_header;
-
-typedef struct stack_state
-{
-    u32 Size;
-    u32 Cursor;
-    s32 CurrLevel;
-} stack_state;
-
-//SUBSECTION: Variables
-
-global_var stack_state *__Stack = NULL;
-
-//SUBSECTION: Functions
-
-internal stack_state * Stack_Create(vptr Base, u32 Size);
-
-internal void Stack_SetGlobal(stack_state *Stack);
-internal stack_state * Stack_GetGlobal(void);
-
-internal svptr _Stack_Push(u32 Size, b08 ShouldZeroMemory);
-#define Stack_PushZeroed(Size_u32) _Stack_Push(Size_u32, TRUE)
-#define Stack_Push(Size_u32)       _Stack_Push(Size_u32, FALSE)
-
-internal void Stack_Pop(void);
-
-internal void Stack_PushLevel(void);
-
-internal void Stack_PopLevel(void);
-
-//SUBSECTION: Debug
-
-#if defined(_VOX_DEBUG)
-internal void _Stack_Print_DEBUG(void);
-
-#define Stack_Print_DEBUG() _Stack_Print_DEBUG()
-#else
-#define Stack_Print_DEBUG()
-#endif
-#endif
 
 
 #endif

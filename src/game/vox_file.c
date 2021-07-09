@@ -20,8 +20,8 @@
 //NOTE: Set ReadLength to 0 to read to the end of the file
 internal str
 File_Read(str FilePath,
-          size ReadLength,
-          size ReadOffset)
+          u64 ReadLength,
+          u64 ReadOffset)
 {
     mem FileHandle;
     Platform_OpenFile(&FileHandle, FilePath, FileMode_Read);
@@ -52,7 +52,7 @@ File_Read(str FilePath,
 internal void
 File_Write(str FilePath,
            str Text,
-           size WriteOffset)
+           u64 WriteOffset)
 {
     mem FileHandle;
     Platform_OpenFile(&FileHandle, FilePath, FileMode_Write);
@@ -248,7 +248,8 @@ File_ReadAssetPack(heap *Heap)
     str TempStr;
     vptr FileHandle;
     
-    Platform_OpenFile(&FileHandle, Str_Create(&TempStr, ASSET_PACK_FILENAME, 0), FileMode_Read); Str_Free(TempStr);
+    Platform_OpenFile(&FileHandle, Str_Create(&TempStr, ASSET_PACK_FILENAME, 0), FileMode_Read);
+    Str_Free(TempStr);
     
     u32 HeaderSize = sizeof(asset_pack);
     asset_pack *AssetPack = Heap_Allocate(Heap, HeaderSize);
@@ -259,22 +260,26 @@ File_ReadAssetPack(heap *Heap)
     u32 GroupsSize = AssetPack->GroupCount * sizeof(asset_group);
     u32 AssetsSize = AssetPack->AssetCount * sizeof(asset_info);
     u32 TagsSize = AssetPack->TagCount * sizeof(asset_tag);
+    u32 ExtraSize = AssetPack->ExtraSize;
     u32 AtlasesSize = AssetPack->AtlasCount * V2u16_RectArea(AssetPack->AtlasSize) * BYTES_PER_PIXEL;
-    Heap_Resize(&AssetPack, HeaderSize + GroupsSize + AssetsSize + TagsSize + AtlasesSize);
+    Heap_Resize(&AssetPack, HeaderSize + GroupsSize + AssetsSize + TagsSize + ExtraSize + AtlasesSize);
     
-    size GroupsOffset = AssetPack->GroupsOffset;
-    size AssetsOffset = AssetPack->AssetsOffset;
-    size TagsOffset = AssetPack->TagsOffset;
-    size AtlasesOffset = AssetPack->AtlasesOffset;
+    u64 GroupsOffset = AssetPack->GroupsOffset;
+    u64 AssetsOffset = AssetPack->AssetsOffset;
+    u64 TagsOffset = AssetPack->TagsOffset;
+    u64 ExtraOffset = AssetPack->ExtraOffset;
+    u64 AtlasesOffset = AssetPack->AtlasesOffset;
     
     AssetPack->Groups = (asset_group*)((mem)AssetPack + AssetPack->GroupsOffset);
     AssetPack->Assets = (asset_info*)((mem)AssetPack + AssetPack->AssetsOffset);
     AssetPack->Tags = (asset_tag*)((mem)AssetPack + AssetPack->TagsOffset);
+    AssetPack->Extra = (mem)AssetPack + AssetPack->ExtraOffset;
     AssetPack->Atlases = (mem)AssetPack + AssetPack->AtlasesOffset;
     
     Platform_ReadFile(AssetPack->Groups, &FileHandle, GroupsSize, GroupsOffset);
     Platform_ReadFile(AssetPack->Assets, &FileHandle, AssetsSize, AssetsOffset);
     Platform_ReadFile(AssetPack->Tags, &FileHandle, TagsSize, TagsOffset);
+    Platform_ReadFile(AssetPack->Extra, &FileHandle, ExtraSize, ExtraOffset);
     Platform_ReadFile(AssetPack->Atlases, &FileHandle, AtlasesSize, AtlasesOffset);
     
     Platform_CloseFile(&FileHandle);
@@ -343,7 +348,7 @@ File_CreateAssetPack(heap *Heap)
         #define ENUM(Name, Value) \
             if(Mem_Cmp(IDStr, #Name, sizeof(#Name)) == 0) \
             { \
-                AssetPacker_FillTag(Groups[0].GroupTags + TagIndex, AssetTagID_##Name, ValueStr); \
+                AssetPacker_FillTag(Heap, Groups[0].GroupTags + TagIndex, AssetTagID_##Name, ValueStr, 0, 0); \
             } else
         ENUM_GROUP_TAG_IDS
         #undef ENUM
@@ -361,6 +366,8 @@ File_CreateAssetPack(heap *Heap)
         TokenIndex += 2;
     }
     
+    u32 ExtraSize = 0;
+    mem Extra = Heap_Allocate(Heap, ExtraSize);
     for(u32 AssetIndex = 0;
         AssetIndex < AssetCount;
         ++AssetIndex)
@@ -373,6 +380,43 @@ File_CreateAssetPack(heap *Heap)
         Str_Sub(&GenAssets[AssetIndex].Path, FileText, StartIndex, EndIndex);
         
         u32 TagCount = Tokens[TokenIndex+1].ChildCount;
+        u32 *ExtraStack = Stack_Allocate((TagCount+1) * sizeof(u32));
+        Mem_Zero(ExtraStack, TagCount * sizeof(u32));
+        for(u32 ChildIndex = 0;
+            ChildIndex < TagCount;
+            ++ChildIndex)
+        {
+            json_token Token = Tokens[TokenIndex+3+2*ChildIndex];
+            if(Token.Type == JSONToken_Array)
+            {
+                json_token *ChildToken = Tokens + TokenIndex+3+2*ChildIndex+1;
+                switch(ChildToken->Type)
+                {
+                    case JSONToken_Integer:
+                    case JSONToken_Float:
+                    {
+                        ExtraStack[ChildIndex+1] = Token.ChildCount * 4;
+                    } break;
+                    case JSONToken_String:
+                    {
+                        for(u32 ChildIndex1 = 0;
+                            ChildIndex1 < Token.ChildCount;
+                            ++ChildIndex1)
+                        {
+                            ExtraStack[ChildIndex+1] += ChildToken->EndOffset - ChildToken->StartOffset + 1;
+                            ++ChildToken;
+                        }
+                    } break;
+                    default:
+                    {
+                        BREAK;
+                    }
+                }
+                
+                ExtraStack[ChildIndex+1] += ExtraStack[ChildIndex];
+            }
+        }
+        Heap_Resize(&Extra, ExtraSize + ExtraStack[TagCount]);
         GenAssets[AssetIndex].Tags = Stack_Allocate(sizeof(asset_tag) * TagCount);
         GenAssets[AssetIndex].TagCount = TagCount;
         TotalTagCount += TagCount;
@@ -387,7 +431,6 @@ File_CreateAssetPack(heap *Heap)
             str TagStr = Str_Sub(NULL, FileText, StartIndex, EndIndex);
             
             asset_tag *Tag = GenAssets[AssetIndex].Tags + TagIndex;
-            
             StartIndex = Tokens[TokenIndex+1].StartOffset;
             EndIndex = Tokens[TokenIndex+1].EndOffset;
             str ValueStr = Str_Sub(NULL, FileText, StartIndex, EndIndex);
@@ -395,7 +438,7 @@ File_CreateAssetPack(heap *Heap)
             #define ENUM(Name, Value) \
                 if(Mem_Cmp(TagStr, #Name, sizeof(#Name)) == 0) \
                 { \
-                    AssetPacker_FillTag(Tag, AssetTagID_##Name, ValueStr); \
+                    AssetPacker_FillTag(Heap, Tag, AssetTagID_##Name, ValueStr, Extra, ExtraSize + ExtraStack[TagIndex]); \
                 } else
             ENUM_ASSET_TAG_IDS
             #undef ENUM
@@ -409,7 +452,22 @@ File_CreateAssetPack(heap *Heap)
             
             Str_Free(TagStr);
             Str_Free(ValueStr);
+            
+            switch(Tokens[TokenIndex+1].Type)
+            {
+                case JSONToken_Array:
+                {
+                    ASSERT(Tokens[TokenIndex+2].Type != JSONToken_Object);
+                    TokenIndex += Tokens[TokenIndex+1].ChildCount;
+                } break;
+                case JSONToken_Object:
+                {
+                    BREAK;
+                } break;         
+            }
         }
+        
+        ExtraSize += ExtraStack[TagCount];
     }
     
     Heap_Free(Tokens);
@@ -601,6 +659,13 @@ File_CreateAssetPack(heap *Heap)
                 v4u08 *Src = BitmapPixel + Col;
                 u08 Gray = (u08)(((r32)Src->X + (r32)Src->Y + (r32)Src->Z) / 3.0f);
                 *Dest = V4u08_4x1(255, 255, 255, Gray);
+                // *Dest = V4u08_4x1(Gray, Gray, Gray, Gray);
+                
+                // if(Str_Cmp(Asset->Path, Str_Create(&TempStr, "assets/arial/89.bmp", 0)) == 0)
+                // {
+                //     *Dest = V4u08_4x1(255, 0, 0, 255);
+                // }
+                // Str_Free(TempStr);
             }
             
             // Mem_Cpy(AtlasPixel, BitmapPixel, Asset->Size.X * sizeof(v4u08));
@@ -771,14 +836,15 @@ File_CreateAssetPack(heap *Heap)
     AssetPack.GroupCount = GroupCount;
     AssetPack.AssetCount = AssetCount;
     AssetPack.TagCount = TotalTagCount;
+    AssetPack.ExtraSize = ExtraSize;
     AssetPack.AtlasCount = AtlasCount;
     AssetPack.AtlasSize = V2u16_1x1(MAX_ATLAS_DIM);
     
-    size AssetsOffset = sizeof(asset_pack) + GroupsSize;
+    u64 AssetsOffset = sizeof(asset_pack) + GroupsSize;
     u32 AssetsSize = AssetCount * sizeof(asset_info);
     asset_info *Assets = Heap_AllocateZeroed(Heap, AssetsSize);
     
-    size TagsOffset = sizeof(asset_pack) + GroupsSize + AssetsSize;
+    u64 TagsOffset = sizeof(asset_pack) + GroupsSize + AssetsSize;
     u32 TagsSize = TotalTagCount * sizeof(asset_tag);
     asset_tag *Tags = Heap_AllocateZeroed(Heap, TagsSize);
     
@@ -789,7 +855,7 @@ File_CreateAssetPack(heap *Heap)
     Groups[0].AssetsOffset = AssetsOffset;
     Groups[0].GroupID = AssetGroupID;
     Mem_Cpy(TagCursor, Groups[0].GroupTags, sizeof(asset_tag) * Groups[0].GroupTagCount);
-    Groups[0].GroupTagsOffset = (size)TagCursor - (size)Tags + TagsOffset;
+    Groups[0].GroupTagsOffset = (u64)TagCursor - (u64)Tags + TagsOffset;
     TagCursor += sizeof(asset_tag) * Groups[0].GroupTagCount;
     
     for(u32 AssetIndex = 0;
@@ -799,7 +865,7 @@ File_CreateAssetPack(heap *Heap)
         asset_packer_asset *GenAsset = GenAssets + AssetIndex;
         
         Mem_Cpy(TagCursor, GenAsset->Tags, sizeof(asset_tag) * GenAsset->TagCount);
-        GenAsset->TagsOffset = (size)TagCursor - (size)Tags + TagsOffset;
+        GenAsset->TagsOffset = (u64)TagCursor - (u64)Tags + TagsOffset;
         TagCursor += sizeof(asset_tag) * GenAsset->TagCount;
         
         Mem_Cpy(AssetCursor, GenAsset, sizeof(asset_info));
@@ -807,7 +873,7 @@ File_CreateAssetPack(heap *Heap)
     }
     
     Platform_OpenFile(&FileHandle, ASSET_PACK_FILENAME, FileMode_Write);
-    size WriteCursor = sizeof(asset_pack);
+    u64 WriteCursor = sizeof(asset_pack);
     
     Platform_WriteFile(Groups, &FileHandle, GroupsSize, WriteCursor); // Groups
     AssetPack.GroupsOffset = WriteCursor;
@@ -821,6 +887,10 @@ File_CreateAssetPack(heap *Heap)
     AssetPack.TagsOffset = WriteCursor;
     WriteCursor += TagsSize;
     
+    Platform_WriteFile(Extra, &FileHandle, ExtraSize, WriteCursor); // Extra
+    AssetPack.ExtraOffset = WriteCursor;
+    WriteCursor += ExtraSize;
+    
     Platform_WriteFile(Atlases, &FileHandle, AtlasCount * BytesPerAtlas, WriteCursor); // Atlases
     AssetPack.AtlasesOffset = WriteCursor;
     
@@ -831,6 +901,7 @@ File_CreateAssetPack(heap *Heap)
     Heap_Free(Groups);
     Heap_Free(Assets);
     Heap_Free(Tags);
+    Heap_Free(Extra);
     Heap_Free(Atlases);
     for(u32 AssetIndex = 0;
         AssetIndex < AssetCount;
@@ -921,11 +992,11 @@ Asset_GetFromTags(asset_pack *Pack,
                 {
                     switch(AssetTagTypes[AssetTag->ID])
                     {
-                        case AssetTagType_B08:
+                        case AssetTagType_Bool:
                         {
-                            ASSERT(WITHIN(0, AssetTag->Value.B08, 1));
-                            ASSERT(WITHIN(0, SearchTag->Value.B08, 1));
-                            WeightedDiff += Weight * (r32)(AssetTag->Value.B08 ^ SearchTag->Value.B08);
+                            ASSERT(WITHIN(0, AssetTag->Value.Bool, 1));
+                            ASSERT(WITHIN(0, SearchTag->Value.Bool, 1));
+                            WeightedDiff += Weight * (r32)(AssetTag->Value.Bool ^ SearchTag->Value.Bool);
                         } break;
                         
                         case AssetTagType_R32:
@@ -947,7 +1018,7 @@ Asset_GetFromTags(asset_pack *Pack,
                         
                         default:
                         {
-                            STOP;
+                            BREAK;
                         }
                     }
                     
@@ -987,18 +1058,28 @@ Asset_GetTag(asset_tag *Tags,
     return NULL;
 }
 
+internal vptr
+Asset_GetExtra(asset_pack *Pack,
+               asset_tag *Tag)
+{
+    return Pack->Extra + Tag->Value.Mem;
+}
+
 internal void
-AssetPacker_FillTag(asset_tag *Tag,
+AssetPacker_FillTag(heap *Heap,
+                    asset_tag *Tag,
                     asset_tag_id TagID,
-                    str ValueStr)
+                    str ValueStr,
+                    mem Extra,
+                    u32 ExtraOffset)
 {
     Tag->ID = TagID;
     
     switch(AssetTagTypes[Tag->ID])
     {
-        case AssetTagType_B08:
+        case AssetTagType_Bool:
         {
-            Tag->Value.B08 = Str_ToB08(ValueStr);
+            Tag->Value.Bool = Str_ToBool(ValueStr);
         } break;
         
         case AssetTagType_R32:
@@ -1011,9 +1092,48 @@ AssetPacker_FillTag(asset_tag *Tag,
             Tag->Value.S32 = Str_ToS32(ValueStr);
         } break;
         
+        case AssetTagType_Arr:
+        {
+            Extra += ExtraOffset;
+            json_token *Tokens = JSON_Parse(Heap, ValueStr);
+            json_token_type Type = Tokens[1].Type;
+            for(u32 ChildIndex = 0;
+                ChildIndex < Tokens[0].ChildCount;
+                ++ChildIndex)
+            {
+                json_token Token = Tokens[ChildIndex+1];
+                u32 SubLen = Token.EndOffset - Token.StartOffset;
+                str SubValue = Str_Sub(0, ValueStr, Token.StartOffset, Token.EndOffset);
+                switch(Type)
+                {
+                    case JSONToken_Integer:
+                    {
+                        ((s32*)Extra)[ChildIndex] = Str_ToS32(SubValue);
+                    } break;
+                    case JSONToken_Float:
+                    {
+                        ((r32*)Extra)[ChildIndex] = Str_ToR32(SubValue);
+                    } break;
+                    case JSONToken_String:
+                    {
+                        Mem_Cpy(Extra, SubValue, SubLen+1);
+                        Extra += SubLen+1;
+                    } break;
+                    default:
+                    {
+                        BREAK;
+                    }
+                }
+                Str_Free(SubValue);
+            }
+            
+            Heap_Free(Tokens);
+            Tag->Value.Mem = ExtraOffset;
+        } break;
+        
         default:
         {
-            STOP;
+            BREAK;
         }
     }
 }

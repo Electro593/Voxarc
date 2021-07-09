@@ -31,11 +31,11 @@ GL_DebugCallback(u32 Source,
     
     str TempStr;
     
-    str SourceStr   = Str_Create(NULL, "\nSource:   ", 0);
-    str TypeStr     = Str_Create(NULL, "\nType:     ", 0);
-    str IDStr       = Str_Create(NULL, "\nError:    ", 0);
-    str SeverityStr = Str_Create(NULL, "\nSeverity: ", 0);
-    str MessageStr  = Str_Create(NULL, "\nMessage:  ", 0);
+    str SourceStr   = Str_Create(0, "\nSource:   ", 0);
+    str TypeStr     = Str_Create(0, "\nType:     ", 0);
+    str IDStr       = Str_Create(0, "\nError:    ", 0);
+    str SeverityStr = Str_Create(0, "\nSeverity: ", 0);
+    str MessageStr  = Str_Create(0, "\nMessage:  ", 0);
     
     switch(Source)
     {

@@ -84,7 +84,7 @@
 //TODO: Turn some of these into functions
 
 #define PTR_JUMP(Base, Offset)    (vptr)((u08*)(Base) + (Offset))
-#define OFFSET_OF(Struct, Member) ((size)&(((Struct*)0)->Member))
+#define OFFSET_OF(Struct, Member) ((u64)&(((Struct*)0)->Member))
 #define ARRAY_COUNT(Array)        (sizeof(Array) / sizeof((Array)[0]))
 
 #define FORCE_CAST(Variable, Type)               (*(Type*)&(Variable))
@@ -131,12 +131,12 @@
 #define MAGIC_4(C0, C1, C2, C3) (((u32)C0 << 0) | ((u32)C1 << 8) | ((u32)C2 << 16) | ((u32)C3 << 24))
 
 #if defined(_VOX_DEBUG)
-    #define STOP __debugbreak()
-    #define ASSERT(Condition) if(!(Condition)) STOP
+    #define BREAK __debugbreak()
+    #define ASSERT(Condition) if(!(Condition)) BREAK
     #define NOP __nop();
 #else
 //TODO: Put in error checking where there are asserts
-    #define STOP
+    #define BREAK
     #define ASSERT(Condition)
     #define NOP
 #endif
@@ -147,13 +147,12 @@
 #define TEBIBYTES(Count) (GIBIBYTES(Count) * 1024ULL)
 
 #define NULL ((vptr)0)
+#define LESS  (-1)
+#define EQUAL   0
+#define GREATER 1
 
+#define TRUE  1
 #define FALSE 0
-#define TRUE 1
-
-#define LESS    (-1)
-#define EQUAL     0
-#define GREATER   1
 
 #define S08_MIN 0x80
 #define S16_MIN 0x8000
@@ -169,7 +168,7 @@
 #define MAX_ATLAS_DIM 128
 #define BYTES_PER_PIXEL 4
 
-#define OFFSET(Type, Name) union { size Name##Offset; Type *Name##Ptr; }
+#define OFFSET(Type, Name) union { u64 Name##Offset; Type *Name##Ptr; }
 
 //SUBSECTION: Types
 
@@ -184,10 +183,6 @@ typedef unsigned __int32 u32;
 typedef unsigned __int64 u64;
 
 typedef u08 b08;
-typedef u16 b16;
-typedef u32 b32;
-
-typedef u64 size;
 
 typedef float  r32;
 typedef double r64;
@@ -197,6 +192,25 @@ typedef void (*fptr)(void);
 
 typedef u08 flag08;
 typedef u16 flag16;
+
+typedef enum type
+{
+    TYPE_S08,
+    TYPE_S16,
+    TYPE_S32,
+    TYPE_S64,
+    
+    TYPE_U08,
+    TYPE_U16,
+    TYPE_U32,
+    TYPE_U64,
+    
+    TYPE_R32,
+    TYPE_R64,
+    
+    TYPE_STR,
+    TYPE_MEM,
+} type;
 
 #include "game/util/vox_macros.h"
 #include "game/util/vox_mem.h"
@@ -225,31 +239,13 @@ typedef u16 flag16;
 // #include "game/vox_world.h"
 #include "game/vox_game.h"
 
-typedef enum type
-{
-    TYPE_S08,
-    TYPE_S16,
-    TYPE_S32,
-    TYPE_S64,
-    
-    TYPE_U08,
-    TYPE_U16,
-    TYPE_U32,
-    TYPE_U64,
-    
-    TYPE_R32,
-    TYPE_R64,
-    
-    TYPE_STR,
-} type;
-
 typedef struct num
 {
     type Type;
     
     union
     {
-        size Raw;
+        u64 Raw;
         
         s08 S08;
         s16 S16;

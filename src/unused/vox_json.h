@@ -41,7 +41,7 @@ typedef struct json
 
 internal memory_handle *
 JSONWriteInit(handle_pool *Pool,
-              size Size)
+              u64 Size)
 {
     memory_handle *Result = AllocateHandle(Pool, Size);
     u32 *JSONBase = Result->Base;
@@ -672,7 +672,7 @@ JSONConvertToText(memory_handle *Memory,
     }
     End:
     
-    return (u32)((size)Cursor - (size)Output->Base);
+    return (u32)((u64)Cursor - (u64)Output->Base);
 }
 
 #undef JSONWriteName

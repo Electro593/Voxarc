@@ -218,7 +218,7 @@ V4r32_ToBfs32_Round(v4r32 V,
         
         default:
         {
-            STOP;
+            BREAK;
             return 0;
         }
     }

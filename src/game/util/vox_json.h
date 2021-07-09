@@ -26,7 +26,10 @@ typedef enum json_token_type
 {
     JSONToken_Invalid = -1, // Currently Unused
     JSONToken_None    =  0,
-    JSONToken_Primitive, // Starts with 't' (true), 'f' (false), 'n' (null), or '-','0'-'9' (numbers)
+    JSONToken_Integer,   // Starts with '-' or '0'-'9'
+    JSONToken_Float,     // Starts with '-' or '0'-'9', contains '.' or is greater than S32_MAX
+    JSONToken_Boolean,   // Starts with 't' or 'f'
+    JSONToken_Null,      // Starts with 'n'
     JSONToken_String,    // Starts and ends with ' " '
     JSONToken_Array,     // Starts with '[', ends with ']'
     JSONToken_Object,    // Starts with '{', ends with '}'
@@ -56,17 +59,17 @@ typedef struct json_write_data
 //SUBSECTION: Functions
 
 #define GAME_UTIL__JSON__EXPORTS \
-    PROC(void,        JSON_CreateInit, heap *Heap, json_write_data *WriteData) \
-    PROC(json_token*, JSON_CreateObjectStart, json_write_data *WriteData, str Key) \
-    PROC(json_token*, JSON_CreateNum, json_write_data *WriteData, str Key, num Value) \
-    PROC(void,        JSON_CreateObjectEnd, json_write_data *WriteData) \
     PROC(void,        JSON_Print, json_write_data *WriteData, str FilePath) \
+    PROC(void,        JSON_CreateInit, heap *Heap, json_write_data *WriteData) \
     PROC(void,        JSON_CreateEnd, json_write_data *WriteData) \
+    PROC(json_token*, JSON_CreateObjectStart, json_write_data *WriteData, str Key) \
+    PROC(void,        JSON_CreateObjectEnd, json_write_data *WriteData) \
+    PROC(json_token*, JSON_CreateArrayStart, json_write_data *WriteData, str Key) \
+    PROC(void,        JSON_CreateArrayEnd, json_write_data *WriteData) \
+    PROC(json_token*, JSON_CreateNum, json_write_data *WriteData, str Key, num Value) \
 
 #define GAME_UTIL__JSON__FUNCS \
     PROC(json_token*, JSON_Parse, heap *Heap, str FileText) \
-    PROC(json_token*, JSON_CreateArrayStart, json_write_data *WriteData, str Key) \
-    PROC(void,        JSON_CreateArrayEnd, json_write_data *WriteData) \
     PROC(json_token*, JSON_CreateStr, json_write_data *WriteData, str Key, str Value) \
     PROC(json_token*, JSON_CreateRaw, json_write_data *WriteData, str Text) \
 

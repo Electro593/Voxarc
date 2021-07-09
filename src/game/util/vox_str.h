@@ -104,7 +104,7 @@ typedef u16 wchr;
     PROC(str_footer*, Str_GetFooter, str Str) \
     PROC(s32,         Str_Cmp, str A, str B) \
     PROC(str,         Str_Dup, str *Dest, str Str) \
-    PROC(b08,         Str_ToB08, str Str) \
+    PROC(b08,         Str_ToBool, str Str) \
     PROC(s32,         Str_ToS32, str Str) \
     PROC(u32,         Str_ToU32, str Str) \
     PROC(r32,         Str_ToR32, str Str) \

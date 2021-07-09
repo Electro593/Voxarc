@@ -329,7 +329,7 @@ internal void
 Win32_ThrowError_DEBUG(chr *Message)
 {
     Win32_Print_DEBUG(Message);
-    STOP;
+    BREAK;
     ExitProcess(1);
 }
 
@@ -381,6 +381,7 @@ Win32_LoadGameDll(win32_dll *GameDll,
     #define PROC(ReturnType, Name, ...) \
         Name = Functions->Name;
     GAME__EXPORTS
+    GAME__MODULE__EXPORTS
     #undef PROC
 }
 
@@ -655,7 +656,7 @@ Win32_GetFileDataA(chr *FileName)
     return Result;
 }
 
-internal size
+internal u64
 Win32_GetFileLength(vptr FileHandle)
 {
     win32_large_integer Size;
@@ -663,7 +664,7 @@ Win32_GetFileLength(vptr FileHandle)
     
     if(GetFileSizeEx(*(win32_handle*)FileHandle, &Size) == 0)
     {
-        Win32_ThrowError_DEBUG("Failed to get size of file\n");
+        Win32_ThrowError_DEBUG("Failed to get u64 of file\n");
     }
     
     return Size.QuadPart;
@@ -713,7 +714,7 @@ Win32_OpenFile(vptr FileHandle,
         
         default:
         {
-            STOP;
+            BREAK;
         }
     }
     
@@ -778,7 +779,7 @@ Win32_CountFilesOfTypeInDir(file_type FileType)
         default:
         {
             Selector = "";
-            STOP;
+            BREAK;
         }
     }
     
@@ -819,7 +820,7 @@ Win32_OpenFileType(vptr FileHandle,
         } break;
         default:
         {
-            STOP;
+            BREAK;
         }
     }
     
@@ -837,7 +838,7 @@ Win32_OpenFileType(vptr FileHandle,
         default:
         {
             ExtStr = "";
-            STOP;
+            BREAK;
         }
     }
     
@@ -902,8 +903,8 @@ Win32_OpenNextFile(vptr FileHandle,
 internal void
 Win32_ReadFile(vptr Dest,
                vptr FileHandle,
-               size Length,
-               size Offset)
+               u64 Length,
+               u64 Offset)
 {
     win32_overlapped Overlapped = {0};
     Overlapped.Offset = (u32)((Offset >> 0) & U32_MAX);
@@ -922,8 +923,8 @@ Win32_ReadFile(vptr Dest,
 internal void
 Win32_WriteFile(vptr Src,
                 vptr FileHandle,
-                size Length,
-                size Offset)
+                u64 Length,
+                u64 Offset)
 {
     win32_overlapped Overlapped = {0};
     Overlapped.Offset = (u32)((Offset >> 0) & U32_MAX);
@@ -938,7 +939,7 @@ Win32_WriteFile(vptr Src,
 }
 
 internal vptr
-Win32_AllocateMemory(size Size)
+Win32_AllocateMemory(u64 Size)
 {
     ++GlobalAllocCounter;
     
@@ -1533,7 +1534,7 @@ WinMainCRTStartup(void)
     Win32_LoadGameDll(&Win32Data.GameDll, &PlatformCallbacks, &GameExports, &GameState);
     
     u32 UtilHeapSize = MEBIBYTES(2);
-    PlatformState.AllocationSize = MEBIBYTES(8);
+    PlatformState.AllocationSize = MEBIBYTES(10);
     u08 *MemoryBase = Win32_AllocateMemory(PlatformState.AllocationSize + UtilHeapSize);
     PlatformState.AllocationBase = MemoryBase;
     
@@ -1632,6 +1633,7 @@ WinMainCRTStartup(void)
             {
                 Win32_UnloadGameDll(&Win32Data.GameDll, &GameExports, &GameState);
                 Win32_LoadGameDll(&Win32Data.GameDll, &PlatformCallbacks, &GameExports, &GameState);
+                FLAG_SET(PlatformState.UpdateFlags, UPDATE_RELOADED);
             }
         }
         #endif

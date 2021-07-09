@@ -318,7 +318,7 @@ Str_FindChar(str Str,
         C += Sign;
     }
     
-    Result = (u32)((size)C - (size)Str);
+    Result = (u32)((u64)C - (u64)Str);
     
     return Result;
 }
@@ -425,7 +425,7 @@ Str_Ins(str *Str,
 //SUBSECTION: Casts
 
 internal b08
-Str_ToB08(str Str)
+Str_ToBool(str Str)
 {
     u32 StrLen = Str_Len(Str);
     
@@ -679,12 +679,12 @@ Str_ToR64(str Str)
     
 //     wstr Dest = WStr_Create(NULL, SrcSize - 1);
     
-//     ASSERT((size)Src > (size)Dest + DestSize ||
-//            (size)Src + SrcSize < (size)Dest);
+//     ASSERT((u64)Src > (u64)Dest + DestSize ||
+//            (u64)Src + SrcSize < (u64)Dest);
 //     // s32 Delta = 1;
 //     // u32 StartOffset = 0;
-//     // if((size)Src < (size)Dest &&
-//     //    (size)Src + DestSize >= (size)Dest)
+//     // if((u64)Src < (u64)Dest &&
+//     //    (u64)Src + DestSize >= (u64)Dest)
 //     // {
 //     //     Delta = -1;
 //     //     StartOffset = SrcSize - 1;
@@ -721,7 +721,7 @@ WStr_Len(wstr WStr)
     u16 *WC = WStr;
     while(*WC++);
     
-    Result = (u32)((size)WC - (size)WStr) >> 1; // Since the chars are two bytes
+    Result = (u32)((u64)WC - (u64)WStr) >> 1; // Since the chars are two bytes
     
     return Result;
 }
@@ -774,7 +774,7 @@ WStr_FindChar(wstr WStr,
         WC += Sign;
     }
     
-    Result = (u32)((size)WC - (size)WStr) >> 1;
+    Result = (u32)((u64)WC - (u64)WStr) >> 1;
     
     return Result;
 }

@@ -27,17 +27,17 @@
 internal vptr
 Mem_Set(vptr Dest,
         s32 Data,
-        size Size)
+        u64 Size)
 {
-    #if 0
+    #if 1
     u08 Data08 = (u08)Data;
-    i128 Data128 = I128_SetI08_1(Data08);
+    i128 Data128 = I128_Set_1x4(Data08);
     
-    size Alignment = ALIGN_DOWN_64(Size, 16);
+    u64 Alignment = (u64)Dest - ALIGN_DOWN_64((u64)Dest, sizeof(i128));
     u08 *Dest08 = (u08*)Dest;
-    while(Size > Alignment)
+    while(Size && Alignment)
     {
-        Size--;
+        Size--, Alignment--;
         *Dest08++ = Data08;
     }
     
@@ -48,7 +48,7 @@ Mem_Set(vptr Dest,
         *Dest128++ = Data128;
     }
     
-    Dest08 = Dest128->U08;
+    Dest08 = (u08*)Dest128;
     while(Size)
     {
         Size--;
@@ -62,7 +62,7 @@ Mem_Set(vptr Dest,
     #else
     i128 Data128 = I128_Set_1x4(Data);
     
-    size Alignment = ALIGN_DOWN_64(Size, 4);
+    u64 Alignment = ALIGN_DOWN_64(Size, 4);
     u08 *Dest08 = (u08*)Dest;
     while(Size > Alignment)
     {
@@ -100,52 +100,54 @@ Mem_Set(vptr Dest,
 internal vptr
 Mem_Cpy(vptr Dest,
         vptr Src,
-        size Size)
+        u64 Size)
 {
-    if(Src && Dest && Size > 0)
+    if(!Src || !Dest || Size == 0)
+        return Dest;
+    
+    s32 Delta = 1;
+    u64 StartOffset = 0;
+    u64 Offset128 = 0;
+    u64 Alignment = (u64)Src - ALIGN_DOWN_64((u64)Src, sizeof(i128));
+    if((u64)Src < (u64)Dest &&
+       (u64)Src + Size >= (u64)Dest)
     {
-        s32 Delta = 1;
-        size StartOffset = 0;
-        size Offset128 = 0;
-        if((size)Src < (size)Dest &&
-           (size)Src + Size >= (size)Dest)
-        {
-            Delta = -1;
-            StartOffset = Size - 1;
-            Offset128 = sizeof(i128) - 1;
-        }
-        //TODO: Alignment should be by address, not by size
-        size Alignment = ALIGN_DOWN_64(Size, 16);
-        u08 *Src08 = (u08*)Src + StartOffset;
-        u08 *Dest08 = (u08*)Dest + StartOffset;
-        while(Size > Alignment)
-        {
-            Size--;
-            *Dest08 = *Src08;
-            Dest08 += Delta;
-            Src08 += Delta;
-        }
+        Delta = -1;
+        StartOffset = Size - 1;
+        Offset128 = sizeof(i128) - 1;
         
-        i128 *Src128 = (i128*)(Src08 - Offset128);
-        i128 *Dest128 = (i128*)(Dest08 - Offset128);
-        while(Size >= sizeof(i128))
-        {
-            Size -= sizeof(i128);
-            *Dest128 = *Src128;
-            Dest128 += Delta;
-            Src128 += Delta;
-        }
-        
-        ASSERT(Size == 0);
-        // Src08 = Src128->U08;
-        // Dest08 = Dest128->U08;
-        // while(Size)
-        // {
-        //     Size--;
-        //     *Dest08 = *Src08;
-        //     Dest08 += Delta;
-        //     Src08 += Delta;
-        // }
+        u64 UpperBound = (u64)Dest + Size;
+        Alignment = UpperBound - ALIGN_DOWN_64(UpperBound, sizeof(i128));
+    }
+    
+    u08 *Src08 = (u08*)Src + StartOffset;
+    u08 *Dest08 = (u08*)Dest + StartOffset;
+    while(Size && Alignment)
+    {
+        Size--, Alignment--;
+        *Dest08 = *Src08;
+        Dest08 += Delta;
+        Src08 += Delta;
+    }
+    
+    i128 *Src128 = (i128*)(Src08 - Offset128);
+    i128 *Dest128 = (i128*)(Dest08 - Offset128);
+    while(Size >= sizeof(i128))
+    {
+        Size -= sizeof(i128);
+        *Dest128 = *Src128;
+        Dest128 += Delta;
+        Src128 += Delta;
+    }
+    
+    Src08 = (u08*)Src128 + Offset128;
+    Dest08 = (u08*)Dest128 + Offset128;
+    while(Size)
+    {
+        Size--;
+        *Dest08 = *Src08;
+        Dest08 += Delta;
+        Src08 += Delta;
     }
     
     return Dest;
@@ -155,7 +157,7 @@ Mem_Cpy(vptr Dest,
 internal s32
 Mem_Cmp(vptr A,
         vptr B,
-        size Size)
+        u64 Size)
 {
     u08 *ByteA = (u08*)A;
     u08 *ByteB = (u08*)B;
@@ -174,12 +176,279 @@ Mem_Cmp(vptr A,
 //      SECTION: Heap Allocator
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+
 #if 0
+internal heap1 *
+Heap1_GetHeap1(heap1_handle *Handle)
+{
+    heap1 *Heap1;
+    ASSERT(Handle);
+    
+    heap1_handle *First = Handle - Handle->Index;
+    Heap1 = (heap1*)First - 1;
+    
+    return Heap1;
+}
 
-//TODO: Segregated lists for allocation to decrease looping
-//      Size and PrevSize to remove looping when freeing
+internal heap1_handle *
+Heap1_GetHandle(heap1 *Heap1,
+                u16 HandleIndex)
+{
+    ASSERT(Heap1);
+    if(HandleIndex == U16_MAX)
+    {
+        return NULL;
+    }
+    
+    heap1_handle *First = (heap1_handle*)(Heap1 + 1);
+    return First + HandleIndex;
+}
 
-#else
+internal heap1 *
+Heap1_Create(vptr Base,
+             u64 Size)
+{
+    ASSERT(Base);
+    ASSERT(Size >= sizeof(heap1) + sizeof(heap1_handle));
+    
+    heap1 *Heap1 = (heap1*)Base;
+    Heap1->DataCursor = (mem)Base + Size;
+    Heap1->Size = Size - sizeof(heap1);
+    Heap1->HandleCount = 0;
+    Heap1->FirstMappedIndex = U16_MAX;
+    Heap1->FirstUnmappedIndex = U16_MAX;
+    Heap1->FirstBlockIndex = U16_MAX;
+    
+    return Heap1;
+}
+
+internal void
+Heap1_Defrag(heap1 *Heap1)
+{
+    Platform_ThrowError_DEBUG("Defragmentation not implemented yet");
+    UNUSED(Heap1);
+}
+
+internal heap1_handle *
+Heap1_Alloc(heap1 *Heap1,
+               u32 Size)
+{
+    ASSERT(Heap1);
+    
+    heap1_handle *BlockHandle = Heap1_GetHandle(Heap1, Heap1->FirstBlockIndex);
+    
+    // Find a valid handle
+    heap1_handle *Handle = Heap1_GetHandle(Heap1, Heap1->FirstUnmappedIndex);
+    if(Handle)
+    { // Guaranteed to be before a mapped handle, all after it are mapped
+        ASSERT(Handle->Mapped == FALSE);
+        ASSERT(Handle->Index < Heap1->HandleCount - 1);
+        
+        Heap1->FirstUnmappedIndex = Handle->NextIndex;
+        
+        u16 *PrevNextIndex = &Heap1->FirstMappedIndex;
+        while(*PrevNextIndex != U16_MAX &&
+              *PrevNextIndex > Handle->Index)
+        {
+            PrevNextIndex = &Heap1_GetHandle(Heap1, *PrevNextIndex)->NextIndex;
+        }
+        Handle->NextIndex = *PrevNextIndex;
+        *PrevNextIndex = Handle->Index;
+    }
+    else
+    {
+        Handle = Heap1_GetHandle(Heap1, Heap1->HandleCount);
+        if((u64)(Handle + 1) > (u64)Heap1->DataCursor)
+        {
+            //TODO: Try to defragment
+            Platform_ThrowError_DEBUG("Heap segment collision (handle overflow)");
+        }
+        
+        Handle->Index = Heap1->HandleCount;
+        Handle->NextIndex = Heap1->FirstMappedIndex;
+        Heap1->FirstMappedIndex = Handle->Index;
+        ++Heap1->HandleCount;
+    }
+    
+    // Find a valid block
+    u16 *PrevNextBlockIndex = &Heap1->FirstBlockIndex;
+    while(BlockHandle &&
+          BlockHandle->Offset < Size)
+    {
+        PrevNextBlockIndex = &BlockHandle->NextBlockIndex;
+        BlockHandle = Heap1_GetHandle(Heap1, BlockHandle->NextBlockIndex);
+    }
+    
+    if(BlockHandle)
+    {
+        Handle->Data = BlockHandle->Data + BlockHandle->Size + BlockHandle->Offset - Size;
+        BlockHandle->Offset -= Size;
+        Handle->NextBlockIndex = BlockHandle->NextBlockIndex;
+        BlockHandle->NextBlockIndex = Handle->Index;
+    }
+    else
+    {
+        ASSERT((u64)(Heap1->DataCursor - Size) >= Heap1->HandleCount * sizeof(heap1_handle));
+        
+        Heap1->DataCursor -= Size;
+        Handle->Data = Heap1->DataCursor;
+        Handle->NextBlockIndex = Heap1->FirstBlockIndex;
+        Heap1->FirstBlockIndex = Handle->Index;
+    }
+    
+    Handle->Size = Size;
+    Handle->Offset = 0;
+    Handle->Mapped = TRUE;
+    Handle->Anchored = FALSE;
+    
+    return Handle;
+}
+
+internal void
+Heap1_Resize(heap1_handle *Handle,
+             u32 Size)
+{
+    ASSERT(Handle);
+    
+    if(Handle->Size == Size)
+        return;
+    
+    if(Size <= Handle->Size + Handle->Offset)
+    {
+        Handle->Offset += (s32)(Handle->Size - Size);
+        Handle->Size = Size;
+    }
+    else
+    {
+        if(Handle->Anchored)
+        {
+            Platform_ThrowError_DEBUG("Cannot increase the size of an anchored handle.");
+            return;
+        }
+        
+        heap1 *Heap1 = Heap1_GetHeap1(Handle);
+        heap1_handle *NewHandle = Heap1_Alloc(Heap1, Size);
+        Mem_Cpy(NewHandle->Data, Handle->Data, Handle->Size);
+        
+        heap1_handle Temp = *Handle;
+        Handle->Data = NewHandle->Data;
+        Handle->Size = NewHandle->Size;
+        Handle->Offset = NewHandle->Offset;
+        
+        NewHandle->Data = Temp.Data;
+        NewHandle->Size = Temp.Size;
+        NewHandle->Offset = Temp.Offset;
+        
+        u16 *PrevHandleBlockIndex = NULL;
+        u16 *PrevNewHandleBlockIndex = NULL;
+        u16 *PrevNextBlockIndex = &Heap1->FirstBlockIndex;
+        while(*PrevNextBlockIndex != U16_MAX &&
+              (PrevHandleBlockIndex == NULL ||
+               PrevNewHandleBlockIndex == NULL))
+        {
+            if(*PrevNextBlockIndex == Handle->Index)
+                PrevHandleBlockIndex = PrevNextBlockIndex;
+            if(*PrevNextBlockIndex == NewHandle->Index)
+                PrevNewHandleBlockIndex = PrevNextBlockIndex;
+            
+            PrevNextBlockIndex = &Heap1_GetHandle(Heap1, *PrevNextBlockIndex)->NextBlockIndex;
+        }
+        ASSERT(PrevHandleBlockIndex && PrevNewHandleBlockIndex);
+        
+        *PrevHandleBlockIndex = NewHandle->Index;
+        *PrevNewHandleBlockIndex = Handle->Index;
+        Handle->NextBlockIndex = NewHandle->NextBlockIndex;
+        NewHandle->NextBlockIndex = Temp.NextBlockIndex;
+        
+        Heap1_Free(NewHandle);
+    }
+}
+
+internal void
+Heap1_Free(heap1_handle *Handle)
+{
+    ASSERT(Handle);
+    ASSERT(Handle->Data);
+    ASSERT(Handle->Mapped == TRUE);
+    heap1 *Heap1 = Heap1_GetHeap1(Handle);
+    
+    u16 *PrevNextMappedIndex = &Heap1->FirstMappedIndex;
+    while(*PrevNextMappedIndex != U16_MAX &&
+          *PrevNextMappedIndex != Handle->Index)
+    {
+        PrevNextMappedIndex = &Heap1_GetHandle(Heap1, *PrevNextMappedIndex)->NextIndex;
+    }
+    *PrevNextMappedIndex = Handle->NextIndex;
+    Handle->Mapped = FALSE;
+    
+    // Rightmost/highest unmapped handles can be deleted
+    if(Handle->Index == Heap1->HandleCount - 1)
+    {
+        Handle->NextIndex = Heap1->FirstUnmappedIndex;
+        
+        heap1_handle *Iter = Handle;
+        while(!Iter->Mapped)
+        {
+            --Heap1->HandleCount;
+            if(Iter->Index == 0)
+                break;
+            
+            --Iter;
+        }
+        
+        if(!Iter->Mapped)
+        {
+            Heap1->FirstUnmappedIndex = Iter->NextIndex;
+        }
+    }
+    else
+    {
+        u16 *PrevNextIndex = &Heap1->FirstUnmappedIndex;
+        while(*PrevNextIndex != U16_MAX &&
+              *PrevNextIndex > Handle->Index)
+        {
+            PrevNextIndex = &Heap1_GetHandle(Heap1, *PrevNextIndex)->NextIndex;
+        }
+        
+        Handle->NextIndex = *PrevNextIndex;
+        *PrevNextIndex = Handle->Index;
+    }
+    
+    // Leftmost/lowest free data blocks can be deleted
+    if(Handle->Data == Heap1->DataCursor)
+    {
+        //TODO: Add the offset, too
+        Heap1->DataCursor += Handle->Size;
+        Heap1->FirstBlockIndex = Handle->NextBlockIndex;
+    }
+    else
+    {
+        // Pop the handle from the block list
+        u16 *PrevNextBlockIndex = &Heap1->FirstBlockIndex;
+        while(*PrevNextBlockIndex != Handle->Index)
+        {
+            PrevNextBlockIndex = &Heap1_GetHandle(Heap1, *PrevNextBlockIndex)->NextBlockIndex;
+            ASSERT(*PrevNextBlockIndex != U16_MAX);
+        }
+        heap1_handle *PrevBlockHandle = (heap1_handle*)((mem)PrevNextBlockIndex - OFFSET_OF(heap1_handle, NextBlockIndex));
+        *PrevNextBlockIndex = Handle->NextBlockIndex;
+        
+        // Must be a previous block, otherwise it would be leftmost
+        PrevBlockHandle->Offset += Handle->Size + Handle->Offset;
+    }
+    
+    Handle->Data = NULL;
+    Handle->Size = 0;
+    Handle->Offset = 0;
+    Handle->NextBlockIndex = U16_MAX;
+}
+#endif
+
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//      SECTION: Heap Allocator 0
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 
 //TODO: Implement segregated lists
 //TODO: Reconsider alignment
@@ -317,7 +586,7 @@ Heap_AllocateAligned(heap *Heap,
     
     if(Heap_IsSentry(Heap->FreeList))
     {
-        STOP;
+        BREAK;
         return NULL;
     }
     
@@ -330,8 +599,8 @@ Heap_AllocateAligned(heap *Heap,
         ASSERT(!Curr->Used);
         
         vptr ExpectedBase = (u08*)Heap_GetNext(Curr) - Size;
-        vptr AlignedBase = (vptr)ALIGN_DOWN_64((size)ExpectedBase, Alignment);
-        u32 Padding = (u32)((size)ExpectedBase - (size)AlignedBase);
+        vptr AlignedBase = (vptr)ALIGN_DOWN_64((u64)ExpectedBase, Alignment);
+        u32 Padding = (u32)((u64)ExpectedBase - (u64)AlignedBase);
         u32 SplitThreshold = (u32)(Size + Padding + sizeof(heap_header));
         
         if(Padding == 0 &&
@@ -375,7 +644,7 @@ Heap_AllocateAligned(heap *Heap,
     else
     {
         //TODO: Handle this, e.g. defragmentation
-        STOP;
+        BREAK;
         Result = NULL;
     }
     
@@ -516,7 +785,7 @@ Heap_Resize(hvptr *Data,
         heap_header *PrevFree = (heap_header*)Heap;
         
         while(PrevFree->NextFree != (heap_header*)Heap &&
-              (size)PrevFree->NextFree < (size)Header)
+              (u64)PrevFree->NextFree < (u64)Header)
         {
             PrevFree = PrevFree->NextFree;
         } // PrevFree < Header < PrevFree->NextFree
@@ -525,6 +794,7 @@ Heap_Resize(hvptr *Data,
         FreedBlock->Size = Header->Size - sizeof(heap_header) - Size;
         FreedBlock->Used = TRUE;
         FreedBlock->NextFree = (heap_header*)Heap;
+        ++Heap->BlockCount;
         
         Header->Size = Size;
         
@@ -548,7 +818,6 @@ Heap_Resize(hvptr *Data,
 //SUBSECTION: Heap Debug
 
 
-#if 1
 #if defined(_VOX_DEBUG)
 internal void
 _Heap_Mark_DEBUG(heap *Heap,
@@ -618,7 +887,7 @@ _Heap_IsCorrupted_DEBUG(heap *Heap)
     {
         if((Header->Used != 0 && Header->Used != 1) ||
            !Header->NextFree ||
-           (size)Header != (size)Heap + SizeTotal)
+           (u64)Header != (u64)Heap + SizeTotal)
         {
             Result = TRUE;
         }
@@ -650,6 +919,7 @@ _Heap_Print_DEBUG(heap *Heap,
     
     heap_data_DEBUG TempDebugData = {0};
     TempDebugData.DebugHeap = DebugData->DebugHeap;
+    heap *StrHeap = Str_GetHeap();
     Str_SetHeap(DebugData->DebugHeap);
     Heap_Mark_DEBUG(DebugData->DebugHeap, &TempDebugData);
     
@@ -773,11 +1043,8 @@ _Heap_Print_DEBUG(heap *Heap,
     
     Heap_Check_DEBUG(DebugData->DebugHeap, &TempDebugData);
     Heap_Free(TempDebugData.List);
-    Str_SetHeap(Heap);
+    Str_SetHeap(StrHeap);
 }
-#endif
-#endif
-
 #endif
 
 
@@ -789,7 +1056,7 @@ _Heap_Print_DEBUG(heap *Heap,
 //TODO: implement extending/switching stacks
 internal void
 Stack_Init(vptr Base,
-           size Size)
+           u64 Size)
 {
     __Global->Stack = Base;
     __Global->Stack->Cursor = (u08*)Base + sizeof(stack);
@@ -802,7 +1069,7 @@ Stack_HasOverflowed(void)
 {
     b08 Result = FALSE;
     
-    if((size)__Global->Stack->Cursor - (size)__Global->Stack > __Global->Stack->Size)
+    if((u64)__Global->Stack->Cursor - (u64)__Global->Stack > __Global->Stack->Size)
     {
         Result = TRUE;
     }
@@ -824,7 +1091,7 @@ Stack_IsCorrupted(void)
         ASSERT(__Global->Stack->Size);
         Result = TRUE;
     }
-    else if(__Global->Stack->NewestMarker && (size)__Global->Stack->Cursor < (size)__Global->Stack->NewestMarker + sizeof(stack_marker))
+    else if(__Global->Stack->NewestMarker && (u64)__Global->Stack->Cursor < (u64)__Global->Stack->NewestMarker + sizeof(stack_marker))
     {
         Result = TRUE;
     }
@@ -834,7 +1101,7 @@ Stack_IsCorrupted(void)
         
         while(CurrMarker && CurrMarker->PrevMarker)
         {
-            if((size)CurrMarker < (size)CurrMarker->PrevMarker + sizeof(stack_marker))
+            if((u64)CurrMarker < (u64)CurrMarker->PrevMarker + sizeof(stack_marker))
             {
                 Result = TRUE;
             }
@@ -881,7 +1148,7 @@ Stack_Pop(void)
 }
 
 internal svptr
-Stack_Allocate(size Size)
+Stack_Allocate(u64 Size)
 {
     svptr Result;
     

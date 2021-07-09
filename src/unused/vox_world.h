@@ -123,7 +123,7 @@ GetBlockFromRelativePos(world *World,
                                   BlockPos.Z - ((ChunkPosToSearch.Z - ChunkPos.Z) * CHUNK_SIZE_Z));
         
         //TODO: Make an array of memory handles, and sort them by xyz to make this easier
-        for(size ChunkIndex = 0;
+        for(u64 ChunkIndex = 0;
             ChunkIndex < World->Chunks->Size / sizeof(chunk);
             ++ChunkIndex)
         {
