@@ -3,20 +3,19 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceFolder}/src"
+                "${workspaceFolder}/**"
             ],
             "defines": [
-                "_VOX_ARCHITECTURE=0",
-                "_VOX_PLATFORM=0",
-                "_VOX_COMPILER=0",
-                "_VOX_BUILD_MODE=0",
-                "_VOX_INTELLISENSE=1"
+                "_MODE=0",
+                "_COMPILER=0",
+                "_PLATFORM=0",
+                "_LOADER=0",
+                "_ARCH=0",
+                "_MODULE=1"
             ],
-            "windowsSdkVersion": "10.0.18362.0",
-            "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.22.27905/bin/Hostx64/x64/cl.exe",
-            "cStandard": "c11",
+            "cStandard": "c17",
             "cppStandard": "c++17",
-            "intelliSenseMode": "msvc-x64"
+            "intelliSenseMode": "windows-msvc-x64"
         }
     ],
     "version": 4

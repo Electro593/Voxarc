@@ -8,13 +8,12 @@
             "name": "Debug Voxarc.exe",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "build/Voxarc_Win32.exe",
+            "program": "build/Voxarc_win_x64.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": false,
-            "preLaunchTask": ""
+            "preLaunchTask": "",
         },
         {
             "name": "Debug AssetPacker.exe",
@@ -25,7 +24,6 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": false,
             "preLaunchTask": ""
         },
         {
@@ -37,7 +35,6 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": false,
             "preLaunchTask": ""
         },
         {
@@ -49,7 +46,6 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": true,
             "preLaunchTask": ""
         },
         {
@@ -61,7 +57,6 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": true,
             "preLaunchTask": ""
         }
     ]

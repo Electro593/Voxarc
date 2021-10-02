@@ -4,8 +4,6 @@
 #include <stdio.h>
 #include <intrin.h>
 
-#include <gl/GL.h>
-
 #define internal static
 
 #define UNUSED(...) ((void)__VA_ARGS__)
@@ -13,7 +11,7 @@
 #define LITERAL_CAST(OldType, Constant, NewType) (*(NewType*)&(OldType){Constant})
 
 #define BIT_SET(Bitstring, Index)    ((Bitstring) |=  (1 << (Index)))
-#define BIT_TEST(Bitstring, Index)   ((Bitstring) &   (1 << (Index)))
+#define BIT_GET(Bitstring, Index)   (((Bitstring) &   (1 << (Index))) >> (Index))
 #define BIT_CLEAR(Bitstring, Index)  ((Bitstring) &= ~(1 << (Index)))
 #define BIT_TOGGLE(Bitstring, Index) ((Bitstring) ^=  (1 << (Index)))
 
@@ -58,16 +56,16 @@ typedef float r32;
 typedef u08 b08;
 typedef u32 b32;
 
-#include <Windows.h>
+r32 Cbrt(r32 N)
+{
+    return N;
+}
 
-typedef __declspec(dllimport) void Testfunc(void);
 
 void
 main(void)
 {
-    HMODULE Dll = LoadLibraryA("Test2.dll");
-    
-    Testfunc();
+    cbrtf(192.f);
     
 #if 0
     r32 _Root0  = sqrtf( 0.0);

@@ -17,4 +17,39 @@
  *                                                                         * 
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+//CREDIT: https://github.com/Chlumsky/msdfgen/blob/master/
+//CREDIT: stb TrueType Library
 
+internal ttf *
+Font_ReadTTF(str FileText)
+{
+    ttf *TTF = (ttf*)FileText;
+    mem Cursor = (mem)FileText;
+    
+    Mem_Cpy(&TTF->OffsetTable, Cursor, sizeof(ttf_offset_table));
+    Cursor += sizeof(ttf_offset_table);
+    
+    TTF->DirTableEntries = (ttf_dir_table_entry*)Cursor;
+    Cursor += TTF->OffsetTable.NumTables * sizeof(ttf_dir_table_entry);
+    
+    for(u16 Index = 0;
+        Index < TTF->OffsetTable.NumTables;
+        ++Index)
+    {
+        switch(TTF->DirTableEntries[Index].Tag)
+        {
+            case 'cmap':
+                TTF->cmap = (ttf_cmap*)(FileText + TTF->DirTableEntries[Index].Offset);
+                TTF->cmap->Tables = 
+                break;
+            case 'glyf':
+                TTF->glyf = (ttf_glyf*)(FileText + TTF->DirTableEntries[Index].Offset);
+                break;
+            case 'head':
+                TTF->head = (ttf_head*)(FileText + TTF->DirTableEntries[Index].Offset);
+                break;
+        }
+    }
+    
+    return TTF;
+}

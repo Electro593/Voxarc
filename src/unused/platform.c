@@ -17,4 +17,15 @@
  *                                                                         * 
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#include "shared.h"
 
+#include "platform/module.h"
+#include "game/module.h"
+
+#include "platform/opengl.c"
+
+#if _LOADER_WIN32
+    #include "platform/win32/win32.h"
+    
+    #include "platform/win32/win32.c"
+#endif

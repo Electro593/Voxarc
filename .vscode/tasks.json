@@ -3,7 +3,7 @@
     "tasks": [
         {
             "type": "shell",
-            "label": "Build Voxarc",
+            "label": "Build",
             "command": "./do build -1 0",
             "group": {
                 "kind": "build",
@@ -13,14 +13,21 @@
         },
         {
             "type": "shell",
-            "label": "Build Voxarc_Game",
+            "label": "Build Platform",
+            "command": "./do build 0 0",
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "type": "shell",
+            "label": "Build Game",
             "command": "./do build 1 0",
             "group": "build",
             "problemMatcher": "$msCompile"
         },
         {
             "type": "shell",
-            "label": "Build Voxarc_Util",
+            "label": "Build Util",
             "command": "./do build 2 0",
             "group": "build",
             "problemMatcher": "$msCompile"
@@ -28,28 +35,28 @@
         {
             "type": "shell",
             "label": "Build Asset Packer",
-            "command": "./do tools vox_asset_packer.c AssetPacker.exe",
+            "command": "./do tools asset_packer.c AssetPacker.exe",
             "group": "build",
             "problemMatcher": "$msCompile"
         },
         {
             "type": "shell",
             "label": "Build Font Unpacker",
-            "command": "./do build -1 vox_ttf_unpacker.c FontUnpacker.exe",
+            "command": "./do build -1 ttf_unpacker.c FontUnpacker.exe",
             "group": "build",
             "problemMatcher": "$msCompile"
         },
         {
             "type": "shell",
             "label": "Build File Viewer",
-            "command": "./do tools vox_file_viewer.c FileViewer.exe",
+            "command": "./do tools file_viewer.c FileViewer.exe",
             "group": "build",
             "problemMatcher": "$msCompile"
         },
         {
             "type": "shell",
-            "label": "Run Voxarc",
-            "command": "./build/Voxarc.exe",
+            "label": "Run",
+            "command": "./build/Voxarc_Win32.exe",
             "group": {
                 "kind": "test",
                 "isDefault": true

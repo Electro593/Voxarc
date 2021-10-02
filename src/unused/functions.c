@@ -215,7 +215,7 @@ CreateHandlePool(u64 Size,
 {
     u64 HandlePoolSize = HandleCount * sizeof(memory_handle) + sizeof(handle_pool);
     u64 DataPoolSize = Size + sizeof(data_pool);
-#if defined(_VOX_WINDOWS)
+#if _PLATFORM_WINDOWS
     vptr Base = Platform_AllocateMemory(HandlePoolSize + DataPoolSize);
 #else
     vptr Base = malloc(HandlePoolSize + DataPoolSize);
