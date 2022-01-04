@@ -3,7 +3,7 @@
     "tasks": [
         {
             "type": "shell",
-            "label": "Build",
+            "label": "Build Program",
             "command": "./do build -1 0",
             "group": {
                 "kind": "build",
@@ -55,8 +55,8 @@
         },
         {
             "type": "shell",
-            "label": "Run",
-            "command": "./build/Voxarc_Win32.exe",
+            "label": "Run Program",
+            "command": "./build/Voxarc_win_x64.exe",
             "group": {
                 "kind": "test",
                 "isDefault": true

@@ -455,7 +455,8 @@ Platform_LoadGameDll(platform_exports *PlatformExports,
     Game_Load = (_type__Game_Load*)GameDll->LoadFunc;
     Game_Load(PlatformExports, UtilExports, GameModule);
     
-    #define FUNC(,Name,...) Name = GameModule->GameExports.Name;
+    #define FUNC(ReturnType, Name, ...) \
+        Name = GameModule->Exports.Name;
     GAME__EXPORTS
     #undef FUNC
 }
@@ -469,6 +470,11 @@ Platform_LoadUtilDll(platform_exports *PlatformExports,
     
     Util_Load = (_type__Util_Load*)UtilDll->LoadFunc;
     Util_Load(PlatformExports, UtilModule);
+    
+    #define FUNC(ReturnType, Name, ...) \
+        Name = UtilModule->Exports.Name;
+    UTIL__EXPORTS
+    #undef FUNC
 }
 
 internal void

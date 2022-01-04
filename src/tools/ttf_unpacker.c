@@ -1,4 +1,4 @@
-#include "platform/platform.c"
+#include <platform/module.c>
 
 #pragma warning(push,1)
 #pragma warning(disable:4100)
@@ -35,17 +35,18 @@ typedef struct ttf_shape
 void
 main(void)
 {
-    platform_exports PlatformCallbacks = {0};
-    Win32_InitFunctions(&PlatformCallbacks);
+    platform_module PlatformModule = {0};
+    util_module UtilModule = {0};
+    game_module GameModule = {0};
     
-    game_exports GameExports = {0};
-    game_state GameState = {0};
-    win32_dll GameDll = {0};
-    Win32_LoadGameDll(&GameDll, &PlatformCallbacks, &GameExports, &GameState);
+    Platform_InitFunctions(&PlatformModule.Exports);
+    
+    loader_dll GameDLL = {0};
+    Platform_LoadGameDll(&PlatformModule.Exports, &UtilModule.Exports, &GameModule, &GameDLL);
     
     u64 HeapSize = MEBIBYTES(2);
     u64 StackSize = MEBIBYTES(1);
-    mem Base = Win32_AllocateMemory(HeapSize + StackSize);
+    mem Base = Platform_AllocateMemory(HeapSize + StackSize);
     heap *Heap = Heap_Create(Base, (u32)HeapSize);
     Stack_Init(Base + HeapSize, StackSize);
     Str_SetHeap(Heap);
@@ -364,26 +365,26 @@ main(void)
             hmem Bitmap = Heap_Allocate(Heap, FileSize);
             v3u08 *BitmapData = (v3u08*)(Bitmap + sizeof(bitmap_header));
             
-            for(u32 PY = Size.Y - 1;
+            for(s32 PY = Size.Y - 1;
                 PY >= 0;
                 --PY)
             {
-                for(u32 PX = 0;
+                for(s32 PX = 0;
                     PX < Size.X;
                     ++PX)
                 {
                     v3r32 D = V3r32_1x1(R32_MAX);
-                    v3u32 E = {-1};
+                    v3u32 E = {(u32)-1};
                     v2s16 P = V2s16_2x1((s16)(((r32)PX+.5f) / Scale), (s16)(((r32)PY+.5f) / Scale));
                     
                     for(u32 EdgeIndex = 0;
                         EdgeIndex < Shape.EdgeCount;
                         ++EdgeIndex)
                     {
-                        r32 CurrDist = R32_MAX;
+                        r32 MinDist = R32_MAX;
                         v2s16 P0 = {0};
-                        for(u32 SegmentIndex = Shape.Segments[Shape.Edges[EdgeIndex]];
-                            SegmentIndex < Shape.Segments[Shape.Edges[EdgeIndex+1]];
+                        for(u32 SegmentIndex = Shape.Edges[EdgeIndex];
+                            SegmentIndex < Shape.Edges[EdgeIndex+1];
                             ++SegmentIndex)
                         {
                             stbtt_vertex Segment = Shape.Segments[SegmentIndex];
@@ -393,53 +394,73 @@ main(void)
                                 {
                                     P0 = *(v2s16*)&Segment.x;
                                 } break;
+                                
                                 case STBTT_vline:
                                 {
+                                    // Line segment's end
                                     v2s16 P1 = *(v2s16*)&Shape.Segments[SegmentIndex].x;
                                     
                                     s32 Numer = V2s16_Dot(V2s16_Sub(P, P0), V2s16_Sub(P1, P0));
                                     s32 Denom = V2s16_Dot(V2s16_Sub(P1, P0), V2s16_Sub(P1, P0));
-                                    r32 T = (r32)Numer / (r32)Denom;
-                                    if(T < 0.0f) T = 0.0f;
+                                    r32 T = (r32)Numer / (r32)Denom; // Percent along line segment
+                                    
+                                    // Clamp if T is past the ends
+                                    if(T < 0.0f)      T = 0.0f;
                                     else if(T > 1.0f) T = 1.0f;
-                                    v2s16 PT = V2s16_Lerp(P0, P1, T);
+                                    
+                                    v2s16 PT = V2s16_Lerp(P0, P1, T); // Point on P01 at T
                                     r32 NumerR = R32_Abs(V2s16_Cross(V2s16_Sub(P1, P0), V2s16_Sub(P0, PT)));
-                                    r32 DenomR = V2s16_Len(V2s16_To_V2r32(V2s16_Sub(P1, P0)));
+                                    r32 DenomR = V2s16_Len(V2s16_Sub(P1, P0));
                                     r32 Dist = NumerR / DenomR;
-                                    if(Dist < CurrDist) CurrDist = Dist;
+                                    
+                                    if(Dist < MinDist) MinDist = Dist;
                                     
                                     P0 = P1;
                                 } break;
+                                
                                 case STBTT_vcurve:
                                 {
                                     v2s16 P1 = *(v2s16*)&Shape.Segments[SegmentIndex].cx;
                                     v2s16 P2 = *(v2s16*)&Shape.Segments[SegmentIndex].x;
-                                    v2s16 V0 = V2s16_Sub(P0, P);
+                                    
+                                    v2s16 V0 = V2s16_Sub(P, P0);
                                     v2s16 V1 = V2s16_Sub(P1, P0);
                                     v2s16 V2 = V2s16_Sub(V2s16_Sub(P2, P1), V1);
-                                    r32 A = V2s16_Dot(V2, V2);
-                                    r32 B = 3*V2s16_Dot(V1, V2);
-                                    r32 C = 2*V2s16_Dot(V1, V1) + V2s16_Dot(V0, V2);
-                                    r32 D = V2s16_Dot(V0, V1);
+                                    
+                                    r32 A = (r32)V2s16_Dot(V2, V2);
+                                    r32 B = (r32)(3*V2s16_Dot(V1, V2));
+                                    r32 C = (r32)(2*V2s16_Dot(V1, V1) - V2s16_Dot(V2, V0));
+                                    r32 D = -(r32)V2s16_Dot(V1, V0);
+                                    
+                                    ASSERT(A != 0);
+                                    
                                     r32 BN = B/A;
                                     r32 CN = C/A;
                                     r32 DN = D/A;
-                                    if(R32_Cmp(A, 0) == EQUAL) // Bx^2 + Cx + D = 0
-                                    { // Quadratic
-                                        if(R32_Cmp(B, 0) == EQUAL)    // Cx + D = 0
-                                        { // Linear
-                                            if(R32_Cmp(C, 0) == EQUAL)     // D = 0
-                                            { // Constant
-                                                if(R32_Cmp(D, 0) == EQUAL) // 0 = 0
-                                                { // All real numbers
-                                                    
-                                                }
-                                            }
-                                        }
-                                    }
-                                    if(R32_Abs(BN) < 1e12 && R32_Abs(CN) < 1e12 && R32_Abs(DN) < 1e12)
-                                    { // Cubic
-                                        ;
+                                    
+                                    ASSERT(CN != 0 && DN != 0);
+                                    
+                                    r32 Q = (BN*BN - 3*CN) / 9;
+                                    r32 R = (BN*(2*BN*BN - 9*CN) + 27*DN) / 54;
+                                    r32 Q3 = Q*Q*Q;
+                                    r32 R2 = R*R;
+                                    BN /= 3;
+                                    
+                                    if(R2 < Q3) {
+                                        // 3 unique solutions
+                                        
+                                        r32 t = r / R32_Sqrt(Q3);
+                                        if(t < -1) t = -1;
+                                        else if(t > 1) t = 1;
+                                        
+                                        t = R32_Arccos(t);
+                                        Q = -2 * R32_Sqrt(Q);
+                                        
+                                        r32 Root1 = Q * R32_Cos(t / 3) - BN;
+                                        r32 Root2 = Q * R32_Cos((t + 2*R32_PI) / 3) - BN;
+                                        r32 Root3 = Q * R32_Cos((t - 2*R32_PI) / 3) - BN;
+                                        
+                                        
                                     }
                                     
                                     
@@ -450,19 +471,19 @@ main(void)
                             }
                         }
                         
-                        if(Shape.Colors[EdgeIndex].X != 0 && Cmp(CurrDist, D.X) == LESS)
+                        if(Shape.Colors[EdgeIndex].X != 0 && Cmp(MinDist, D.X) == LESS)
                         {
-                            D.X = CurrDist;
+                            D.X = MinDist;
                             E.X = EdgeIndex;
                         }
-                        if(Shape.Colors[EdgeIndex].Y != 0 && Cmp(CurrDist, D.Y) == LESS)
+                        if(Shape.Colors[EdgeIndex].Y != 0 && Cmp(MinDist, D.Y) == LESS)
                         {
-                            D.Y = CurrDist;
+                            D.Y = MinDist;
                             E.Y = EdgeIndex;
                         }
-                        if(Shape.Colors[EdgeIndex].Z != 0 && Cmp(CurrDist, D.Z) == LESS)
+                        if(Shape.Colors[EdgeIndex].Z != 0 && Cmp(MinDist, D.Z) == LESS)
                         {
-                            D.Z = CurrDist;
+                            D.Z = MinDist;
                             E.Z = EdgeIndex;
                         }
                     }
