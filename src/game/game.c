@@ -1,20 +1,10 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
- *                                                                         * 
- *  Copyright (C) 2020 Aria Seiler                                       * 
- *                                                                         * 
- *  This program is free software: you can redistribute it and/or modify   * 
- *  it under the terms of the GNU General Public License as published by   * 
- *  the Free Software Foundation, either version 3 of the License, or      * 
- *  (at your option) any later version.                                    * 
- *                                                                         * 
- *  This program is distributed in the hope that it will be useful,        * 
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of         * 
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the           * 
- *  GNU General Public License for more details.                           * 
- *                                                                         * 
- *  You should have received a copy of the GNU General Public License      * 
- *  along with this program. If not, see <https://www.gnu.org/licenses/>.  * 
- *                                                                         * 
+**                                                                         **
+**  Author: Aria Seiler                                                    **
+**                                                                         **
+**  This program is in the public domain. There is no implied warranty,    **
+**  so use it at your own risk.                                            **
+**                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "shared.h"
@@ -56,7 +46,9 @@ Game_Init(platform_state *PlatformState,
     
     File_CreateAssetPack(GeneralHeap);
     
-    // File_ReadConfig(&Game.S.Config, Str_Create(&TempStr, "config.cfg", 0)); Str_Free(TempStr);
+    GameState->Config = (game_config){8, 15, 60, 5e-6, {2,2,2}, 65, 87, 32, 16};
+    str TempStr;
+    File_ReadConfig(&GameState->Config, Str_Create(&TempStr, "config.cfg", 0)); Str_Free(TempStr);
     
     //TODO: Make tags importable?
     GameState->AssetPack = File_ReadAssetPack(GeneralHeap);
@@ -68,50 +60,70 @@ Game_Init(platform_state *PlatformState,
         GL_DebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DONT_CARE, 1, &ID, FALSE);
     #endif
     
-    mesh *UIMesh = &GameState->UIMesh;
-    UIMesh->ProgramID = File_ReadShaders("shaders/general_pt.vert", "shaders/general_pt.frag");
-    GL_UseProgram(UIMesh->ProgramID);
+    // mesh PCMesh;
+    // Mesh_Init(MeshHeap, &PCMesh, MESH_HAS_COLORS);
+    // u32 PCShaderID = File_ReadShaders("shaders/general_pc.vert", "shaders/general_pc.frag");
+    // GL_UseProgram(PCShaderID);
+    // GL_UniformMatrix4fv(, "MPMatrix");
     
+    
+    
+    u32 PTShaderID = File_ReadShaders("shaders/general_pt.vert", "shaders/general_pt.frag");
+    
+    mesh *UIMesh = &GameState->UIMesh;
+    UIMesh->ProgramID = PTShaderID;
     Mesh_Init(MeshHeap, UIMesh, MESH_HAS_TEXTURES);
     
+    GL_UseProgram(PTShaderID);
     GL_GenTextures(1, &GameState->UIMesh.TextureID);
     GL_BindTexture(GL_TEXTURE_2D_ARRAY, GameState->UIMesh.TextureID);
     GL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     GL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     GL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     GL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    
     GL_TexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, GameState->AssetPack->AtlasSize.X,
                   GameState->AssetPack->AtlasSize.Y, GameState->AssetPack->AtlasCount,
                   0, GL_RGBA, GL_UNSIGNED_BYTE, GameState->AssetPack->Atlases);
     GL_Uniform1ui(GameState->UIMesh.AtlasCountID, GameState->AssetPack->AtlasCount);
     GL_Uniform1i(GameState->UIMesh.SamplerID, 0);
     
+    
+    
+    //
+    // Strings
+    //
     u32 ObjectCount = 2;
     mesh_object *Objects = Stack_Allocate(ObjectCount * sizeof(mesh_object));
     str UIStr = Str_Create(NULL, "abcdefghijklmnopqrstuvwxyz  ABCDEFGHIJKLMNOPQRSTUVWXYZ", 0);
-    // str UIStr = Str_Create(NULL, "LY  Y", 0);
     str UIStr2 = Str_Create(NULL, "0123456789`~-_=+[{]}\\|;:\'\",<.>/?!@#$%^&*()", 0);
     UI_CreateStringObject(MeshHeap, &GameState->UIMesh, Objects, GameState->AssetPack,
                           UIStr, V3r32_3x1(-1.0f, 1.0f, 0.0f), 72.0f);
     UI_CreateStringObject(MeshHeap, &GameState->UIMesh, Objects+1, GameState->AssetPack,
                           UIStr2, V3r32_3x1(-1.0f, 0.0f, 0.0f), 72.0f);
-    // UI_CreateStringObject(MeshHeap, &Game.S.UIMesh, Objects+2, Game.S.AssetPack,
-    //                       UIStr3, V3r32_3x1(-1.0f, 0.0f, 0.0f), 72.0f);
     Str_Free(UIStr);
     Str_Free(UIStr2);
-    // Str_Free(UIStr3);
     
     //TODO: Mesh indexing function
     
     Mesh_AddObjects(UIMesh, ObjectCount, Objects);
     Mesh_Finalize(UIMesh);
     
-    v3u16 TC = *(v3u16*)((u32*)UIMesh->Vertices+1); UNUSED(TC);
+    
+    //
+    // Cube or something
+    //
+    // mesh CubeMesh;
+    // GL_UseProgram(PCShaderID);
+    
+    // Mesh_Init(MeshHeap, &CubeMesh, 0);
+    
+    // u32 ObjectCount = 1;
+    // mesh_object *Objects = Stack_Allocate(ObjectCount * sizeof(mesh_object));
+    
+    // Mesh_AddObjects(UIMesh, ObjectCount, Objects);
+    // Mesh_Finalize(UIMesh);
     
     
-    // msdf MSDF;
-    // ASSERT(MSDF_Init(&MSDF));
     
     
     GL_Enable(GL_CULL_FACE);

@@ -1,20 +1,10 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
- *                                                                         * 
- *  Copyright (C) 2020 Aria Seiler                                       * 
- *                                                                         * 
- *  This program is free software: you can redistribute it and/or modify   * 
- *  it under the terms of the GNU General Public License as published by   * 
- *  the Free Software Foundation, either version 3 of the License, or      * 
- *  (at your option) any later version.                                    * 
- *                                                                         * 
- *  This program is distributed in the hope that it will be useful,        * 
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of         * 
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the           * 
- *  GNU General Public License for more details.                           * 
- *                                                                         * 
- *  You should have received a copy of the GNU General Public License      * 
- *  along with this program. If not, see <https://www.gnu.org/licenses/>.  * 
- *                                                                         * 
+**                                                                         **
+**  Author: Aria Seiler                                                    **
+**                                                                         **
+**  This program is in the public domain. There is no implied warranty,    **
+**  so use it at your own risk.                                            **
+**                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #ifndef UTIL_MATH_V3_H_
@@ -137,18 +127,17 @@ typedef union v3u32
 
 
 #define UTIL_MATH__V3__EXPORTS \
-    FUNC(v3u08, V3u08_3x1, u08 X, u08 Y, u08 Z) \
-    FUNC(s32,   V3u08_Cmp, v3u08 A, v3u08 B) \
     FUNC(v3r32, V3r32_1x1, r32 N) \
     FUNC(v3r32, V3r32_3x1, r32 X, r32 Y, r32 Z) \
     FUNC(v3r32, V3r32_Mul_V_S, v3r32 V, r32 S) \
     FUNC(v3r32, V3r32_Div_V_V, v3r32 A, v3r32 B) \
     FUNC(v3r32, V3r32_Clamp, v3r32 Min, v3r32 V, v3r32 Max) \
     FUNC(v3u16, V3r32_RoundTo_V3u16, v3r32 V) \
+    FUNC(v3u08, V3u08_3x1, u08 X, u08 Y, u08 Z) \
+    FUNC(s32,   V3u08_Cmp, v3u08 A, v3u08 B) \
+    FUNC(v3u32, V3u32_1x1, u32 N) \
 
 #define UTIL_MATH__V3__FUNCS \
-    FUNC(v3u32, V3u32_1x1, u32 N) \
-    \
     FUNC(v3r32, V3r32_Add, v3r32 A, v3r32 B) \
     FUNC(v3r32, V3r32_Sub, v3r32 A, v3r32 B) \
     FUNC(v3r32, V3r32_Mul_V_V, v3r32 A, v3r32 B) \

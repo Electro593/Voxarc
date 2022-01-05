@@ -1,20 +1,10 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
- *                                                                         * 
- *  Copyright (C) 2020 Aria Seiler                                       * 
- *                                                                         * 
- *  This program is free software: you can redistribute it and/or modify   * 
- *  it under the terms of the GNU General Public License as published by   * 
- *  the Free Software Foundation, either version 3 of the License, or      * 
- *  (at your option) any later version.                                    * 
- *                                                                         * 
- *  This program is distributed in the hope that it will be useful,        * 
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of         * 
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the           * 
- *  GNU General Public License for more details.                           * 
- *                                                                         * 
- *  You should have received a copy of the GNU General Public License      * 
- *  along with this program. If not, see <https://www.gnu.org/licenses/>.  * 
- *                                                                         * 
+**                                                                         **
+**  Author: Aria Seiler                                                    **
+**                                                                         **
+**  This program is in the public domain. There is no implied warranty,    **
+**  so use it at your own risk.                                            **
+**                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 //NOTE: Set ReadLength to 0 to read to the end of the file
@@ -62,116 +52,70 @@ File_Write(str FilePath,
 
 internal void
 File_ReadConfig(game_config *Config,
-                chr *ConfigFilePath)
+                str ConfigFilePath)
 {
-    //TODO: Implement type specifiers (U32:, V3S:, etc)
-    //TODO: Make this actually decent
-    //TODO: Do it without extra buffers and work off the file text, similar
-    //      to the JSON parsing
-    #if 1
-    UNUSED(Config, ConfigFilePath);
-    #else
-    str Buffer;
-    str TypeName;
-    b08 Commented = FALSE;
-    str ConfigText = File_Read(ConfigFilePath, 0, 0);
+    str Name = Str_Create(NULL, NULL, 128);
+    str Value = Str_Create(NULL, NULL, 128);
+    str Data = File_Read(ConfigFilePath, 0, 0);
     
-    u08 *BufferByte = (u08*)Buffer;
-    u08 *TextByte = (u08*)ConfigText;
-    while(*TextByte != '\0')
+    u08 *C = (u08*)Data;
+    while(TRUE)
     {
-        if(*TextByte == '#')
+        u08 *NI = (u08*)Name;
+        u08 *VI = (u08*)Value;
+        
+        while(Chr_IsWhitespace(*C)) C++;
+        while(*C == '#')
         {
-            Commented = TRUE;
+            while(*C != '\n') C++;
+            C++;
         }
         
-        if(!Commented &&
-           *TextByte == '=')
-        {
-            Str_Dup(&TypeName, Buffer);
-            Str_Free(Buffer);
-            Str_Create(&Buffer, NULL, );
-            
-            BufferByte = (u08*)Buffer;
-            
-            TextByte++;
-            
-            continue;
-        }
-        if(*TextByte == '\n')
-        {
-            if(!Commented)
-            {
-                if(Str_Cmp(TypeName, "VisionBitsPerChannel") == 0)
-                {
-                    Config->VisionBitsPerChannel = Str_To_U32(Buffer);
-                }
-                else if(Str_Cmp(TypeName, "VisionChannelBinary") == 0)
-                {
-                    Config->VisionChannelBinary = Str_To_U32(Buffer);
-                }
-                else if(Str_Cmp(TypeName, "FOV") == 0)
-                {
-                    Config->FOV = Str_To_U32(Buffer);
-                }
-                else if(Str_Cmp(TypeName, "Sensitivity") == 0)
-                {
-                    Config->Sensitivity = Str_To_R32(Buffer);
-                }
-                else if(Str_Cmp(TypeName, "RenderDistance") == 0)
-                {
-                    Config->RenderDistance = V3u32_1(Str_To_U32(Buffer));
-                }
-                else if(Str_Cmp(TypeName, "MoveLeft") == 0)
-                {
-                    Config->MoveLeft = Str_To_U32(Buffer);
-                }
-                else if(Str_Cmp(TypeName, "MoveForward") == 0)
-                {
-                    Config->MoveForward = Str_To_U32(Buffer);
-                }
-                else if(Str_Cmp(TypeName, "MoveRight") == 0)
-                {
-                    Config->MoveRight = Str_To_U32(Buffer);
-                }
-                else if(Str_Cmp(TypeName, "MoveBack") == 0)
-                {
-                    Config->MoveBack = Str_To_U32(Buffer);
-                }
-                else if(Str_Cmp(TypeName, "MoveUp") == 0)
-                {
-                    Config->MoveUp = Str_To_U32(Buffer);
-                }
-                else if(Str_Cmp(TypeName, "MoveDown") == 0)
-                {
-                    Config->MoveDown = Str_To_U32(Buffer);
-                }
-            }
-            else
-            {
-                Commented = FALSE;
-            }
-            
-            Mem_Zero(Buffer, sizeof(Buffer));
-            Mem_Zero(TypeName, sizeof(TypeName));
-            BufferByte = (u08*)Buffer;
-            
-            TextByte++;
-            
-            continue;
-        }
+        if(*C == '\0') break;
+        while(Chr_IsWhitespace(*C)) C++;
+        while(Chr_IsPrintableASCII(*C) && *C != '=') *NI++ = *C++;
+        *NI++ = '\0';
+        while(Chr_IsWhitespace(*C)) C++;
+        ASSERT(*C == '=');
+        C++;
         
-        *BufferByte++ = *TextByte++;
+        while(Chr_IsWhitespace(*C)) C++;
+        while(Chr_IsPrintableASCII(*C)) *VI++ = *C++;
+        *VI++ = '\0';
         
-        while(*TextByte != '\n' &&
-              Chr_IsWhitespace(*TextByte))
-        {
-            TextByte++;
-        }
+        ASSERT(Name[0] != '\0' && Value[0] != '\0');
+        
+        #define CASE(Label) (Mem_Cmp(Name, #Label, sizeof(#Label)-1) == EQUAL)
+        
+        if(CASE(VisionBitsPerChannel))
+            Config->VisionBitsPerChannel = Str_To_U32(Value);
+        else if(CASE(VisionChannelBinary))
+            Config->VisionChannelBinary = Str_To_U32(Value);
+        else if(CASE(FOV))
+            Config->FOV = Str_To_U32(Value);
+        else if(CASE(Sensitivity))
+            Config->Sensitivity = Str_To_R32(Value);
+        else if(CASE(RenderDistance))
+            Config->RenderDistance = V3u32_1x1(Str_To_U32(Value));
+        else if(CASE(MoveLeft))
+            Config->MoveLeft = Str_To_U32(Value);
+        else if(CASE(MoveForward))
+            Config->MoveForward = Str_To_U32(Value);
+        else if(CASE(MoveRight))
+            Config->MoveRight = Str_To_U32(Value);
+        else if(CASE(MoveBack))
+            Config->MoveBack = Str_To_U32(Value);
+        else if(CASE(MoveUp))
+            Config->MoveUp = Str_To_U32(Value);
+        else if(CASE(MoveDown))
+            Config->MoveDown = Str_To_U32(Value);
+        
+        #undef CASE
     }
     
-    Str_Free(ConfigText);
-    #endif
+    Str_Free(Name);
+    Str_Free(Value);
+    Str_Free(Data);
 }
 
 internal u32
@@ -346,7 +290,7 @@ File_CreateAssetPack(heap *Heap)
         str ValueStr = Str_Sub(NULL, FileText, Tokens[TokenIndex+1].StartOffset, Tokens[TokenIndex+1].EndOffset);
         
         #define ENUM(Name, Value) \
-            if(Mem_Cmp(IDStr, #Name, sizeof(#Name)) == 0) \
+            if(Mem_Cmp(IDStr, #Name, sizeof(#Name)) == EQUAL) \
             { \
                 AssetPacker_FillTag(Heap, Groups[0].GroupTags + TagIndex, AssetTagID_##Name, ValueStr, 0, 0); \
             } else

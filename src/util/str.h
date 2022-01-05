@@ -1,20 +1,10 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
- *                                                                         * 
- *  Copyright (C) 2020 Aria Seiler                                       * 
- *                                                                         * 
- *  This program is free software: you can redistribute it and/or modify   * 
- *  it under the terms of the GNU General Public License as published by   * 
- *  the Free Software Foundation, either version 3 of the License, or      * 
- *  (at your option) any later version.                                    * 
- *                                                                         * 
- *  This program is distributed in the hope that it will be useful,        * 
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of         * 
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the           * 
- *  GNU General Public License for more details.                           * 
- *                                                                         * 
- *  You should have received a copy of the GNU General Public License      * 
- *  along with this program. If not, see <https://www.gnu.org/licenses/>.  * 
- *                                                                         * 
+**                                                                         **
+**  Author: Aria Seiler                                                    **
+**                                                                         **
+**  This program is in the public domain. There is no implied warranty,    **
+**  so use it at your own risk.                                            **
+**                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #ifndef UTIL_STR_H_
@@ -75,6 +65,7 @@ typedef u16 wchr;
 #define UTIL__STR__EXPORTS \
     UTIL__STR_DEBUG__EXPORTS \
     \
+    FUNC(b08,         Chr_IsWhitespace, chr C) \
     FUNC(b08,         Chr_IsPrintableASCII, chr C) \
     FUNC(u32,         ChrArr_CountPrintableASCII, chr *Arr) \
     FUNC(void,        Str_SetHeap, heap *Heap) \
@@ -86,6 +77,8 @@ typedef u16 wchr;
     FUNC(str,         Str_Cat, str *StrA, str StrB) \
     FUNC(str,         Str_CatC, str *Str, chr *ChrArr) \
     FUNC(str,         Str_Ins, str *Str, str Insertion, u32 Index) \
+    FUNC(str,         Str_Dup, str *Dest, str Str) \
+    FUNC(s32,         Str_Cmp, str A, str B) \
     FUNC(b08,         Str_To_Bool, str Str) \
     FUNC(r32,         Str_To_R32, str Str) \
     FUNC(s32,         Str_To_S32, str Str) \
@@ -96,7 +89,6 @@ typedef u16 wchr;
     \
     FUNC(chr,         Chr_ToLower, chr C) \
     FUNC(chr,         Chr_ToUpper, chr C) \
-    FUNC(b08,         Chr_IsWhitespace, chr C) \
     FUNC(b08,         Chr_IsBase2, chr C) \
     FUNC(b08,         Chr_IsBase8, chr C) \
     FUNC(b08,         Chr_IsBase10, chr C) \
@@ -106,8 +98,6 @@ typedef u16 wchr;
     FUNC(void,        Str_SetHeap, heap *Heap) \
     FUNC(str,         Str_Resize, str *Str, u32 Length) \
     FUNC(str_footer*, Str_GetFooter, str Str) \
-    FUNC(s32,         Str_Cmp, str A, str B) \
-    FUNC(str,         Str_Dup, str *Dest, str Str) \
     FUNC(r64,         Str_To_R64, str Str) \
     // FUNC(wstr, Str_To_WStr, wstr Dest, str Src) \
 

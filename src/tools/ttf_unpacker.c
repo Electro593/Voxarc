@@ -19,18 +19,185 @@
 #define FONT_NAME "arial"
 // #define FONT_NAME "Speeday-axVZa"
 
-typedef struct ttf_shape
+typedef struct msdf_segment {
+    v2s16 P0;
+    v2s16 P1;
+    v2s16 CP;
+    b08 IsLinear;
+} msdf_segment;
+
+typedef struct msdf_edge {
+    msdf_segment *Segments;
+    u32 SegmentCount;
+    u08 Color;
+} msdf_edge;
+
+typedef struct msdf_contour
 {
+    u32 *Edges;
+    u32 EdgeCount;
+    s08 Winding;
+} msdf_contour;
+
+typedef struct msdf_shape {
+    msdf_contour *Contours;
+    msdf_edge *Edges;
+    msdf_segment *Segments;
+    
     u32 ContourCount;
     u32 EdgeCount;
     u32 SegmentCount;
+} msdf_shape;
+
+typedef struct msdf_dist {
+    r64 X;
+    r64 Y;
+    r64 Z;
+} msdf_dist;
+
+internal u32
+MSDF_GetDistance()
+{
     
-    u32 *Contours;
-    u32 *Edges;
-    stbtt_vertex *Segments;
+}
+
+internal void
+MSDF_AddEdge(msdf_edge *Edge)
+{
+    if(!((Edge->Color & 0b001) && MSDF_IsEdgeRelevant(Edge)) &&
+       !((Edge->Color & 0b010) && MSDF_IsEdgeRelevant(Edge)) &&
+       !((Edge->Color & 0b100) && MSDF_IsEdgeRelevant(Edge)))
+        return;
     
-    v3u08 *Colors;
-} ttf_shape;
+    
+    
+}
+
+internal void
+MSDF_PrepareEdges(ttf_shape Shape,
+                  v2s16 P)
+{
+    for(u32 ContourIndex = 0; ContourIndex < Shape.ContourCount; ++ContourIndex)
+    {
+        u32 FirstEdge = Shape.Contours[ContourIndex];
+        u32 LastEdge = Shape.Contours[ContourIndex+1];
+        u32 EdgeCount = LastEdge - FirstEdge;
+        
+        if(EdgeCount > 0)
+        {
+            u32 PrevEdge, CurrEdge;
+            
+            if(EdgeCount == 1)
+                PrevEdge = Shape.Edges[FirstEdge];
+            else
+                PrevEdge = Shape.Edges[LastEdge-2];
+            CurrEdge = Shape.Edges[LastEdge-1];
+            
+            for(u32 EdgeIndex = FirstEdge; EdgeIndex < LastEdge; ++EdgeIndex)
+            {
+                u32 NextEdge = Shape.Edges[EdgeIndex];
+                
+                msdf_edge Edge;
+                Edge.FirstSegment = Shape.Segments + EdgeIndex;
+                
+                MSDF_AddEdge(Edge);
+                
+                PrevEdge = CurrEdge;
+                CurrEdge = NextEdge;
+            }
+        }
+    }
+}
+
+internal void
+MSDF_Generate(v3u08 *Bitmap,
+              msdf_shape Shape,
+              v2s16 Size,
+              r64 Range)
+{
+    for(s16 PY = 0; PY < Size.Y; ++PY)
+    {
+        for(s16 PX = 0; PX < Size.X; ++PX)
+        {
+            v2s16 P = (v2s16){PX, PY};
+            
+            MSDF_PrepareEdges(Shape, P);
+            u32 Dist = MSDF_GetDistance(Shape, P);
+            
+            v3u08 Color = {
+                (u08)((Dist.X/Range + 0.5) * 255),
+                (u08)((Dist.Y/Range + 0.5) * 255),
+                (u08)((Dist.Z/Range + 0.5) * 255),
+            };
+            Bitmap[INDEX_2D(PX, PY, Size.X)] = Color;
+        }
+    }
+    
+    // MSDF_CorrectErrors();
+}
+
+internal msdf_shape
+MSDF_MakeShape(stbtt_vertex *Vertices,
+               u32 VertexCount)
+{
+    msdf_shape Shape;
+    
+    for(u32 VertexIndex = 0; VertexIndex < VertexCount; ++VertexIndex)
+    {
+        switch(Vertices[VertexIndex].type) {
+            case STBTT_vmove: {
+                Shape.ContourCount++;
+            } break;
+            case STBTT_vline: {
+                Shape.SegmentCount++;
+            } break;
+            case STBTT_vcurve: {
+                Shape.SegmentCount++;
+            } break;
+        }
+    }
+    
+    Shape.Contours = Stack_Allocate(Shape.ContourCount * sizeof(msdf_contour));
+    Shape.Segments = Stack_Allocate(Shape.SegmentCount * sizeof(msdf_segment));
+    
+    Shape.Edges = Stack_Allocate(Shape.SegmentCount * sizeof(msdf_edge));
+    msdf_contour *Contour = Shape.Contours;
+    msdf_edge *Edge = Shape.Edges;
+    msdf_segment *Segment = Shape.Segments;
+    v2s16 PrevDir = {0}, Dir = {0}, NextDir = {0};
+    for(u32 VertexIndex = 0; VertexIndex < VertexCount; ++VertexIndex)
+    {
+        stbtt_vertex Vertex = Vertices[VertexIndex];
+        
+        if(Vertex.type == STBTT_vmove) {
+            Contour++;
+        } else {
+            Segment->P0 = *(v2s16*)&(Vertices+VertexIndex-1).x;
+            Segment->P1 = *(v2s16*)&Vertex.x;
+            Segment->CP = *(v2s16*)&Vertex.cx;
+            
+            if(Vertex.type == STBTT_vline) {
+                Segment->IsLinear = TRUE;
+                Dir = V2s16_Sub(Segment->P1, Segment->P0);
+                NextDir = Dir;
+            } else {
+                Segment->IsLinear = FALSE;
+                Dir = V2s16_Sub(CP, P0);
+                NextDir = V2s16_Sub(P1, CP);
+            }
+            
+            if()
+            {
+                Shape.EdgeCount++;
+                Edge++;
+            }
+            
+            Segment++;
+        }
+    }
+    
+    return Shape;
+}
 
 void
 main(void)
@@ -270,36 +437,56 @@ main(void)
         if(!stbtt_IsGlyphEmpty(&Font, GlyphIndex))
         {
             Stack_Push();
-            ttf_shape Shape = {0};
-            r32 CrossThresh = 0.17365f; // ~ sin(pi/18)
-            Shape.SegmentCount = stbtt_GetGlyphShape(&Font, GlyphIndex, &Shape.Segments);
-            Shape.Edges = Stack_Allocate(Shape.SegmentCount * sizeof(u32) + 1);
-            Shape.Contours = Stack_Allocate(Shape.SegmentCount * sizeof(u32) + 1);
             
-            v2s32 Size = V2s32_Sub(BitmapBox.ZW, BitmapBox.XY);
+            stbtt_vertex *Vertices;
+            u32 VertexCount = stbtt_GetGlyphShape(&Font, GlyphIndex, Vertices);
+            msdf_shape Shape = MSDF_MakeShape(Vertices, VertexCount);
+            
+            v2s16 Size = V2s16_Sub(BitmapBox.ZW, BitmapBox.XY);
             u32 FileSize = sizeof(bitmap_header) + (Size.X * Size.Y * 3);
             hmem Bitmap = Heap_Allocate(Heap, FileSize);
             v3u08 *BitmapData = (v3u08*)(Bitmap + sizeof(bitmap_header));
             
-            #if 0
+            #define COUNTER_CLOCKWISE 1
+            #define CLOCKWISE -1
+            
+            
+            
+            // ttf_shape Shape = {0};
+            r32 CrossThresh = 0.17365f; // ~ sin(pi/18)
+            
+            MSDF_Generate((v3u08*)Bitmap, Shape, Size, 4.0);
+            // Shape.SegmentCount = stbtt_GetGlyphShape(&Font, GlyphIndex, &Shape.Segments);
+            // Shape.Edges = Stack_Allocate(Shape.SegmentCount * sizeof(u32) + 1);
+            // Shape.Contours = Stack_Allocate(Shape.SegmentCount * sizeof(u32) + 1);
+            // Shape.Windings = Stack_Allocate(Shape.SegmentCount * sizeof(s08) + 1);
+            
+            
             v2s16 PrevDirection={0}, Direction={0}, NextDirection={0};
-            b08 ContourStart = FALSE;
+            r32 CrossTotal = 0;
             //TODO: Handle teardrop case
             for(u32 SegmentIndex = 0;
                 SegmentIndex < Shape.SegmentCount;
                 ++SegmentIndex)
             {
-                ContourStart = FALSE;
+                u32 ContourStartIndex = 0;
                 stbtt_vertex Segment = Shape.Segments[SegmentIndex];
                 // ASSERT(!(Codepoint == 'R' && SegmentIndex == 10));
                 switch(Segment.type)
                 {
                     case STBTT_vmove:
                     {
+                        // If zero, should be first contour (hasn't calculated yet)
+                        if(CrossTotal > 0)
+                            Shape.Windings[Shape.ContourCount-1] = COUNTER_CLOCKWISE;
+                        else if(CrossTotal < 0)
+                            Shape.Windings[Shape.ContourCount-1] = CLOCKWISE;
+                        CrossTotal = 0;
+                        
                         Shape.Contours[Shape.ContourCount] = Shape.EdgeCount;
                         ++Shape.ContourCount;
                         NextDirection = *(v2s16*)&Shape.Segments[SegmentIndex];
-                        ContourStart = TRUE;
+                        ContourStartIndex = SegmentIndex;
                     } break;
                     case STBTT_vline:
                     {
@@ -315,8 +502,11 @@ main(void)
                     } break;
                 }
                 
-                if(!ContourStart &&
-                   (R32_Abs(V2s16_Cross(PrevDirection, Direction)) > CrossThresh ||
+                r32 Cross = V2s16_Cross(PrevDirection, Direction);
+                CrossTotal += Cross;
+                
+                if(ContourStartIndex != SegmentIndex &&
+                   (R32_Abs(Cross) > CrossThresh ||
                     V2s16_Dot(PrevDirection, Direction) <= 0))
                 {
                     Shape.Edges[Shape.EdgeCount] = SegmentIndex - 1;
@@ -325,19 +515,9 @@ main(void)
                 
                 PrevDirection = NextDirection;
             }
-            // Makes getting the segments per edge/contour easier
             Shape.Contours[Shape.ContourCount] = Shape.EdgeCount;
             Shape.Edges[Shape.EdgeCount] = Shape.SegmentCount;
-            
-            // for(u32 SegmentIndex = 0;
-            //     SegmentIndex < Shape.SegmentCount;
-            //     ++SegmentIndex)
-            // {
-            //     Shape.Segments[SegmentIndex].x *= Scale;
-            //     Shape.Segments[SegmentIndex].y *= Scale;
-            //     Shape.Segments[SegmentIndex].cx *= Scale;
-            //     Shape.Segments[SegmentIndex].cy *= Scale;
-            // }
+            #if 0
             
             Shape.Colors = Stack_Allocate(Shape.EdgeCount * sizeof(v3u08));
             v3u08 Color_011 = V3u08_3x1(  0, 255, 255);
@@ -359,12 +539,13 @@ main(void)
                     ++EdgeIndex)
                 {
                     Shape.Colors[EdgeIndex] = Curr;
-                    if(V3u08_Cmp(Curr, Color_110) == 0)
+                    if(V3u08_Cmp(Curr, Color_110) == EQUAL)
                         Curr = Color_011;
                     else
                         Curr = Color_110;
                 }
             }
+            
             
             for(s32 PY = Size.Y - 1;
                 PY >= 0;
@@ -374,7 +555,8 @@ main(void)
                     PX < Size.X;
                     ++PX)
                 {
-                    v3r32 D = V3r32_1x1(R32_MAX);
+                    v3r32 MDist = V3r32_1x1(R32_MAX);
+                    v3r32 MDot = V3r32_1x1(R32_MAX);
                     v3u32 E = {(u32)-1};
                     v2s16 P = V2s16_2x1((s16)(((r32)PX+.5f) / Scale), (s16)(((r32)PY+.5f) / Scale));
                     
@@ -382,7 +564,8 @@ main(void)
                         EdgeIndex < Shape.EdgeCount;
                         ++EdgeIndex)
                     {
-                        r32 MinDist = R32_MAX;
+                        r32 CDist = R32_MAX;
+                        r32 CDot = R32_MAX;
                         v2s16 P0 = {0};
                         for(u32 SegmentIndex = Shape.Edges[EdgeIndex];
                             SegmentIndex < Shape.Edges[EdgeIndex+1];
@@ -498,54 +681,47 @@ main(void)
                             }
                         }
                         
-                        if(Shape.Colors[EdgeIndex].X != 0 && Cmp(MinDist, D.X) == LESS)
+                        #define CMP(CDist, CDot, MDist, MDot) (CDist < MDist || CDot < MDot)
+                        
+                        if(Shape.Colors[EdgeIndex].X != 0 && CMP(CDist, CDot, MDist.X, MDot.X))
                         {
-                            D.X = MinDist;
+                            MDist.X = CDist;
+                            MDot.X = CDot;
                             E.X = EdgeIndex;
                         }
-                        if(Shape.Colors[EdgeIndex].Y != 0 && Cmp(MinDist, D.Y) == LESS)
+                        if(Shape.Colors[EdgeIndex].Y != 0 && CMP(CDist, CDot, MDist.Y, MDot.Y))
                         {
-                            D.Y = MinDist;
+                            MDist.Y = CDist;
+                            MDot.Y = CDot;
                             E.Y = EdgeIndex;
                         }
-                        if(Shape.Colors[EdgeIndex].Z != 0 && Cmp(MinDist, D.Z) == LESS)
+                        if(Shape.Colors[EdgeIndex].Z != 0 && CMP(CDist, CDot, MDist.Z, MDot.Z))
                         {
-                            D.Z = MinDist;
+                            MDist.Z = CDist;
+                            MDot.Z = CDot;
                             E.Z = EdgeIndex;
                         }
+                        
+                        #undef CMP
                     }
                     
-                    D.X = EdgePseudoSignedDistance(P, E.X);
-                    D.Y = EdgePseudoSignedDistance(P, E.Y);
-                    D.Z = EdgePseudoSignedDistance(P, E.Z);
+                    MDist.X = EdgeSignedPseudoDistance(P, E.X); // R
+                    MDist.Y = EdgeSignedPseudoDistance(P, E.Y); // G
+                    MDist.Z = EdgeSignedPseudoDistance(P, E.Z); // B
                     
                     v3u08 Color;
-                    r32 DistanceMax = ;
+                    r32 DistanceMax = 4.0f;
                     r32 Range = 2 * DistanceMax;
-                    Color.X = (u08)(((D.X / Range) + 0.5f) * 255.0f);
-                    Color.Y = (u08)(((D.Y / Range) + 0.5f) * 255.0f);
-                    Color.Z = (u08)(((D.Z / Range) + 0.5f) * 255.0f);
+                    Color.X = (u08)(((MDist.X / Range) + 0.5f) * 255.0f);
+                    Color.Y = (u08)(((MDist.Y / Range) + 0.5f) * 255.0f);
+                    Color.Z = (u08)(((MDist.Z / Range) + 0.5f) * 255.0f);
                     
-                    BitmapData[INDEX_2D(PX, PY, Size.X)] = ;
+                    BitmapData[INDEX_2D(PX, PY, Size.X)] = Color;
                 }
             }
-            
-            #else
-            
-            
-            for(u32 X = 0; X < Size.X; ++X)
-            {
-                for(u32 Y = 0; Y < Size.Y; ++Y)
-                {
-                    for(u32 ContourIndex = 0; ContourIndex < Shape.ContourCount; ++ContourIndex)
-                    {
-                        
-                    }
-                }
-            }
-            
-            
             #endif
+            
+            
             
             // v2s32 Size;
             // mem MonoBitmap = stbtt_GetGlyphBitmap(&Font, Scale, Scale, GlyphIndex, &Size.X, &Size.Y, NULL, NULL);
@@ -615,5 +791,5 @@ main(void)
     Str_Free(FontText);
     
     Str_HeapCheck_DEBUG();
-    ExitProcess(0);
+    Win32_ExitProcess(0);
 }

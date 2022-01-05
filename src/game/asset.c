@@ -1,20 +1,10 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
- *                                                                         * 
- *  Copyright (C) 2020 Aria Seiler                                       * 
- *                                                                         * 
- *  This program is free software: you can redistribute it and/or modify   * 
- *  it under the terms of the GNU General Public License as published by   * 
- *  the Free Software Foundation, either version 3 of the License, or      * 
- *  (at your option) any later version.                                    * 
- *                                                                         * 
- *  This program is distributed in the hope that it will be useful,        * 
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of         * 
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the           * 
- *  GNU General Public License for more details.                           * 
- *                                                                         * 
- *  You should have received a copy of the GNU General Public License      * 
- *  along with this program. If not, see <https://www.gnu.org/licenses/>.  * 
- *                                                                         * 
+**                                                                         **
+**  Author: Aria Seiler                                                    **
+**                                                                         **
+**  This program is in the public domain. There is no implied warranty,    **
+**  so use it at your own risk.                                            **
+**                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 internal s32
@@ -25,6 +15,7 @@ Glyph_IsUnicodeControl(u32 Codepoint)
 
 // TODO: Bin packer
 
+#if 0
 internal b08
 MSDF_Init(msdf *MSDF)
 {
@@ -115,6 +106,7 @@ MSDF_Free(msdf *MSDF)
     GL_DeleteProgram(&MSDF->GenProgramID);
     GL_DeleteProgram(&MSDF->RenderProgramID);
 }
+#endif
 
 //CREDIT: https://github.com/Chlumsky/msdfgen/blob/master/
 //CREDIT: stb TrueType Library
