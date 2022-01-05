@@ -71,13 +71,13 @@ V2r32_Sub(v2r32 A,
 }
 
 internal v2r32
-V2r32_Mul(v2r32 A,
-          v2r32 B)
+V2r32_Mul(v2r32 V,
+          r32 S)
 {
     v2r32 Result;
     
-    Result.X = A.X * B.X;
-    Result.Y = A.Y * B.Y;
+    Result.X = V.X * S;
+    Result.Y = V.Y * S;
     
     return Result;
 }
@@ -131,6 +131,13 @@ V2r32_Len(v2r32 V)
     Result = R32_Sqrt(Result);
     
     return Result;
+}
+
+internal r32
+V2r32_Cross(v2r32 A,
+            v2r32 B)
+{
+    return (A.X * B.Y) - (A.Y * B.X);
 }
 
 internal v2r32

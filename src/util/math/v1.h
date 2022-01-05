@@ -136,6 +136,7 @@ typedef struct
 
 #define UTIL_MATH__V1__EXPORTS \
     FUNC(s32,   R32_Cmp, r32 A, r32 B) \
+    FUNC(r32,   R32_Sign, r32 N) \
     FUNC(r32,   R32_Abs, r32 N) \
     FUNC(r32,   R32_Floor, r32 N) \
     FUNC(r32,   R32_Ceil, r32 N) \

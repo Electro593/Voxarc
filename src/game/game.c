@@ -22,7 +22,7 @@
 #include "game/module.h"
 
 #include "game/file.c"
-// #include "game/asset.c"
+#include "game/asset.c"
 #include "game/mesh.c"
 #include "game/ui.c"
 // #include "game/world.c"
@@ -108,6 +108,11 @@ Game_Init(platform_state *PlatformState,
     Mesh_Finalize(UIMesh);
     
     v3u16 TC = *(v3u16*)((u32*)UIMesh->Vertices+1); UNUSED(TC);
+    
+    
+    // msdf MSDF;
+    // ASSERT(MSDF_Init(&MSDF));
+    
     
     GL_Enable(GL_CULL_FACE);
     GL_Enable(GL_DEPTH_TEST);

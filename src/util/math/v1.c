@@ -138,6 +138,15 @@ R32_Round(r32 N)
 }
 
 internal r32
+R32_Sign(r32 N)
+{
+    u32 Literal = 0x3f800000; // '1.0f'
+    u32 Binary = FORCE_CAST(N, u32);
+    Binary = (Binary & (1<<31)) | Literal;
+    return FORCE_CAST(Binary, r32);
+}
+
+internal r32
 R32_Abs(r32 N)
 {
     r32 Result;
@@ -309,102 +318,6 @@ R32_Cbrt(r32 N)
 {
     STOP;
     return N;
-}
-
-// Formula: Ax + B = 0
-internal u32
-R32_RootsDeg1(r32 *Roots,
-              r32 A,
-              r32 B)
-{
-    if(R32_Cmp(A, 0) == EQUAL) // B = 0
-    {
-        if(R32_Cmp(B, 0) == EQUAL) // 0 = 0
-            return U32_MAX;
-        
-        return 0;
-    }
-    
-    Roots[0] = -B / A;
-    return 1;
-}
-
-// Formula: Ax^2 + Bx + C = 0
-internal u32
-R32_RootsDeg2(r32 *Roots,
-              r32 A,
-              r32 B,
-              r32 C)
-{
-    if(R32_Cmp(A, 0) == EQUAL)
-        return R32_RootsDeg1(Roots, B, C);
-    
-    r32 Diff = B*B - 4*A*C;
-    if(R32_Cmp(Diff, 0) == GREATER)
-    { // To not use sqrt if necessary
-        Diff = R32_Sqrt(Diff);
-        Roots[0] = (-B + Diff) / (2*A);
-        Roots[1] = (-B - Diff) / (2*A);
-        return 2;
-    }
-    if(R32_Cmp(Diff, 0) == EQUAL)
-    {
-        Roots[0] = -B / (2*A);
-        return 1;
-    }
-    return 0;
-}
-
-internal u32
-R32_RootsDeg3(r32 *Roots,
-              r32 A,
-              r32 B,
-              r32 C,
-              r32 D)
-{
-    if(R32_Cmp(A, 0) == EQUAL)
-        return R32_RootsDeg2(Roots, B, C, D);
-    
-    B /= A;
-    C /= A;
-    D /= A;
-    r32 BB = B*B;
-    r32 Q = (3*C - BB) / 9;
-    r32 R = (B*(-2*BB + 9*C) - 27*D) / 54;
-    r32 QQQ = Q*Q*Q;
-    r32 D1 = QQQ + R*R;
-    B /= 3;
-    s32 Cmp = R32_Cmp(D1, 0);
-    if(Cmp == LESS)
-    {
-        r32 Theta = R32_Acos(R / R32_Sqrt(-QQQ));
-        Q = 2 * R32_Sqrt(-Q);
-        Theta /= 3;
-        Roots[0] = Q*R32_Cos(Theta) - B;
-        Roots[1] = Q*R32_Cos(Theta + LITERAL_CAST(u32, 0x40060A92/* 2PI/3 */, r32)) - B;
-        Roots[2] = Q*R32_Cos(Theta + LITERAL_CAST(u32, 0x40860A92/* 4PI/3 */, r32)) - B;
-        return 3;
-    }
-    
-    r32 T;
-    D1 = R32_Sqrt(D1);
-    r32 S = R32_Cbrt(R + D1); //TODO: Generalized pow function
-    if(R32_Cmp(D, 0) == EQUAL)
-        T = S;
-    else
-        T = R32_Cbrt(R - D1);
-    r32 SpT = S + T;
-    r32 SmT = S - T;
-    Roots[0] = SpT - B;
-    if(Cmp == GREATER)
-    {
-        ASSERT(!R32_IsNAN(Roots[0]));
-        return 1;
-    }
-    
-    Roots[1] = -.5f*SpT - B;
-    ASSERT(!R32_IsNAN(Roots[1]));
-    return 2;
 }
 
 //TODO: Fix/improve these

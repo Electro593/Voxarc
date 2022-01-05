@@ -275,9 +275,15 @@ main(void)
             Shape.SegmentCount = stbtt_GetGlyphShape(&Font, GlyphIndex, &Shape.Segments);
             Shape.Edges = Stack_Allocate(Shape.SegmentCount * sizeof(u32) + 1);
             Shape.Contours = Stack_Allocate(Shape.SegmentCount * sizeof(u32) + 1);
+            
+            v2s32 Size = V2s32_Sub(BitmapBox.ZW, BitmapBox.XY);
+            u32 FileSize = sizeof(bitmap_header) + (Size.X * Size.Y * 3);
+            hmem Bitmap = Heap_Allocate(Heap, FileSize);
+            v3u08 *BitmapData = (v3u08*)(Bitmap + sizeof(bitmap_header));
+            
+            #if 0
             v2s16 PrevDirection={0}, Direction={0}, NextDirection={0};
             b08 ContourStart = FALSE;
-            ASSERT(Codepoint != 'R');
             //TODO: Handle teardrop case
             for(u32 SegmentIndex = 0;
                 SegmentIndex < Shape.SegmentCount;
@@ -360,11 +366,6 @@ main(void)
                 }
             }
             
-            v2s32 Size = V2s32_Sub(BitmapBox.ZW, BitmapBox.XY);
-            u32 FileSize = sizeof(bitmap_header) + (Size.X * Size.Y * 3);
-            hmem Bitmap = Heap_Allocate(Heap, FileSize);
-            v3u08 *BitmapData = (v3u08*)(Bitmap + sizeof(bitmap_header));
-            
             for(s32 PY = Size.Y - 1;
                 PY >= 0;
                 --PY)
@@ -423,14 +424,14 @@ main(void)
                                     v2s16 P1 = *(v2s16*)&Shape.Segments[SegmentIndex].cx;
                                     v2s16 P2 = *(v2s16*)&Shape.Segments[SegmentIndex].x;
                                     
-                                    v2s16 V0 = V2s16_Sub(P, P0);
-                                    v2s16 V1 = V2s16_Sub(P1, P0);
-                                    v2s16 V2 = V2s16_Sub(V2s16_Sub(P2, P1), V1);
+                                    v2r32 V0 = V2s16_To_V2r32(V2s16_Sub(P0, P));
+                                    v2r32 V1 = V2s16_To_V2r32(V2s16_Sub(P1, P0));
+                                    v2r32 V2 = V2s16_To_V2r32(V2s16_Sub(V2s16_Sub(P2, P1), V1));
                                     
-                                    r32 A = (r32)V2s16_Dot(V2, V2);
-                                    r32 B = (r32)(3*V2s16_Dot(V1, V2));
-                                    r32 C = (r32)(2*V2s16_Dot(V1, V1) - V2s16_Dot(V2, V0));
-                                    r32 D = -(r32)V2s16_Dot(V1, V0);
+                                    r32 A =   V2r32_Dot(V2, V2);
+                                    r32 B = 3*V2r32_Dot(V1, V2));
+                                    r32 C = 2*V2r32_Dot(V1, V1) + V2r32_Dot(V0, V2));
+                                    r32 D =   V2r32_Dot(V0, V1);
                                     
                                     ASSERT(A != 0);
                                     
@@ -446,6 +447,11 @@ main(void)
                                     r32 R2 = R*R;
                                     BN /= 3;
                                     
+                                    r32 Roots[5];
+                                    Roots[0] = 0.0f;
+                                    Roots[1] = 1.0f;
+                                    u32 RootCount = 2;
+                                    
                                     if(R2 < Q3) {
                                         // 3 unique solutions
                                         
@@ -456,13 +462,34 @@ main(void)
                                         t = R32_Arccos(t);
                                         Q = -2 * R32_Sqrt(Q);
                                         
-                                        r32 Root1 = Q * R32_Cos(t / 3) - BN;
-                                        r32 Root2 = Q * R32_Cos((t + 2*R32_PI) / 3) - BN;
-                                        r32 Root3 = Q * R32_Cos((t - 2*R32_PI) / 3) - BN;
+                                        Roots[2] = Q * R32_Cos(t / 3) - BN;
+                                        Roots[3] = Q * R32_Cos((t + 2*R32_PI) / 3) - BN;
+                                        Roots[4] = Q * R32_Cos((t - 2*R32_PI) / 3) - BN;
+                                        RootCount += 3;
+                                    } else {
+                                        r32 u = (R < 0 ? 1 : -1) * R32_Cbrt(R32_Abs(R) + R32_Sqrt(R2 - Q3));
+                                        r32 v = (u == 0 ? 0 : q / u);
+                                        Roots[2] = (u + v) - BN;
+                                        RootCount++;
                                         
-                                        
+                                        if(R32_Abs(u - v) < R32_EPSILON * R32_Abs(u + v)) {
+                                            Roots[3] = -0.5 * Roots[0];
+                                            RootCount++;
+                                        }
                                     }
                                     
+                                    r32 MinDist = R32_MAX;
+                                    
+                                    for(u32 RootIndex = 0; RootIndex < RootCount; ++RootIndex) {
+                                        r32 Root = Roots[RootIndex];
+                                        
+                                        v2r32 qe = V2r32_Add(V0, V2r32_Add(V2r32_Mul(2*V1, Root) + V2r32_Mul(V2, Root*Root));
+                                        r32 Dist = V2r32_Len(qe);
+                                        
+                                        if(Dist < R32_Abs(MinDist)) {
+                                            MinDist = R32_Sign(V2r32_Cross(V2r32_Add(V1, V2r32_Mul(V2, Root)), qe)) * Dist;
+                                        }
+                                    }
                                     
                                     
                                     
@@ -502,6 +529,23 @@ main(void)
                     BitmapData[INDEX_2D(PX, PY, Size.X)] = ;
                 }
             }
+            
+            #else
+            
+            
+            for(u32 X = 0; X < Size.X; ++X)
+            {
+                for(u32 Y = 0; Y < Size.Y; ++Y)
+                {
+                    for(u32 ContourIndex = 0; ContourIndex < Shape.ContourCount; ++ContourIndex)
+                    {
+                        
+                    }
+                }
+            }
+            
+            
+            #endif
             
             // v2s32 Size;
             // mem MonoBitmap = stbtt_GetGlyphBitmap(&Font, Scale, Scale, GlyphIndex, &Size.X, &Size.Y, NULL, NULL);

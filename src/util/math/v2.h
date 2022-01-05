@@ -111,8 +111,12 @@ typedef union v2u32
 
 #define UTIL_MATH__V2__EXPORTS \
     FUNC(v2r32, V2r32_2x1,       r32 X, r32 Y) \
+    FUNC(v2r32, V2r32_Add,       v2r32 A, v2r32 B) \
     FUNC(v2r32, V2r32_Sub,       v2r32 A, v2r32 B) \
+    FUNC(v2r32, V2r32_Mul,       v2r32 V, r32 S) \
+    FUNC(r32,   V2r32_Len,       v2r32 V) \
     FUNC(r32,   V2r32_Dot,       v2r32 A, v2r32 B) \
+    FUNC(r32,   V2r32_Cross,     v2r32 A, v2r32 B) \
     FUNC(v2r32, V2r32_Normalize, v2r32 V) \
     FUNC(v2s16, V2s16_2x1,       s16 X, s16 Y) \
     FUNC(v2s16, V2s16_Sub,       v2s16 A, v2s16 B) \
@@ -136,11 +140,8 @@ typedef union v2u32
 
 #define UTIL_MATH__V2__FUNCS \
     FUNC(v2r32, V2r32_1x1,       r32 N) \
-    FUNC(v2r32, V2r32_Add,       v2r32 A, v2r32 B) \
-    FUNC(v2r32, V2r32_Mul,       v2r32 A, v2r32 B) \
     FUNC(v2r32, V2r32_Div,       v2r32 A, v2r32 B) \
     FUNC(v2r32, V2r32_DivS,      v2r32 V, r32 S) \
-    FUNC(r32,   V2r32_Len,       v2r32 V) \
     FUNC(b08,   V2r32_Equal,     v2r32 A, v2r32 B) \
     FUNC(s32,   V2r32_Cmp,       v2r32 A, v2r32 B) \
     FUNC(v2s16, V2s16_1x1,       s16 N) \

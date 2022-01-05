@@ -273,7 +273,7 @@ typedef struct util_module      util_module;
 #endif
 
 #include <game/file.h>
-// #include <game/asset.h>
+#include <game/asset.h>
 #include <game/mesh.h>
 #include <game/ui.h>
 // #include <game/world.h>
