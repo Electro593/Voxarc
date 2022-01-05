@@ -517,14 +517,14 @@ JSON_CreateNum(json_write_data *WriteData,
     json_token *Result;
     
     json_token_type PrimType = JSONToken_None;
-    switch(Value.Type)
+    switch(Value.Type.Name)
     {
-        case TYPE_U32:
-        case TYPE_S32:
+        case Type_U32:
+        case Type_S32:
         {
             PrimType = JSONToken_Integer;
         } break;
-        case TYPE_R32:
+        case Type_R32:
         {
             PrimType = JSONToken_Float;
         } break;
@@ -540,24 +540,24 @@ JSON_CreateNum(json_write_data *WriteData,
     Result->EndOffset = 0;
     
     str NumBuf = NULL;
-    switch(Value.Type)
+    switch(Value.Type.Name)
     {
-        case TYPE_R32:
+        case Type_R32:
         {
             Str_Cat(&WriteData->Buffer, R32_To_Str(&NumBuf, Value.R32));
         } break;
         
-        case TYPE_S32:
+        case Type_S32:
         {
             Str_Cat(&WriteData->Buffer, S32_To_Str(&NumBuf, Value.S32));
         } break;
         
-        case TYPE_U32:
+        case Type_U32:
         {
             Str_Cat(&WriteData->Buffer, U32_To_Str(&NumBuf, Value.U32));
         } break;
         
-        // case TYPE_STR:
+        // case Type_STR:
         // { // For directly transferring a number string
         //     Str_Cat(&WriteData->Buffer, Value.NumStr);
         // } break;

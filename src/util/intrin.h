@@ -12,7 +12,7 @@
 
 //TODO: Write alternatives for intrinsics that aren't supported
 
-#if _ARCH_X86 || _ARCH_X64
+#if defined(_X86) || defined(_X64)
 
 typedef union __declspec(intrin_type) __declspec(align(16)) __m128i
 {

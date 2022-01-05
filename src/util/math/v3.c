@@ -14,7 +14,7 @@
 
 
 //NOTE: JAI would make this so much better...
-#if _VEC_GENERATORS
+#ifdef _VEC_GENERATORS
 
 #define V3_GEN_CASES \
     CASE(r32, r32) CASE(r64, r64) \

@@ -107,7 +107,7 @@
 				8.952797860
 			]
 		},
-		"assets/arial/33.bmp": {
+		"assets/fonts/arial/33.bmp": {
 			"Codepoint": 33,
 			"BearingX": 2.769230988,
 			"BearingY": 0.000000000,
@@ -209,7 +209,7 @@
 				8.952797860
 			]
 		},
-		"assets/arial/34.bmp": {
+		"assets/fonts/arial/34.bmp": {
 			"Codepoint": 34,
 			"BearingX": 1.479021046,
 			"BearingY": 14.000000000,
@@ -311,7 +311,7 @@
 				11.438811384
 			]
 		},
-		"assets/arial/35.bmp": {
+		"assets/fonts/arial/35.bmp": {
 			"Codepoint": 35,
 			"BearingX": 0.330419562,
 			"BearingY": -1.000000000,
@@ -413,7 +413,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/36.bmp": {
+		"assets/fonts/arial/36.bmp": {
 			"Codepoint": 36,
 			"BearingX": 1.148601424,
 			"BearingY": -4.000000000,
@@ -515,7 +515,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/37.bmp": {
+		"assets/fonts/arial/37.bmp": {
 			"Codepoint": 37,
 			"BearingX": 1.872377868,
 			"BearingY": -1.000000000,
@@ -617,7 +617,7 @@
 				28.652099604
 			]
 		},
-		"assets/arial/38.bmp": {
+		"assets/fonts/arial/38.bmp": {
 			"Codepoint": 38,
 			"BearingX": 1.384615444,
 			"BearingY": -1.000000000,
@@ -719,7 +719,7 @@
 				21.493007648
 			]
 		},
-		"assets/arial/39.bmp": {
+		"assets/fonts/arial/39.bmp": {
 			"Codepoint": 39,
 			"BearingX": 1.416083968,
 			"BearingY": 14.000000000,
@@ -821,7 +821,7 @@
 				6.152098154
 			]
 		},
-		"assets/arial/40.bmp": {
+		"assets/fonts/arial/40.bmp": {
 			"Codepoint": 40,
 			"BearingX": 1.951049128,
 			"BearingY": -7.000000000,
@@ -923,7 +923,7 @@
 				10.730770188
 			]
 		},
-		"assets/arial/41.bmp": {
+		"assets/fonts/arial/41.bmp": {
 			"Codepoint": 41,
 			"BearingX": 1.951049128,
 			"BearingY": -7.000000000,
@@ -1025,7 +1025,7 @@
 				10.730770188
 			]
 		},
-		"assets/arial/42.bmp": {
+		"assets/fonts/arial/42.bmp": {
 			"Codepoint": 42,
 			"BearingX": 1.006993055,
 			"BearingY": 13.000000000,
@@ -1127,7 +1127,7 @@
 				12.540210728
 			]
 		},
-		"assets/arial/43.bmp": {
+		"assets/fonts/arial/43.bmp": {
 			"Codepoint": 43,
 			"BearingX": 1.793706408,
 			"BearingY": 3.000000000,
@@ -1229,7 +1229,7 @@
 				18.818182006
 			]
 		},
-		"assets/arial/44.bmp": {
+		"assets/fonts/arial/44.bmp": {
 			"Codepoint": 44,
 			"BearingX": 2.674825128,
 			"BearingY": -5.000000000,
@@ -1331,7 +1331,7 @@
 				8.952797860
 			]
 		},
-		"assets/arial/45.bmp": {
+		"assets/fonts/arial/45.bmp": {
 			"Codepoint": 45,
 			"BearingX": 1.022727372,
 			"BearingY": 6.000000000,
@@ -1433,7 +1433,7 @@
 				10.730770188
 			]
 		},
-		"assets/arial/46.bmp": {
+		"assets/fonts/arial/46.bmp": {
 			"Codepoint": 46,
 			"BearingX": 2.926573524,
 			"BearingY": 0.000000000,
@@ -1535,7 +1535,7 @@
 				8.952797860
 			]
 		},
-		"assets/arial/47.bmp": {
+		"assets/fonts/arial/47.bmp": {
 			"Codepoint": 47,
 			"BearingX": 0.000000000,
 			"BearingY": -1.000000000,
@@ -1637,7 +1637,7 @@
 				8.952797860
 			]
 		},
-		"assets/arial/48.bmp": {
+		"assets/fonts/arial/48.bmp": {
 			"Codepoint": 48,
 			"BearingX": 1.337412564,
 			"BearingY": -1.000000000,
@@ -1739,7 +1739,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/49.bmp": {
+		"assets/fonts/arial/49.bmp": {
 			"Codepoint": 49,
 			"BearingX": 3.508741408,
 			"BearingY": 0.000000000,
@@ -1841,7 +1841,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/50.bmp": {
+		"assets/fonts/arial/50.bmp": {
 			"Codepoint": 50,
 			"BearingX": 0.944055926,
 			"BearingY": 0.000000000,
@@ -1943,7 +1943,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/51.bmp": {
+		"assets/fonts/arial/51.bmp": {
 			"Codepoint": 51,
 			"BearingX": 1.353146980,
 			"BearingY": -1.000000000,
@@ -2045,7 +2045,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/52.bmp": {
+		"assets/fonts/arial/52.bmp": {
 			"Codepoint": 52,
 			"BearingX": 0.409090964,
 			"BearingY": 0.000000000,
@@ -2147,7 +2147,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/53.bmp": {
+		"assets/fonts/arial/53.bmp": {
 			"Codepoint": 53,
 			"BearingX": 1.337412564,
 			"BearingY": -1.000000000,
@@ -2249,7 +2249,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/54.bmp": {
+		"assets/fonts/arial/54.bmp": {
 			"Codepoint": 54,
 			"BearingX": 1.211538560,
 			"BearingY": -1.000000000,
@@ -2351,7 +2351,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/55.bmp": {
+		"assets/fonts/arial/55.bmp": {
 			"Codepoint": 55,
 			"BearingX": 1.526223926,
 			"BearingY": 0.000000000,
@@ -2453,7 +2453,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/56.bmp": {
+		"assets/fonts/arial/56.bmp": {
 			"Codepoint": 56,
 			"BearingX": 1.305944106,
 			"BearingY": -1.000000000,
@@ -2555,7 +2555,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/57.bmp": {
+		"assets/fonts/arial/57.bmp": {
 			"Codepoint": 57,
 			"BearingX": 1.337412564,
 			"BearingY": -1.000000000,
@@ -2657,7 +2657,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/58.bmp": {
+		"assets/fonts/arial/58.bmp": {
 			"Codepoint": 58,
 			"BearingX": 2.910839208,
 			"BearingY": 0.000000000,
@@ -2759,7 +2759,7 @@
 				8.952797860
 			]
 		},
-		"assets/arial/59.bmp": {
+		"assets/fonts/arial/59.bmp": {
 			"Codepoint": 59,
 			"BearingX": 2.674825128,
 			"BearingY": -5.000000000,
@@ -2861,7 +2861,7 @@
 				8.952797860
 			]
 		},
-		"assets/arial/60.bmp": {
+		"assets/fonts/arial/60.bmp": {
 			"Codepoint": 60,
 			"BearingX": 1.762237860,
 			"BearingY": 3.000000000,
@@ -2963,7 +2963,7 @@
 				18.818182006
 			]
 		},
-		"assets/arial/61.bmp": {
+		"assets/fonts/arial/61.bmp": {
 			"Codepoint": 61,
 			"BearingX": 1.793706408,
 			"BearingY": 6.000000000,
@@ -3065,7 +3065,7 @@
 				18.818182006
 			]
 		},
-		"assets/arial/62.bmp": {
+		"assets/fonts/arial/62.bmp": {
 			"Codepoint": 62,
 			"BearingX": 1.762237860,
 			"BearingY": 3.000000000,
@@ -3167,7 +3167,7 @@
 				18.818182006
 			]
 		},
-		"assets/arial/63.bmp": {
+		"assets/fonts/arial/63.bmp": {
 			"Codepoint": 63,
 			"BearingX": 1.416083968,
 			"BearingY": 0.000000000,
@@ -3269,7 +3269,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/64.bmp": {
+		"assets/fonts/arial/64.bmp": {
 			"Codepoint": 64,
 			"BearingX": 1.746503606,
 			"BearingY": -7.000000000,
@@ -3371,7 +3371,7 @@
 				32.711540244
 			]
 		},
-		"assets/arial/65.bmp": {
+		"assets/fonts/arial/65.bmp": {
 			"Codepoint": 65,
 			"BearingX": -0.047202796,
 			"BearingY": 0.000000000,
@@ -3473,7 +3473,7 @@
 				21.493007648
 			]
 		},
-		"assets/arial/66.bmp": {
+		"assets/fonts/arial/66.bmp": {
 			"Codepoint": 66,
 			"BearingX": 2.360140042,
 			"BearingY": 0.000000000,
@@ -3575,7 +3575,7 @@
 				21.493007648
 			]
 		},
-		"assets/arial/67.bmp": {
+		"assets/fonts/arial/67.bmp": {
 			"Codepoint": 67,
 			"BearingX": 1.604895242,
 			"BearingY": -1.000000000,
@@ -3677,7 +3677,7 @@
 				23.270980842
 			]
 		},
-		"assets/arial/68.bmp": {
+		"assets/fonts/arial/68.bmp": {
 			"Codepoint": 68,
 			"BearingX": 2.486014180,
 			"BearingY": 0.000000000,
@@ -3779,7 +3779,7 @@
 				23.270980842
 			]
 		},
-		"assets/arial/69.bmp": {
+		"assets/fonts/arial/69.bmp": {
 			"Codepoint": 69,
 			"BearingX": 2.548951208,
 			"BearingY": 0.000000000,
@@ -3881,7 +3881,7 @@
 				21.493007648
 			]
 		},
-		"assets/arial/70.bmp": {
+		"assets/fonts/arial/70.bmp": {
 			"Codepoint": 70,
 			"BearingX": 2.643356800,
 			"BearingY": 0.000000000,
@@ -3983,7 +3983,7 @@
 				19.683567040
 			]
 		},
-		"assets/arial/71.bmp": {
+		"assets/fonts/arial/71.bmp": {
 			"Codepoint": 71,
 			"BearingX": 1.715035048,
 			"BearingY": -1.000000000,
@@ -4085,7 +4085,7 @@
 				25.064685820
 			]
 		},
-		"assets/arial/72.bmp": {
+		"assets/fonts/arial/72.bmp": {
 			"Codepoint": 72,
 			"BearingX": 2.580419924,
 			"BearingY": 0.000000000,
@@ -4187,7 +4187,7 @@
 				23.270980842
 			]
 		},
-		"assets/arial/73.bmp": {
+		"assets/fonts/arial/73.bmp": {
 			"Codepoint": 73,
 			"BearingX": 3.005244970,
 			"BearingY": 0.000000000,
@@ -4289,7 +4289,7 @@
 				8.952797860
 			]
 		},
-		"assets/arial/74.bmp": {
+		"assets/fonts/arial/74.bmp": {
 			"Codepoint": 74,
 			"BearingX": 0.865384724,
 			"BearingY": -1.000000000,
@@ -4391,7 +4391,7 @@
 				16.111888898
 			]
 		},
-		"assets/arial/75.bmp": {
+		"assets/fonts/arial/75.bmp": {
 			"Codepoint": 75,
 			"BearingX": 2.360140042,
 			"BearingY": 0.000000000,
@@ -4493,7 +4493,7 @@
 				21.493007648
 			]
 		},
-		"assets/arial/76.bmp": {
+		"assets/fonts/arial/76.bmp": {
 			"Codepoint": 76,
 			"BearingX": 2.360140042,
 			"BearingY": 0.000000000,
@@ -4595,7 +4595,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/77.bmp": {
+		"assets/fonts/arial/77.bmp": {
 			"Codepoint": 77,
 			"BearingX": 2.391608448,
 			"BearingY": 0.000000000,
@@ -4697,7 +4697,7 @@
 				26.842659042
 			]
 		},
-		"assets/arial/78.bmp": {
+		"assets/fonts/arial/78.bmp": {
 			"Codepoint": 78,
 			"BearingX": 2.454545526,
 			"BearingY": 0.000000000,
@@ -4799,7 +4799,7 @@
 				23.270980842
 			]
 		},
-		"assets/arial/79.bmp": {
+		"assets/fonts/arial/79.bmp": {
 			"Codepoint": 79,
 			"BearingX": 1.557692406,
 			"BearingY": -1.000000000,
@@ -4901,7 +4901,7 @@
 				25.064685820
 			]
 		},
-		"assets/arial/80.bmp": {
+		"assets/fonts/arial/80.bmp": {
 			"Codepoint": 80,
 			"BearingX": 2.486014180,
 			"BearingY": 0.000000000,
@@ -5003,7 +5003,7 @@
 				21.493007648
 			]
 		},
-		"assets/arial/81.bmp": {
+		"assets/fonts/arial/81.bmp": {
 			"Codepoint": 81,
 			"BearingX": 1.384615444,
 			"BearingY": -2.000000000,
@@ -5105,7 +5105,7 @@
 				25.064685820
 			]
 		},
-		"assets/arial/82.bmp": {
+		"assets/fonts/arial/82.bmp": {
 			"Codepoint": 82,
 			"BearingX": 2.533216986,
 			"BearingY": 0.000000000,
@@ -5207,7 +5207,7 @@
 				23.270980842
 			]
 		},
-		"assets/arial/83.bmp": {
+		"assets/fonts/arial/83.bmp": {
 			"Codepoint": 83,
 			"BearingX": 1.447552566,
 			"BearingY": -1.000000000,
@@ -5309,7 +5309,7 @@
 				21.493007648
 			]
 		},
-		"assets/arial/84.bmp": {
+		"assets/fonts/arial/84.bmp": {
 			"Codepoint": 84,
 			"BearingX": 0.755244726,
 			"BearingY": 0.000000000,
@@ -5411,7 +5411,7 @@
 				19.683567040
 			]
 		},
-		"assets/arial/85.bmp": {
+		"assets/fonts/arial/85.bmp": {
 			"Codepoint": 85,
 			"BearingX": 2.533216986,
 			"BearingY": -1.000000000,
@@ -5513,7 +5513,7 @@
 				23.270980842
 			]
 		},
-		"assets/arial/86.bmp": {
+		"assets/fonts/arial/86.bmp": {
 			"Codepoint": 86,
 			"BearingX": 0.141608400,
 			"BearingY": 0.000000000,
@@ -5615,7 +5615,7 @@
 				21.493007648
 			]
 		},
-		"assets/arial/87.bmp": {
+		"assets/fonts/arial/87.bmp": {
 			"Codepoint": 87,
 			"BearingX": 0.393356726,
 			"BearingY": 0.000000000,
@@ -5717,7 +5717,7 @@
 				30.414337162
 			]
 		},
-		"assets/arial/88.bmp": {
+		"assets/fonts/arial/88.bmp": {
 			"Codepoint": 88,
 			"BearingX": 0.141608400,
 			"BearingY": 0.000000000,
@@ -5819,7 +5819,7 @@
 				21.493007648
 			]
 		},
-		"assets/arial/89.bmp": {
+		"assets/fonts/arial/89.bmp": {
 			"Codepoint": 89,
 			"BearingX": 0.094405592,
 			"BearingY": 0.000000000,
@@ -5921,7 +5921,7 @@
 				21.493007648
 			]
 		},
-		"assets/arial/90.bmp": {
+		"assets/fonts/arial/90.bmp": {
 			"Codepoint": 90,
 			"BearingX": 0.645104960,
 			"BearingY": 0.000000000,
@@ -6023,7 +6023,7 @@
 				19.683567040
 			]
 		},
-		"assets/arial/91.bmp": {
+		"assets/fonts/arial/91.bmp": {
 			"Codepoint": 91,
 			"BearingX": 2.187062986,
 			"BearingY": -7.000000000,
@@ -6125,7 +6125,7 @@
 				8.952797860
 			]
 		},
-		"assets/arial/92.bmp": {
+		"assets/fonts/arial/92.bmp": {
 			"Codepoint": 92,
 			"BearingX": 0.000000000,
 			"BearingY": -1.000000000,
@@ -6227,7 +6227,7 @@
 				8.952797860
 			]
 		},
-		"assets/arial/93.bmp": {
+		"assets/fonts/arial/93.bmp": {
 			"Codepoint": 93,
 			"BearingX": 0.613636406,
 			"BearingY": -7.000000000,
@@ -6329,7 +6329,7 @@
 				8.952797860
 			]
 		},
-		"assets/arial/94.bmp": {
+		"assets/fonts/arial/94.bmp": {
 			"Codepoint": 94,
 			"BearingX": 0.849650402,
 			"BearingY": 10.000000000,
@@ -6431,7 +6431,7 @@
 				15.120630266
 			]
 		},
-		"assets/arial/95.bmp": {
+		"assets/fonts/arial/95.bmp": {
 			"Codepoint": 95,
 			"BearingX": -0.487762240,
 			"BearingY": -7.000000000,
@@ -6533,7 +6533,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/96.bmp": {
+		"assets/fonts/arial/96.bmp": {
 			"Codepoint": 96,
 			"BearingX": 1.400349728,
 			"BearingY": 18.000000000,
@@ -6635,7 +6635,7 @@
 				10.730770188
 			]
 		},
-		"assets/arial/97.bmp": {
+		"assets/fonts/arial/97.bmp": {
 			"Codepoint": 97,
 			"BearingX": 1.164335722,
 			"BearingY": -1.000000000,
@@ -6737,7 +6737,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/98.bmp": {
+		"assets/fonts/arial/98.bmp": {
 			"Codepoint": 98,
 			"BearingX": 2.108391760,
 			"BearingY": -1.000000000,
@@ -6839,7 +6839,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/99.bmp": {
+		"assets/fonts/arial/99.bmp": {
 			"Codepoint": 99,
 			"BearingX": 1.258741408,
 			"BearingY": -1.000000000,
@@ -6941,7 +6941,7 @@
 				16.111888898
 			]
 		},
-		"assets/arial/100.bmp": {
+		"assets/fonts/arial/100.bmp": {
 			"Codepoint": 100,
 			"BearingX": 1.101398712,
 			"BearingY": -1.000000000,
@@ -7043,7 +7043,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/101.bmp": {
+		"assets/fonts/arial/101.bmp": {
 			"Codepoint": 101,
 			"BearingX": 1.180070026,
 			"BearingY": -1.000000000,
@@ -7145,7 +7145,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/102.bmp": {
+		"assets/fonts/arial/102.bmp": {
 			"Codepoint": 102,
 			"BearingX": 0.298951040,
 			"BearingY": 0.000000000,
@@ -7247,7 +7247,7 @@
 				8.952797860
 			]
 		},
-		"assets/arial/103.bmp": {
+		"assets/fonts/arial/103.bmp": {
 			"Codepoint": 103,
 			"BearingX": 1.038461564,
 			"BearingY": -7.000000000,
@@ -7349,7 +7349,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/104.bmp": {
+		"assets/fonts/arial/104.bmp": {
 			"Codepoint": 104,
 			"BearingX": 2.124125984,
 			"BearingY": 0.000000000,
@@ -7451,7 +7451,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/105.bmp": {
+		"assets/fonts/arial/105.bmp": {
 			"Codepoint": 105,
 			"BearingX": 2.139860154,
 			"BearingY": 0.000000000,
@@ -7553,7 +7553,7 @@
 				7.159091498
 			]
 		},
-		"assets/arial/106.bmp": {
+		"assets/fonts/arial/106.bmp": {
 			"Codepoint": 106,
 			"BearingX": -1.479021046,
 			"BearingY": -7.000000000,
@@ -7655,7 +7655,7 @@
 				7.159091498
 			]
 		},
-		"assets/arial/107.bmp": {
+		"assets/fonts/arial/107.bmp": {
 			"Codepoint": 107,
 			"BearingX": 2.139860154,
 			"BearingY": 0.000000000,
@@ -7757,7 +7757,7 @@
 				16.111888898
 			]
 		},
-		"assets/arial/108.bmp": {
+		"assets/fonts/arial/108.bmp": {
 			"Codepoint": 108,
 			"BearingX": 2.061188940,
 			"BearingY": 0.000000000,
@@ -7859,7 +7859,7 @@
 				7.159091498
 			]
 		},
-		"assets/arial/109.bmp": {
+		"assets/fonts/arial/109.bmp": {
 			"Codepoint": 109,
 			"BearingX": 2.124125984,
 			"BearingY": 0.000000000,
@@ -7961,7 +7961,7 @@
 				26.842659042
 			]
 		},
-		"assets/arial/110.bmp": {
+		"assets/fonts/arial/110.bmp": {
 			"Codepoint": 110,
 			"BearingX": 2.124125984,
 			"BearingY": 0.000000000,
@@ -8063,7 +8063,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/111.bmp": {
+		"assets/fonts/arial/111.bmp": {
 			"Codepoint": 111,
 			"BearingX": 1.069930072,
 			"BearingY": -1.000000000,
@@ -8165,7 +8165,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/112.bmp": {
+		"assets/fonts/arial/112.bmp": {
 			"Codepoint": 112,
 			"BearingX": 2.124125984,
 			"BearingY": -7.000000000,
@@ -8267,7 +8267,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/113.bmp": {
+		"assets/fonts/arial/113.bmp": {
 			"Codepoint": 113,
 			"BearingX": 1.132867200,
 			"BearingY": -7.000000000,
@@ -8369,7 +8369,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/114.bmp": {
+		"assets/fonts/arial/114.bmp": {
 			"Codepoint": 114,
 			"BearingX": 2.092657320,
 			"BearingY": 0.000000000,
@@ -8471,7 +8471,7 @@
 				10.730770188
 			]
 		},
-		"assets/arial/115.bmp": {
+		"assets/fonts/arial/115.bmp": {
 			"Codepoint": 115,
 			"BearingX": 0.991258980,
 			"BearingY": -1.000000000,
@@ -8573,7 +8573,7 @@
 				16.111888898
 			]
 		},
-		"assets/arial/116.bmp": {
+		"assets/fonts/arial/116.bmp": {
 			"Codepoint": 116,
 			"BearingX": 0.566433600,
 			"BearingY": -1.000000000,
@@ -8675,7 +8675,7 @@
 				8.952797860
 			]
 		},
-		"assets/arial/117.bmp": {
+		"assets/fonts/arial/117.bmp": {
 			"Codepoint": 117,
 			"BearingX": 2.061188940,
 			"BearingY": -1.000000000,
@@ -8777,7 +8777,7 @@
 				17.921329526
 			]
 		},
-		"assets/arial/118.bmp": {
+		"assets/fonts/arial/118.bmp": {
 			"Codepoint": 118,
 			"BearingX": 0.409090964,
 			"BearingY": 0.000000000,
@@ -8879,7 +8879,7 @@
 				16.111888898
 			]
 		},
-		"assets/arial/119.bmp": {
+		"assets/fonts/arial/119.bmp": {
 			"Codepoint": 119,
 			"BearingX": 0.094405592,
 			"BearingY": 0.000000000,
@@ -8981,7 +8981,7 @@
 				23.270980842
 			]
 		},
-		"assets/arial/120.bmp": {
+		"assets/fonts/arial/120.bmp": {
 			"Codepoint": 120,
 			"BearingX": 0.236013984,
 			"BearingY": 0.000000000,
@@ -9083,7 +9083,7 @@
 				16.111888898
 			]
 		},
-		"assets/arial/121.bmp": {
+		"assets/fonts/arial/121.bmp": {
 			"Codepoint": 121,
 			"BearingX": 0.519230980,
 			"BearingY": -7.000000000,
@@ -9185,7 +9185,7 @@
 				16.111888898
 			]
 		},
-		"assets/arial/122.bmp": {
+		"assets/fonts/arial/122.bmp": {
 			"Codepoint": 122,
 			"BearingX": 0.629370722,
 			"BearingY": 0.000000000,
@@ -9287,7 +9287,7 @@
 				16.111888898
 			]
 		},
-		"assets/arial/123.bmp": {
+		"assets/fonts/arial/123.bmp": {
 			"Codepoint": 123,
 			"BearingX": 0.896853204,
 			"BearingY": -7.000000000,
@@ -9389,7 +9389,7 @@
 				10.762238484
 			]
 		},
-		"assets/arial/124.bmp": {
+		"assets/fonts/arial/124.bmp": {
 			"Codepoint": 124,
 			"BearingX": 2.958042182,
 			"BearingY": -7.000000000,
@@ -9491,7 +9491,7 @@
 				8.370629380
 			]
 		},
-		"assets/arial/125.bmp": {
+		"assets/fonts/arial/125.bmp": {
 			"Codepoint": 125,
 			"BearingX": 0.739510584,
 			"BearingY": -7.000000000,
@@ -9593,7 +9593,7 @@
 				10.762238484
 			]
 		},
-		"assets/arial/126.bmp": {
+		"assets/fonts/arial/126.bmp": {
 			"Codepoint": 126,
 			"BearingX": 1.368881248,
 			"BearingY": 8.000000000,

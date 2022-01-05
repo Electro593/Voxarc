@@ -103,7 +103,7 @@ Win32_InitFunctions(platform_exports *PlatformCallbacks)
     win32_module Gdi32 = LoadLibraryA("gdi32.dll");
     win32_module Opengl32 = LoadLibraryA("opengl32.dll");
     
-// #if _MODE_DEBUG
+// #ifdef _DEBUG
     OutputDebugStringA = (_type__OutputDebugStringA*)GetProcAddress(Kernel32, "OutputDebugStringA");
     if(!OutputDebugStringA)
     {
@@ -111,7 +111,7 @@ Win32_InitFunctions(platform_exports *PlatformCallbacks)
     }
 // #endif
     
-// #if _MODE_DEBUG
+// #ifdef _DEBUG
     b08 WinReturnError = FALSE;
     
     #define FUNC(Module, ReturnType, Name, ...) \
@@ -141,7 +141,7 @@ Win32_InitFunctions(platform_exports *PlatformCallbacks)
     #undef FUNC
 #endif
     
-// #if _MODE_DEBUG
+// #ifdef _DEBUG
     b08 GlReturnError = FALSE;
     
     #define FUNC(ReturnType, Name, ...) \
@@ -212,7 +212,7 @@ Win32_InitFunctions(platform_exports *PlatformCallbacks)
     wglMakeCurrent(DummyDeviceContext, DummyRenderContext);
     
     
-// #if _MODE_DEBUG
+// #ifdef _DEBUG
     b08 WglReturnError = FALSE;
     
     #define FUNC(ReturnType, Name, ...) \
@@ -269,7 +269,7 @@ Win32_InitOpenGLFunctions(platform_exports *PlatformCallbacks, win32_device_cont
     WGL_ChoosePixelFormatARB(DeviceContext, PixelFormatAttribs, 0, 1, &PixelFormat, &FormatCount);
     DescribePixelFormat(DeviceContext, PixelFormat, sizeof(PixelFormatDescriptor), &PixelFormatDescriptor);
     
-    #if _MODE_DEBUG
+    #ifdef _DEBUG
     u32 DebugBit = WGL_CONTEXT_DEBUG_BIT_ARB;
     #else
     u32 DebugBit = 0;
@@ -285,7 +285,7 @@ Win32_InitOpenGLFunctions(platform_exports *PlatformCallbacks, win32_device_cont
     win32_opengl_render_context RenderContext = WGL_CreateContextAttribsARB(DeviceContext, 0, AttribList);
     wglMakeCurrent(DeviceContext, RenderContext);
     
-// #if _MODE_DEBUG
+// #ifdef _DEBUG
     b08 GlReturnError = FALSE;
     
     #define FUNC(ReturnType, Name, ...) \
@@ -318,7 +318,7 @@ Win32_InitOpenGLFunctions(platform_exports *PlatformCallbacks, win32_device_cont
     return RenderContext;
 }
 
-// #if _MODE_DEBUG
+// #ifdef _DEBUG
 internal void
 Win32_ThrowError_DEBUG(chr *Message)
 {
@@ -1618,7 +1618,7 @@ WinMainCRTStartup(void)
     //TODO: https://gafferongames.com/post/fix_your_timestep/
     while(PlatformState.ExecutionState != EXECUTION_ENDED)
     {
-        #if _MODE_DEBUG
+        #ifdef _DEBUG
         {
             //TODO: Make this thread safe
             win32_filetime GameDllWriteTime = Win32_GetFileDataA(GAME_DLL_PATH).LastWriteTime;

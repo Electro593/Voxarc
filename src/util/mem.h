@@ -124,7 +124,7 @@ typedef struct stack
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-#if _MODE_DEBUG
+#ifdef _DEBUG
     #define UTIL__MEM_DEBUG__EXPORTS \
         FUNC(void, _Heap_Print_DEBUG, heap *Heap, heap_data_DEBUG *DebugData) \
     

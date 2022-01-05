@@ -677,19 +677,19 @@ R32_To_Str(str *Dest,
         ++NumLen;
     }
     
-    str Str = Str_Create(Dest, NULL, NumLen + DecLen + Negative);
+    str String = Str_Create(Dest, NULL, NumLen + DecLen + Negative);
     if(Negative)
     {
-        Str[0] = '-';
+        String[0] = '-';
     }
-    Str[NumLen + Negative] = '.';
+    String[NumLen + Negative] = '.';
     
     s32 NumI = (s32)N;
     for(s32 Index = NumLen + Negative - 1;
         Index >= Negative;
         --Index)
     {
-        Str[Index] = '0' + (NumI % 10);
+        String[Index] = '0' + (NumI % 10);
         NumI /= 10;
     }
     
@@ -699,10 +699,10 @@ R32_To_Str(str *Dest,
         ++Index)
     {
         NumF *= 10;
-        Str[NumLen + Negative + Index] = '0' + ((s32)NumF % 10);
+        String[NumLen + Negative + Index] = '0' + ((s32)NumF % 10);
     }
     
-    return Str;
+    return String;
 }
 
 
@@ -767,7 +767,7 @@ S32_Abs(s32 N)
 
 internal str
 S32_To_Str(str *Dest,
-          s32 N)
+           s32 N)
 {
     u32 NumLen = 0;
     b08 Negative = FALSE;
@@ -791,22 +791,22 @@ S32_To_Str(str *Dest,
         }
     }
     
-    str Str = Str_Create(Dest, NULL, NumLen + Negative);
+    str String = Str_Create(Dest, NULL, NumLen + Negative);
     if(Negative)
     {
-        Str[0] = '-';
+        String[0] = '-';
     }
     
     do
     {
-        Str[--NumLen + Negative] = '0' + (N % 10);
+        String[--NumLen + Negative] = '0' + (N % 10);
         N /= 10;
     }
     while(N);
     
     ASSERT(NumLen == 0);
     
-    return Str;
+    return String;
 }
 
 
@@ -862,18 +862,18 @@ U32_To_Str(str *Dest,
         }
     }
     
-    str Str = Str_Create(Dest, NULL, NumLen);
+    str String = Str_Create(Dest, NULL, NumLen);
     
     do
     {
-        Str[--NumLen] = '0' + (N % 10);
+        String[--NumLen] = '0' + (N % 10);
         N /= 10;
     }
     while(N);
     
     ASSERT(NumLen == 0);
     
-    return Str;
+    return String;
 }
 
 
@@ -899,16 +899,16 @@ U64_To_Str(str *Dest,
         ++NumLen;
     }
     
-    str Str = Str_Create(Dest, NULL, NumLen);
+    str String = Str_Create(Dest, NULL, NumLen);
     
     do
     {
-        Str[NumLen--] = '0' + (N % 10);
+        String[NumLen--] = '0' + (N % 10);
         N /= 10;
     }
     while(N);
     
-    return Str;
+    return String;
 }
 
 internal str
@@ -918,21 +918,21 @@ U64_To_Str_Hex(str *Dest,
     u32 NumLen = U64_MAX_CHARS_HEX - 1;
     
     //TODO: Test this
-    str Str = Str_Create(Dest, "0x", NumLen);
+    str String = Str_Create(Dest, "0x", NumLen);
     
     while(NumLen > 2) // Length of "0x"
     {
         if(N % 16 < 10)
         {
-            Str[--NumLen] = '0' + (N % 16);
+            String[--NumLen] = '0' + (N % 16);
         }
         else
         {
-            Str[--NumLen] = 'A' + (N % 16 - 10);
+            String[--NumLen] = 'A' + (N % 16 - 10);
         }
         
         N /= 16;
     }
     
-    return Str;
+    return String;
 }

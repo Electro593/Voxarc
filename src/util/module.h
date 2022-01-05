@@ -18,7 +18,7 @@ struct util_state
     stack *Stack;
     
     heap *StrHeap;
-    #if _MODE_DEBUG
+    #ifdef _DEBUG
         heap_data_DEBUG StrHeapDebugData;
     #endif
 };
@@ -76,7 +76,7 @@ struct util_module
     b08 Loaded;
 };
 
-#if _MODULE_UTIL
+#ifdef _MODULE_UTIL
     #define FUNC(ReturnType, Name, ...) \
         internal ReturnType Name(__VA_ARGS__);
     UTIL__FUNCS

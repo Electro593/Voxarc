@@ -16,7 +16,7 @@
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-#if _VEC_GENERATORS
+#ifdef _VEC_GENERATORS
 #define V3_TYPEDEFS \
     DEF(r32) DEF(r64) \
     DEF(s08) DEF(s16) DEF(s32) DEF(s64) \

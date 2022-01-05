@@ -7,7 +7,7 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#if _MODE_DEBUG
+#ifdef _DEBUG
 external void _API_ENTRY
 GL_DebugCallback(u32 Source,
                  u32 Type,

@@ -48,12 +48,12 @@ Game_Init(platform_state *PlatformState,
     
     GameState->Config = (game_config){8, 15, 60, 5e-6, {2,2,2}, 65, 87, 32, 16};
     str TempStr;
-    File_ReadConfig(&GameState->Config, Str_Create(&TempStr, "config.cfg", 0)); Str_Free(TempStr);
+    File_ReadConfig(&GameState->Config, Str_Create(&TempStr, "assets/config.cfg", 0)); Str_Free(TempStr);
     
     //TODO: Make tags importable?
     GameState->AssetPack = File_ReadAssetPack(GeneralHeap);
     
-    #if _MODE_DEBUG
+    #ifdef _DEBUG
         GL_Enable(GL_DEBUG_OUTPUT);
         GL_DebugMessageCallback(GL_DebugCallback, NULL);
         u32 ID = 131185;
@@ -62,13 +62,13 @@ Game_Init(platform_state *PlatformState,
     
     // mesh PCMesh;
     // Mesh_Init(MeshHeap, &PCMesh, MESH_HAS_COLORS);
-    // u32 PCShaderID = File_ReadShaders("shaders/general_pc.vert", "shaders/general_pc.frag");
+    // u32 PCShaderID = File_ReadShaders("assets/shaders/general_pc.vert", "assets/shaders/general_pc.frag");
     // GL_UseProgram(PCShaderID);
     // GL_UniformMatrix4fv(, "MPMatrix");
     
     
     
-    u32 PTShaderID = File_ReadShaders("shaders/general_pt.vert", "shaders/general_pt.frag");
+    u32 PTShaderID = File_ReadShaders("assets/shaders/general_pt.vert", "assets/shaders/general_pt.frag");
     
     mesh *UIMesh = &GameState->UIMesh;
     UIMesh->ProgramID = PTShaderID;
@@ -257,7 +257,7 @@ Game_Cleanup(util_state *UtilState,
 {
     Mesh_Free(&GameState->UIMesh);
     Heap_Free(GameState->AssetPack);
-    #if _MODE_DEBUG
+    #ifdef _DEBUG
         Heap_Free(UtilState->StrHeapDebugData.List);
     #endif
     
@@ -266,7 +266,7 @@ Game_Cleanup(util_state *UtilState,
     ASSERT(UtilState->StrHeap->BlockCount == 1);
     
     
-    #if _MODE_DEBUG
+    #ifdef _DEBUG
         if(UtilState->StrHeapDebugData.DebugHeap)
         {
             Platform_FreeMemory(UtilState->StrHeapDebugData.DebugHeap);

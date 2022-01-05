@@ -19,7 +19,7 @@
 //SUBSECTION: C08
 
 typedef u08  chr;
-typedef hmem str;
+// typedef hmem str;
 
 typedef struct str_footer
 {
@@ -38,7 +38,7 @@ typedef u16 wchr;
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-#if _MODE_DEBUG
+#ifdef _DEBUG
     #define UTIL__STR_DEBUG__EXPORTS \
         FUNC(heap_data_DEBUG*, _Str_GetHeapDebugData_DEBUG, void) \
         FUNC(void,             _Str_HeapMark_DEBUG, void) \

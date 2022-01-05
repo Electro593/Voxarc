@@ -53,7 +53,7 @@ struct game_module
     b08 Loaded;
 };
 
-#if _MODULE_GAME
+#ifdef _MODULE_GAME
     #define FUNC(ReturnType, Name, ...) \
         internal ReturnType Name(__VA_ARGS__);
     GAME__FUNCS

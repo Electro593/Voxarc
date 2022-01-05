@@ -219,7 +219,7 @@ Platform_InitOpenGLFunctions(platform_exports *PlatformExports,
     WGL_ChoosePixelFormatARB(DeviceContext, PixelFormatAttribs, 0, 1, &PixelFormat, &FormatCount);
     Win32_DescribePixelFormat(DeviceContext, PixelFormat, sizeof(PixelFormatDescriptor), &PixelFormatDescriptor);
     
-    #if _MODE_DEBUG
+    #ifdef _DEBUG
     u32 DebugBit = WGL_CONTEXT_DEBUG_BIT_ARB;
     #else
     u32 DebugBit = 0;
@@ -390,7 +390,7 @@ Platform_InitKeyTables(platform_state *PlatformState)
     }
 }
 
-// #if _MODE_DEBUG
+// #ifdef _DEBUG
 internal void
 Platform_ThrowError_DEBUG(chr *Message)
 {
@@ -1587,7 +1587,7 @@ Platform_Entry(void)
     //TODO: https://gafferongames.com/post/fix_your_timestep/
     while(PlatformState->ExecutionState != EXECUTION_ENDED)
     {
-        #if _MODE_DEBUG
+        #ifdef _DEBUG
         {
             //TODO: Make this thread safe
             win32_filetime GameDllWriteTime = Platform_GetFileDataA(DLL_PATH("Game")).LastWriteTime;

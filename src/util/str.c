@@ -150,7 +150,7 @@ Str_SetHeap(heap *Heap)
     UtilState->StrHeap = Heap;
 }
 
-#if _MODE_DEBUG
+#ifdef _DEBUG
 internal heap_data_DEBUG *
 _Str_GetHeapDebugData_DEBUG(void)
 {
@@ -187,63 +187,63 @@ Str_Create(str *Dest,
         Length = ChrArr_Len(Chars);
     }
     
-    str Str = Heap_Allocate(UtilState->StrHeap, Length + 1 + sizeof(str_footer));
-    str_footer *Footer = (str_footer*)(Str + Heap_GetSize(Str)- sizeof(str_footer));
+    str String = Heap_Allocate(UtilState->StrHeap, Length + 1 + sizeof(str_footer));
+    str_footer *Footer = (str_footer*)(String + Heap_GetSize(String)- sizeof(str_footer));
     
     if(Chars)
     {
-        Mem_Cpy(Str, Chars, Length);
+        Mem_Cpy(String, Chars, Length);
     }
-    Str[Length] = '\0';
+    String[Length] = '\0';
     
     Footer->Length = Length;
     Footer->CharSize = sizeof(chr);
     
     if(Dest)
     {
-        *Dest = Str;
+        *Dest = String;
     }
     
-    return Str;
+    return String;
 }
 
 //NOTE: Length does not include null terminator
 internal str
-Str_Resize(str *Str,
+Str_Resize(str *String,
            u32 Length)
 {
-    str_footer OldFooter = *Str_GetFooter(*Str);
+    str_footer OldFooter = *Str_GetFooter(*String);
     
-    Heap_Resize(Str, Length + 1 + sizeof(str_footer));
-    str_footer *NewFooter = (str_footer*)(*Str + Heap_GetSize(*Str) - sizeof(str_footer));
+    Heap_Resize(String, Length + 1 + sizeof(str_footer));
+    str_footer *NewFooter = (str_footer*)(*String + Heap_GetSize(*String) - sizeof(str_footer));
     *NewFooter = OldFooter;
     
-    return *Str;
+    return *String;
 }
 
 internal void
-Str_Free(str Str)
+Str_Free(str String)
 {
-    Heap_Free(Str);
+    Heap_Free(String);
 }
 
 internal str_footer *
-Str_GetFooter(str Str)
+Str_GetFooter(str String)
 {
-    return (str_footer*)(Str + Heap_GetHeader(Str)->Size - sizeof(str_footer));
+    return (str_footer*)(String + Heap_GetHeader(String)->Size - sizeof(str_footer));
 }
 
 internal u32
-Str_GetSize(str Str)
+Str_GetSize(str String)
 {
-    return Heap_GetSize(Str) - sizeof(str_footer);
+    return Heap_GetSize(String) - sizeof(str_footer);
 }
 
 //NOTE: Does not include the null terminator
 internal u32
-Str_Len(str Str)
+Str_Len(str String)
 {
-    return Str_GetFooter(Str)->Length;
+    return Str_GetFooter(String)->Length;
 }
 
 //TODO: See what the crt does for all of these
@@ -274,7 +274,7 @@ Str_Cmp(str A,
 //NOTE: Index =  0 is the first match from left to right
 //      Index = -1 is the first match from right to left
 internal u32
-Str_FindChar(str Str,
+Str_FindChar(str String,
              chr Char,
              s32 Index)
 {
@@ -287,10 +287,10 @@ Str_FindChar(str Str,
         Count = -1;
     }
     
-    chr *C = Str;
+    chr *C = String;
     if(Sign < 0)
     {
-        C += Str_Len(Str) - 1; // To go from a count to an index
+        C += Str_Len(String) - 1; // To go from a count to an index
     }
     
     while(*C)
@@ -308,7 +308,7 @@ Str_FindChar(str Str,
         C += Sign;
     }
     
-    Result = (u32)((u64)C - (u64)Str);
+    Result = (u32)((u64)C - (u64)String);
     
     return Result;
 }
@@ -376,65 +376,65 @@ Str_Cat(str *StrA,
 }
 
 internal str
-Str_CatC(str *Str,
+Str_CatC(str *String,
          chr *ChrArr)
 {
     str TempStr = Str_Create(NULL, ChrArr, 0);
-    Str_Cat(Str, TempStr);
+    Str_Cat(String, TempStr);
     Str_Free(TempStr);
     
-    return *Str;
+    return *String;
 }
 
 internal str
-Str_Ins(str *Str,
+Str_Ins(str *String,
         str Insertion,
         u32 Index)
 {
-    u32 StrLen = Str_Len(*Str);
+    u32 StrLen = Str_Len(*String);
     u32 InsLen = Str_Len(Insertion);
     
     if(InsLen == 0)
     {
-        return *Str;
+        return *String;
     }
     ASSERT(Index < StrLen);
     
-    if(Str_GetSize(*Str) < StrLen + InsLen + 1)
+    if(Str_GetSize(*String) < StrLen + InsLen + 1)
     {
-        Str_Resize(Str, StrLen + InsLen);
+        Str_Resize(String, StrLen + InsLen);
     }
-    Str_GetFooter(*Str)->Length += InsLen;
+    Str_GetFooter(*String)->Length += InsLen;
     
-    Mem_Cpy(*Str + Index + InsLen, *Str + Index, StrLen - Index + 1);
-    Mem_Cpy(*Str + Index, Insertion, InsLen);
+    Mem_Cpy(*String + Index + InsLen, *String + Index, StrLen - Index + 1);
+    Mem_Cpy(*String + Index, Insertion, InsLen);
     
-    return *Str;
+    return *String;
 }
 
 //SUBSECTION: Casts
 
 internal b08
-Str_To_Bool(str Str)
+Str_To_Bool(str String)
 {
-    u32 StrLen = Str_Len(Str);
+    u32 StrLen = Str_Len(String);
     
-    if(Mem_Cmp(Str, "true", StrLen) == 0)
+    if(Mem_Cmp(String, "true", StrLen) == 0)
     {
         return TRUE;
     }
     
-    ASSERT(Mem_Cmp(Str, "false", StrLen) == 0);
+    ASSERT(Mem_Cmp(String, "false", StrLen) == 0);
     
     return FALSE;
 }
 
 internal s32
-Str_To_S32(str Str)
+Str_To_S32(str String)
 {
     s32 Value = 0;
     
-    chr *C = (chr*)Str;
+    chr *C = (chr*)String;
     b08 Negative = FALSE;
     if(*C == '-')
     {
@@ -461,9 +461,9 @@ Str_To_S32(str Str)
 
 //TODO: Try to optimize these
 internal u32
-Str_To_U32(str Str)
+Str_To_U32(str String)
 {
-    chr *C = (chr*)Str;
+    chr *C = (chr*)String;
     
     //TODO: Handle incorrect types, like a negative sign
     //      Also, do XXXXh and XXXXb
@@ -520,9 +520,9 @@ Str_To_U32(str Str)
 }
 
 internal r32
-Str_To_R32(str Str)
+Str_To_R32(str String)
 {
-    chr *C = (chr*)Str;
+    chr *C = (chr*)String;
     
     b08 Negative = FALSE;
     if(*C == '-')
@@ -591,9 +591,9 @@ Str_To_R32(str Str)
 }
 
 internal r64
-Str_To_R64(str Str)
+Str_To_R64(str String)
 {
-    chr *C = (chr*)Str;
+    chr *C = (chr*)String;
     
     b08 Negative = FALSE;
     if(*C == '-')

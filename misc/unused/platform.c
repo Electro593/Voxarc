@@ -14,7 +14,7 @@
 
 #include "platform/opengl.c"
 
-#if _LOADER_WIN32
+#ifdef _LOADER_WIN32
     #include "platform/win32/win32.h"
     
     #include "platform/win32/win32.c"

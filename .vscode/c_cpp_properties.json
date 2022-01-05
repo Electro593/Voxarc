@@ -6,11 +6,10 @@
                 "${workspaceFolder}/**"
             ],
             "defines": [
-                "_MODE=0",
+                "_BUILD_MODE=0",
                 "_COMPILER=0",
                 "_PLATFORM=0",
-                "_LOADER=0",
-                "_ARCH=0",
+                "_ARCHITECTURE=0",
                 "_MODULE=1"
             ],
             "cStandard": "c17",

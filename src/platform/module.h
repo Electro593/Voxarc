@@ -73,7 +73,7 @@ struct platform_module
 };
 global platform_module Platform;
 
-#if _MODULE_PLATFORM
+#ifdef _MODULE_PLATFORM
     #define FUNC(ReturnType, Name, ...) \
         internal ReturnType Name(__VA_ARGS__);
     PLATFORM__FUNCS

@@ -97,7 +97,7 @@
 #define GL_DEBUG_SEVERITY_LOW                   0x9148
 #define GL_DEBUG_OUTPUT                         0x92E0
 
-#if _MODE_DEBUG
+#ifdef _DEBUG
 #define OPENGL__EXT_DEBUG__PROCS \
     PROC(,void, glDebugMessageCallback, GL_DebugMessageCallback, _type__GL_DebugCallback *Callback, vptr UserParam) \
     PROC(,void, glDebugMessageControl,  GL_DebugMessageControl, u32 Source, u32 Type, u32 Severity, s32 Count, u32 *IDs, b08 Enabled) \

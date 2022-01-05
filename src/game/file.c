@@ -605,7 +605,7 @@ File_CreateAssetPack(heap *Heap)
                 *Dest = V4u08_4x1(255, 255, 255, Gray);
                 // *Dest = V4u08_4x1(Gray, Gray, Gray, Gray);
                 
-                // if(Str_Cmp(Asset->Path, Str_Create(&TempStr, "assets/arial/89.bmp", 0)) == 0)
+                // if(Str_Cmp(Asset->Path, Str_Create(&TempStr, "assets/fonts/arial/89.bmp", 0)) == 0)
                 // {
                 //     *Dest = V4u08_4x1(255, 0, 0, 255);
                 // }
@@ -771,7 +771,7 @@ File_CreateAssetPack(heap *Heap)
     
     //NOTE: Write file
     
-    #if _MODE_DEBUG
+    #ifdef _DEBUG
         bitmap_header OutHeader = {0};
         OutHeader.Signature[0] = 'B';
         OutHeader.Signature[1] = 'M';

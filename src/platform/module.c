@@ -8,18 +8,17 @@
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 
-#include <shared.h>
+// #ifndef INCLUDE_HEADER
+#   include <shared.h>
+// #endif
 
 #include <util/module.h>
 #include <game/module.h>
 #include <platform/module.h>
 
-#if 0 && _PLATFORM_WINDOWS
-#   include <d3d/d3d.c>
-#else
-#   include <platform/opengl/opengl.c>
-#endif
+#include <platform/opengl/opengl.c>
 
-#if _LOADER_WIN32
+#ifdef _WIN32
+// #   include <platform/win32/win32.c>
 #   include <platform/win32/loader.c>
 #endif

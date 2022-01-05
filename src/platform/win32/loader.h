@@ -10,12 +10,12 @@
 #ifndef PLATFORM_WIN32_LOADER_H_
 #define PLATFORM_WIN32_LOADER_H_
 
-#if _MODE_DEBUG
-    #define DLL_PATH(Module) ("build/Voxarc_" Module ".dll")
-    #define DLL_LOCKED_PATH(Module) ("build/Voxarc_" Module "_Locked.dll")
+#ifdef _DEBUG
+    #define DLL_PATH(Module) ("build/" Module ".dll")
+    #define DLL_LOCKED_PATH(Module) ("build/" Module "_Locked.dll")
 #else
-    #define DLL_PATH(Module) ("Voxarc_" Module ".dll")
-    #define DLL_LOCKED_PATH(Module) ("Voxarc_" Module "_Locked.dll")
+    #define DLL_PATH(Module) (Module ".dll")
+    #define DLL_LOCKED_PATH(Module) (Module "_Locked.dll")
 #endif
 #define DLL_LOAD_FUNC_NAME(Module) (Module "_Load")
 

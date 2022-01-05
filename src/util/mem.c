@@ -808,7 +808,7 @@ Heap_Resize(hvptr *Data,
 //SUBSECTION: Heap Debug
 
 
-#if _MODE_DEBUG
+#ifdef _DEBUG
 internal void
 _Heap_Mark_DEBUG(heap *Heap,
                  heap_data_DEBUG *DebugData)
@@ -914,7 +914,7 @@ _Heap_Print_DEBUG(heap *Heap,
     Heap_Mark_DEBUG(DebugData->DebugHeap, &TempDebugData);
     
     str TempStr;
-    str Str = Str_Create(NULL, "\n\nHeap:\n", 0);
+    str String = Str_Create(NULL, "\n\nHeap:\n", 0);
     str Header = Str_Create(NULL, "__________________", 0);
     str Section = Str_Create(NULL, "| __ __ __ __ __ |", 0);
     str UsedSeg = Str_Create(NULL, "|      Used      |", 0);
@@ -925,19 +925,19 @@ _Heap_Print_DEBUG(heap *Heap,
     
     heap_header *NextFree = Heap->FreeList;
     
-    Str_Cat(&Str, FreeIndent);
-    Str_Cat(&Str, Header);
-    Str_CatC(&Str, "\n");
+    Str_Cat(&String, FreeIndent);
+    Str_Cat(&String, Header);
+    Str_CatC(&String, "\n");
     
-    u32 LineOffset = Str_Len(Str);
-    Str_Cat(&Str, FreeIndent);
-    Str_Cat(&Str, Footer);
-    Str_CatC(&Str, " ");
-    Str_Cat(&Str, U32_To_Str(&TempStr, sizeof(heap))); Str_Free(TempStr);
-    Str_CatC(&Str, " bytes\n");
+    u32 LineOffset = Str_Len(String);
+    Str_Cat(&String, FreeIndent);
+    Str_Cat(&String, Footer);
+    Str_CatC(&String, " ");
+    Str_Cat(&String, U32_To_Str(&TempStr, sizeof(heap))); Str_Free(TempStr);
+    Str_CatC(&String, " bytes\n");
     if(NextFree)
     {
-        Mem_Cpy(Str + LineOffset + 2, "+---", 4);
+        Mem_Cpy(String + LineOffset + 2, "+---", 4);
     }
     
     heap_header *Curr = Heap_GetFirst(Heap);
@@ -962,51 +962,51 @@ _Heap_Print_DEBUG(heap *Heap,
             Mem_Cpy(Indent + 2, "|", 1);
         }
         
-        LineOffset = Str_Len(Str);
-        Str_Cat(&Str, Indent);
-        Str_Cat(&Str, Header);
-        Str_CatC(&Str, "\n");
+        LineOffset = Str_Len(String);
+        Str_Cat(&String, Indent);
+        Str_Cat(&String, Header);
+        Str_CatC(&String, "\n");
         if(Curr == NextFree)
         {
-            Mem_Cpy(Str + LineOffset + 2, "|", 1);
+            Mem_Cpy(String + LineOffset + 2, "|", 1);
         }
         
-        LineOffset = Str_Len(Str);
-        Str_Cat(&Str, Indent);
-        Str_Cat(&Str, Section);
-        Str_CatC(&Str, " ");
-        Str_Cat(&Str, U32_To_Str(&TempStr, sizeof(heap))); Str_Free(TempStr);
-        Str_CatC(&Str, " + ");
-        Str_Cat(&Str, U32_To_Str(&TempStr, Curr->Size)); Str_Free(TempStr);
-        Str_CatC(&Str, " bytes\n");
+        LineOffset = Str_Len(String);
+        Str_Cat(&String, Indent);
+        Str_Cat(&String, Section);
+        Str_CatC(&String, " ");
+        Str_Cat(&String, U32_To_Str(&TempStr, sizeof(heap))); Str_Free(TempStr);
+        Str_CatC(&String, " + ");
+        Str_Cat(&String, U32_To_Str(&TempStr, Curr->Size)); Str_Free(TempStr);
+        Str_CatC(&String, " bytes\n");
         if(Curr == NextFree)
         {
-            Mem_Cpy(Str + LineOffset + 2, "+-->", 4);
+            Mem_Cpy(String + LineOffset + 2, "+-->", 4);
         }
         
-        if(Str_Len(Str) > 2610)
+        if(Str_Len(String) > 2610)
             NOP;
         
-        Str_Cat(&Str, Indent);
+        Str_Cat(&String, Indent);
         if(Curr->Used)
         {
-            Str_Cat(&Str, UsedSeg);
+            Str_Cat(&String, UsedSeg);
         }
         else
         {
-            Str_Cat(&Str, FreeSeg);
+            Str_Cat(&String, FreeSeg);
         }
-        Str_CatC(&Str, " ");
-        Str_Cat(&Str, U64_To_Str_Hex(&TempStr, (u64)Heap_GetData(Curr))); Str_Free(TempStr);
-        Str_CatC(&Str, "\n");
+        Str_CatC(&String, " ");
+        Str_Cat(&String, U64_To_Str_Hex(&TempStr, (u64)Heap_GetData(Curr))); Str_Free(TempStr);
+        Str_CatC(&String, "\n");
         
-        LineOffset = Str_Len(Str);
-        Str_Cat(&Str, Indent);
-        Str_Cat(&Str, Footer);
-        Str_CatC(&Str, "\n");
+        LineOffset = Str_Len(String);
+        Str_Cat(&String, Indent);
+        Str_Cat(&String, Footer);
+        Str_CatC(&String, "\n");
         if(Curr->NextFree)
         {
-            Mem_Cpy(Str + LineOffset + 2, "+---", 4);
+            Mem_Cpy(String + LineOffset + 2, "+---", 4);
         }
         
         Str_Free(Indent);
@@ -1019,10 +1019,10 @@ _Heap_Print_DEBUG(heap *Heap,
     
     mem FileHandle;
     Platform_OpenFile(&FileHandle, "DEBUGOutput.txt", FileMode_Write);
-    Platform_WriteFile(Str, &FileHandle, Str_Len(Str), 0);
+    Platform_WriteFile(String, &FileHandle, Str_Len(String), 0);
     Platform_CloseFile(&FileHandle);
     
-    Str_Free(Str);
+    Str_Free(String);
     Str_Free(Header);
     Str_Free(Section);
     Str_Free(UsedSeg);
@@ -1154,14 +1154,14 @@ Stack_Allocate(u64 Size)
 }
 
 //TODO: This needs to be redone
-#define PointerCount(Ptr, Type) PointerCount_(Ptr, sizeof(Type))
+#define PointerCount(Data, Type) PointerCount_(Data, sizeof(Type))
 //NOTE: Requires zeroed memory
 internal u32
-PointerCount_(void *Ptr,
+PointerCount_(void *Data,
               u32 UnitSize)
 {
     u32 Size = 0;
-    u08 *Unit = (u08*)Ptr;
+    u08 *Unit = (u08*)Data;
     while(TRUE)
     {
         for(u32 ByteIndex = 0;
