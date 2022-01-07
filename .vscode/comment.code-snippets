@@ -13,15 +13,7 @@
             "**                                                                         **",
             "\\* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */",
             "",
-            "#ifdef INCLUDE_HEADER",
-            "",
-            "#define ${TM_FILEPATH/.*src\\W(\\w*).*/${1:/upcase}/g}__${TM_FILEPATH/.*src\\W\\w*\\W|\\.[hc]|((\\w*)(\\\\)?)/${2:/upcase}${3:+_}/g}__FUNCS \\",
-            "",
-            "#else",
-            "",
-            "",
-            "",
-            "#endif",
+            "$0"
         ],
     }
 }

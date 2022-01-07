@@ -21,7 +21,7 @@
         {
             "type": "shell",
             "label": "Run Program",
-            "command": "./build/Platform.exe",
+            "command": "./build/Voxarc.exe",
             "group": {
                 "kind": "test",
                 "isDefault": true

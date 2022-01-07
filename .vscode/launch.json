@@ -8,7 +8,7 @@
             "name": "Debug Program",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "build/Platform.exe",
+            "program": "build/Voxarc.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
