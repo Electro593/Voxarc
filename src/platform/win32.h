@@ -7,23 +7,53 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-// DECLARE_HANDLE(win32_icon);
-// DECLARE_HANDLE(win32_cursor);
-// DECLARE_HANDLE(win32_brush);
-// DECLARE_HANDLE(win32_window);
-// DECLARE_HANDLE(win32_menu);
+#define BRUSH_BLACK 4
+#define CW_USEDEFAULT ((s32)0x80000000)
+#define IDC_ARROW       ((c08*)((u64)((u16)(32512))))
+#define IDI_APPLICATION ((c08*)((u64)((u16)(32512))))
+#define PM_REMOVE 0x1
+#define WM_DESTROY       0x0002
+#define WM_CLOSE         0x0010
+#define WM_QUIT          0x0012
+#define WM_CREATE_WINDOW 0xFFFF
+#define WS_OVERLAPPED 0x00000000L
+#define WS_SYSMENU    0x00080000L
+#define WS_CAPTION    0x00C00000L
+#define WS_VISIBLE    0x10000000L
+
+typedef enum win32_message_name {
+    WM_Destroy       = 0x0002,
+    WM_Close         = 0x0010,
+    WM_Quit          = 0x0012,
+    WM_CreateWindow  = 0xFFFF,
+} win32_message_name;
+
+
 // DECLARE_HANDLE(win32_device_context);
 // DECLARE_HANDLE(win32_raw_input_handle);
 // DECLARE_HANDLE(win32_region);
 // DECLARE_HANDLE(win32_key);
 // DECLARE_HANDLE(win32_pen);
-// DECLARE_HANDLE(win32_gdi_object);
 // DECLARE_HANDLE(win32_monitor);
 // DECLARE_HANDLE(win32_opengl_render_context)
 
+typedef u16 win32_atom;
 typedef vptr win32_handle;
+typedef win32_handle win32_brush;
+typedef win32_handle win32_cursor;
+typedef win32_handle win32_gdi_object;
+typedef win32_handle win32_icon;
 typedef win32_handle win32_instance;
+typedef win32_handle win32_menu;
+typedef win32_handle win32_window;
 typedef win32_instance win32_module;
+
+// typedef b08
+// (API_ENTRY *_type__EnumCallback)(win32_window Window,
+//                                   s64 LParam);
+
+typedef u32 (API_ENTRY *func_Win32_ThreadCallback)(vptr Parameter);
+typedef s64 (API_ENTRY *func_Win32_WindowCallback)(win32_window Window, u32 Message, s64 WParam, s64 LParam);
 
 typedef struct win32_unicode_string {
     u16 Length;
@@ -50,34 +80,20 @@ typedef union win32_large_integer {
 // typedef u32 win32_color_ref;
 
 // typedef s64
-// (_API_ENTRY *win32_process)(void);
+// (API_ENTRY *win32_process)(void);
 
-// typedef s64
-// (_API_ENTRY *_type__WindowProc)(win32_window Window,
-//                                 u32 Message,
-//                                 u64 WParam,
-//                                 s64 LParam);
-
-// typedef b08
-// (_API_ENTRY *_type__EnumCallback)(win32_window Window,
-//                                   s64 LParam);
-
-// typedef u32
-// (_API_ENTRY *_type__ThreadStartRoutine)(vptr ThreadParameter);
-
-// typedef struct win32_window_class_a
-// {
-//     u32 Style;
-//     _type__WindowProc WindowCallback;
-//     s32 WindowClassExtraBytes;
-//     s32 WindowInstanceExtraBytes;
-//     win32_instance Instance;
-//     win32_icon Icon;
-//     win32_cursor Cursor;
-//     win32_brush Background;
-//     c08 *MenuName;
-//     c08 *ClassName;
-// } win32_window_class_a;
+typedef struct win32_window_class_a {
+    u32 Style;
+    func_Win32_WindowCallback Callback;
+    s32 WindowClassExtraBytes;
+    s32 WindowInstanceExtraBytes;
+    win32_instance Instance;
+    win32_icon Icon;
+    win32_cursor Cursor;
+    win32_brush Background;
+    c08 *MenuName;
+    c08 *ClassName;
+} win32_window_class_a;
 
 // typedef struct win32_window_class_w
 // {
@@ -101,11 +117,10 @@ typedef union win32_large_integer {
 //     s32 Bottom;
 // } win32_rect;
 
-// typedef struct win32_point
-// {
-//     s32 X;
-//     s32 Y;
-// } win32_point;
+typedef struct win32_point {
+    s32 X;
+    s32 Y;
+} win32_point;
 
 // typedef struct win32_overlapped
 // {
@@ -123,12 +138,11 @@ typedef union win32_large_integer {
 //     win32_handle Event;
 // } win32_overlapped;
 
-// typedef struct win32_security_attributes
-// {
-//     u32 Length;
-//     vptr SecurityDescriptor;
-//     b08 InheritHandle;
-// } win32_security_attributes;
+typedef struct win32_security_attributes {
+    u32 Length;
+    vptr SecurityDescriptor;
+    b08 InheritHandle;
+} win32_security_attributes;
 
 // typedef struct win32_pixel_format_descriptor
 // {
@@ -160,16 +174,15 @@ typedef union win32_large_integer {
 //     u32 DamageMask;
 // } win32_pixel_format_descriptor;
 
-// typedef struct win32_message
-// {
-//     win32_window Window;
-//     u32 Message;
-//     u64 WParam;
-//     s64 LParam;
-//     u32 Time;
-//     win32_point Point;
-//     u32 Private;
-// } win32_message;
+typedef struct win32_message {
+    win32_window Window;
+    u32 Message;
+    u64 WParam;
+    s64 LParam;
+    u32 Time;
+    win32_point Point;
+    u32 Private;
+} win32_message;
 
 // typedef struct win32_filetime
 // {
@@ -339,9 +352,9 @@ typedef struct win32_context {
 } win32_context;
 
 typedef struct win32_ldr_data_table_entry {
-    win32_list_entry InLoadOrderLinks;
-    win32_list_entry InMemoryOrderLinks;
-    win32_list_entry InInitializationOrderLinks;
+    win32_list_entry LoadOrderLinks;
+    win32_list_entry MemoryOrderLinks;
+    win32_list_entry InitializationOrderLinks;
     vptr DllBase;
     vptr EntryPoint;
     u32 SizeOfImage;
@@ -476,7 +489,7 @@ typedef struct win32_teb {
     struct win32_nt_tib {
         struct win32_exception_registration_record {
             struct win32_exception_registration_record *Next;
-            win32_exception_disposition (_API_ENTRY *Handler)(win32_exception_record *ExceptionRecord, vptr EstablisherFrame, win32_context *ContextRecord, vptr DispatcherContext);
+            win32_exception_disposition (API_ENTRY *Handler)(win32_exception_record *ExceptionRecord, vptr EstablisherFrame, win32_context *ContextRecord, vptr DispatcherContext);
         } *ExceptionList;
         vptr StackBase;
         vptr StackLimit;
@@ -674,7 +687,7 @@ typedef struct win32_teb {
         u08 _Padding5_[4];
         u64 ActiveProcessAffinityMask;
         u32 GdiHandleBuffer[60];
-        void (_API_ENTRY *PostProcessInitRoutine)(void);
+        void (API_ENTRY *PostProcessInitRoutine)(void);
         vptr TlsExpansionBitmap;
         u32 TlsExpansionBitmapBits[32];
         u32 SessionId;
@@ -1187,8 +1200,25 @@ typedef struct win32_image_export_directory {
 // } win32_monitor_info;
 
 #define WIN32_FUNCS \
-    PROC(Kernel32, fptr,         GetProcAddress, win32_module Module, c08 *Name) \
-    PROC(Kernel32, win32_module, LoadLibraryA,   c08 *Name) \
+    PROC(Kernel32, win32_handle,     CreateThread,       win32_security_attributes *ThreadAttributes, u64 StackSize, func_Win32_ThreadCallback *StartAddress, vptr Parameter, u32 CreationFlags, u32 *ThreadId) \
+    PROC(User32,   win32_window,     CreateWindowExA,    u32 StyleEx, c08 *ClassName, c08 *WindowName, u32 Style, s32 x, s32 y, s32 Width, s32 Height, win32_window ParentWindow, win32_menu Menu, win32_instance Instance, vptr Param) \
+    PROC(User32,   s32,              DefWindowProcA,     win32_window Window, u32 Message, s64 WParam, s64 LParam) \
+    PROC(User32,   s64,              DispatchMessageA,   win32_message *Message) \
+    PROC(Kernel32, void,             ExitProcess,        u32 ExitCode) \
+    PROC(Gdi32,    win32_gdi_object, GetStockObject,     s32 I) \
+    PROC(User32,   b32,              GetMessageA,        win32_message *Msg, win32_window Window, u32 MessageFilterMin, u32 MessageFilterMax) \
+    PROC(Kernel32, win32_module,     GetModuleHandleA,   c08 *ModuleName) \
+    PROC(Kernel32, fptr,             GetProcAddress,     win32_module Module, c08 *Name) \
+    PROC(User32,   win32_cursor,     LoadCursorA,        win32_instance Instance, c08 *CursorName) \
+    PROC(User32,   win32_icon,       LoadIconA,          win32_instance Instance, c08 *IconName) \
+    PROC(Kernel32, win32_module,     LoadLibraryA,       c08 *Name) \
+    PROC(Kernel32, void,             OutputDebugStringA, c08 *String) \
+    PROC(User32,   b32,              PeekMessageA,       win32_message *Message, win32_window Window, u32 MessageFilterMin, u32 MessageFilterMax, u32 RemoveMessage) \
+    PROC(User32,   b32,              PostThreadMessageA, u32 Thread, u32 Message, s64 WParam, s64 LParam) \
+    PROC(User32,   win32_atom,       RegisterClassA,     win32_window_class_a *WindowClass) \
+    PROC(User32,   s64,              SendMessageA,       win32_window Window, u32 Message, s64 WParam, s64 LParam) \
+    PROC(User32,   b32,              TranslateMessage,   win32_message *Message) \
+    PROC(User32,   b08,              WaitMessage,        void) \
 
 #define PROC(Module, ReturnType, Name, ...) \
     typedef ReturnType func_Win32_##Name(__VA_ARGS__); \

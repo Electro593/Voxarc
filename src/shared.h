@@ -9,9 +9,9 @@
 
 #define _DEBUG
 #define _MSVC
-#define _API_ENTRY  __stdcall
-#define _API_IMPORT __declspec(dllimport)
-#define _API_EXPORT __declspec(dllexport)
+#define API_ENTRY  __stdcall
+#define API_IMPORT __declspec(dllimport)
+#define API_EXPORT __declspec(dllexport)
 #define _X64
 
 #define global     static
@@ -23,6 +23,7 @@
 
 #define FORCE_CAST(Variable, Type)               (*(Type*)&(Variable))
 #define LITERAL_CAST(OldType, Constant, NewType) (*(NewType*)&(OldType){Constant})
+#define OFFSET_OF(Type, Element) ((u64)&(((Type*)0)->Element))
 
 #ifdef _DEBUG
     #define STOP Intrin_DebugBreak()
@@ -69,5 +70,6 @@ typedef u16 c16;
 
 #include <util/intrin.h>
 #include <platform/win32.h>
+#include <platform/entry.h>
 
 s32 _fltused;
