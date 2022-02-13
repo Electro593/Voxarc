@@ -3,9 +3,12 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/src/**"
             ],
             "defines": [
+                "_MSVC=1",
+                "_X64=1",
+                "_DEBUG=1"
             ],
             "cStandard": "c17",
             "cppStandard": "c++17",

@@ -7,20 +7,21 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-typedef union __declspec(intrin_type) __declspec(align(16)) __m128 {
-    r32 R32[4];
-    r64 R64[2];
-} r128;
+typedef enum execution_state {
+    EXECUTION_UNINITIALIZED,
+    EXECUTION_RUNNING,
+    EXECUTION_PAUSED,
+    EXECUTION_ENDED,
+} execution_state;
 
-void __debugbreak(void);
-void __nop(void);
-u64  __readgsqword(u32 Offset);
-r128 _mm_sqrt_ps(r128);
-r128 _mm_set_ps(r32, r32, r32, r32);
+typedef enum key_state {
+    KEY_RELEASED,
+    KEY_PRESSED,
+    KEY_HELD,
+} key_state;
 
-#define Asm_ReadGSQWord(u32__Offset) RETURNS(u64)  __readgsqword(u32__Offset)
-#define Intrin_DebugBreak()          RETURNS(void) __debugbreak();
-#define Intrin_Nop()                 RETURNS(void) __nop();
-
-#define R128_Set_4x32(_0,_1,_2,_3) _mm_set_ps(_0,_1,_2,_3)
-#define R128_Sqrt_4(R128) (_mm_sqrt_ps(R128))
+typedef enum file_mode {
+    FILE_READ,
+    FILE_WRITE,
+    FILE_APPEND,
+} file_mode;

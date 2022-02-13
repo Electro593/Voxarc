@@ -7,20 +7,30 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-typedef union __declspec(intrin_type) __declspec(align(16)) __m128 {
-    r32 R32[4];
-    r64 R64[2];
-} r128;
+#define HEAP_NULL_HANDLE 0xFFFF
+#define HEAP(Type) heap_handle *
 
-void __debugbreak(void);
-void __nop(void);
-u64  __readgsqword(u32 Offset);
-r128 _mm_sqrt_ps(r128);
-r128 _mm_set_ps(r32, r32, r32, r32);
+typedef struct heap_handle {
+    vptr Data;
+    u64 Size;
+    u16 Index;
+    u16 Next;
+    b08 Free;
+} heap_handle;
 
-#define Asm_ReadGSQWord(u32__Offset) RETURNS(u64)  __readgsqword(u32__Offset)
-#define Intrin_DebugBreak()          RETURNS(void) __debugbreak();
-#define Intrin_Nop()                 RETURNS(void) __nop();
+typedef struct heap {
+    u64 TotalSize;
+    
+    u16 HandleCount;
+    u16 FreeList;
+    u16 UsedList;
+    u16 BlockList;
+    
+    u08 *DataCursor; // Grows leftward
+} heap;
 
-#define R128_Set_4x32(_0,_1,_2,_3) _mm_set_ps(_0,_1,_2,_3)
-#define R128_Sqrt_4(R128) (_mm_sqrt_ps(R128))
+typedef struct stack {
+    u64 Size;
+    vptr *FirstMarker;
+    u08 *Cursor;
+} stack;

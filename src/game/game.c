@@ -7,20 +7,25 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-typedef union __declspec(intrin_type) __declspec(align(16)) __m128 {
-    r32 R32[4];
-    r64 R64[2];
-} r128;
+internal void
+Game_Init(game_state *Game,
+          renderer_state *Renderer)
+{
+    Renderer_Init(Renderer);
+}
 
-void __debugbreak(void);
-void __nop(void);
-u64  __readgsqword(u32 Offset);
-r128 _mm_sqrt_ps(r128);
-r128 _mm_set_ps(r32, r32, r32, r32);
-
-#define Asm_ReadGSQWord(u32__Offset) RETURNS(u64)  __readgsqword(u32__Offset)
-#define Intrin_DebugBreak()          RETURNS(void) __debugbreak();
-#define Intrin_Nop()                 RETURNS(void) __nop();
-
-#define R128_Set_4x32(_0,_1,_2,_3) _mm_set_ps(_0,_1,_2,_3)
-#define R128_Sqrt_4(R128) (_mm_sqrt_ps(R128))
+internal void
+Game_Update(game_state *Game,
+            renderer_state *Renderer)
+{
+    r32 R = R32_Abs((r32)(s08)Game->DebugCounter)/128.f;
+    r32 G = 0;
+    r32 B = 0;
+    
+    OpenGL_ClearColor(R, G, B, 1);
+    Game->DebugCounter++;
+    
+    OpenGL_Clear(GL_COLOR_BUFFER_BIT);
+    
+    Renderer_Draw(Renderer);
+}

@@ -2,35 +2,16 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build Program",
+            "label": "Build Program (MS)",
             "type": "shell",
-            "command": "./build",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "Build Font Unpacker",
-            "type": "shell",
-            "command": "./build ttf_unpacker",
+            "command": "./scripts/build",
             "group": "build",
             "problemMatcher": "$msCompile"
         },
         {
             "type": "shell",
-            "label": "Run Program",
+            "label": "Run Program (MS)",
             "command": "./build/Voxarc.exe",
-            "group": {
-                "kind": "test",
-                "isDefault": true
-            }
-        },
-        {
-            "type": "shell",
-            "label": "Run Font Unpacker",
-            "command": "./build/ttf_unpacker.exe",
             "group": "test"
         },
     ]

@@ -7,53 +7,134 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#define INVALID_HANDLE_VALUE ((vptr)(s64)-1)
+
 #define BRUSH_BLACK 4
 #define CW_USEDEFAULT ((s32)0x80000000)
 #define IDC_ARROW       ((c08*)((u64)((u16)(32512))))
 #define IDI_APPLICATION ((c08*)((u64)((u16)(32512))))
-#define PM_REMOVE 0x1
-#define WM_DESTROY       0x0002
-#define WM_CLOSE         0x0010
-#define WM_QUIT          0x0012
-#define WM_CREATE_WINDOW 0xFFFF
-#define WS_OVERLAPPED 0x00000000L
-#define WS_SYSMENU    0x00080000L
-#define WS_CAPTION    0x00C00000L
-#define WS_VISIBLE    0x10000000L
 
-typedef enum win32_message_name {
-    WM_Destroy       = 0x0002,
-    WM_Close         = 0x0010,
-    WM_Quit          = 0x0012,
-    WM_CreateWindow  = 0xFFFF,
-} win32_message_name;
+#define READ_CONTROL  0x00020000L
+#define SYNCHRONIZE   0x00100000L
+#define GENERIC_WRITE 0x40000000L
+#define GENERIC_READ  0x80000000L
+#define FILE_SHARE_READ 0x00000001
+#define FILE_ATTRIBUTE_NORMAL 0x80
+
+#define ERROR_SUCCESS          0L
+#define ERROR_FILE_NOT_FOUND   2L
+#define ERROR_PATH_NOT_FOUND   3L
+#define ERROR_ALREADY_EXISTS 183L
+
+#define CREATE_NEW    1
+#define CREATE_ALWAYS 2
+#define OPEN_EXISTING 3
 
 
-// DECLARE_HANDLE(win32_device_context);
-// DECLARE_HANDLE(win32_raw_input_handle);
-// DECLARE_HANDLE(win32_region);
-// DECLARE_HANDLE(win32_key);
-// DECLARE_HANDLE(win32_pen);
-// DECLARE_HANDLE(win32_monitor);
-// DECLARE_HANDLE(win32_opengl_render_context)
+
+
 
 typedef u16 win32_atom;
 typedef vptr win32_handle;
 typedef win32_handle win32_brush;
 typedef win32_handle win32_cursor;
+typedef win32_handle win32_device_context;
 typedef win32_handle win32_gdi_object;
 typedef win32_handle win32_icon;
 typedef win32_handle win32_instance;
 typedef win32_handle win32_menu;
+typedef win32_handle win32_opengl_render_context;
 typedef win32_handle win32_window;
 typedef win32_instance win32_module;
 
-// typedef b08
-// (API_ENTRY *_type__EnumCallback)(win32_window Window,
-//                                   s64 LParam);
+
+
+
 
 typedef u32 (API_ENTRY *func_Win32_ThreadCallback)(vptr Parameter);
 typedef s64 (API_ENTRY *func_Win32_WindowCallback)(win32_window Window, u32 Message, s64 WParam, s64 LParam);
+
+
+
+
+
+typedef enum win32_page_flags {
+    Win32_Page_ReadWrite = 0x04,
+} win32_page_flags;
+
+typedef enum win32_alloc_flags {
+    Win32_Alloc_Commit  = 0x1000,
+    Win32_Alloc_Reserve = 0x2000,
+    Win32_Alloc_Release = 0x8000,
+} win32_alloc_flags;
+
+typedef enum win32_class_style_flags {
+    Win32_ClassStyle_VRedraw = 0x0001,
+    Win32_ClassStyle_HRedraw = 0x0002,
+    Win32_ClassStyle_OwnDC   = 0x0020,
+} win32_class_style_flags;
+
+typedef enum win32_window_style_flags {
+    Win32_WindowStyle_Overlapped = 0x00000000L,
+    Win32_WindowStyle_SysMenu    = 0x00080000L,
+    Win32_WindowStyle_Caption    = 0x00C00000L,
+    Win32_WindowStyle_Visible    = 0x10000000L,
+} win32_window_style_flags;
+
+typedef enum win32_window_message {
+    Win32_WindowMessage_Destroy       = 0x0002,
+    Win32_WindowMessage_Close         = 0x0010,
+    Win32_WindowMessage_Quit          = 0x0012,
+} win32_window_message;
+
+typedef enum win32_peek_message_flags {
+    Win32_PeekMessage_Remove = 0x1,
+} win32_peek_message_flags;
+
+typedef enum win32_exception_disposition {
+    Win32Exception_ContinueExecution,
+    Win32Exception_ContinueSearch,
+    Win32Exception_NestedException,
+    Win32Exception_CollidedUnwind,
+} win32_exception_disposition;
+
+typedef enum win32_pixel_format_descriptor_flags {
+    Win32_PixelFormatDescriptor_TypeRGBA      = 0x00,
+    Win32_PixelFormatDescriptor_MainPlane     = 0x00,
+    Win32_PixelFormatDescriptor_DoubleBuffer  = 0x01,
+    Win32_PixelFormatDescriptor_DrawToWindow  = 0x04,
+    Win32_PixelFormatDescriptor_SupportOpenGL = 0x20,
+} win32_pixel_format_descriptor_flags;
+
+typedef enum wgl_attributes {
+    WGL_ARB_DrawToWindow     = 0x2001,
+    WGL_ARB_Acceleration     = 0x2003,
+    WGL_ARB_SupportOpenGL    = 0x2010,
+    WGL_ARB_DoubleBuffer     = 0x2011,
+    WGL_ARB_PixelType        = 0x2013,
+    WGL_ARB_ColorBits        = 0x2014,
+    WGL_ARB_DepthBits        = 0x2022,
+    WGL_ARB_StencilBits      = 0x2023,
+    WGL_ARB_FullAcceleration = 0x2027,
+    WGL_ARB_TypeRGBA         = 0x202B,
+    WGL_ARB_SampleBuffers    = 0x2041,
+    WGL_ARB_Samples          = 0x2042,
+    
+    WGL_ARB_Context_MajorVersion = 0x2091,
+    WGL_ARB_Context_MinorVersion = 0x2092,
+    WGL_ARB_Context_LayerPlane   = 0x2093,
+    WGL_ARB_Context_Flags        = 0x2094,
+    WGL_ARB_Context_ProfileMask  = 0x9126,
+    
+    WGL_ARB_Context_CoreProfile = 0x00000001,
+    
+    WGL_ARB_Context_Debug             = 0x00000001,
+    WGL_ARB_Context_ForwardCompatible = 0x00000002,
+} wgl_attributes;
+
+
+
+
 
 typedef struct win32_unicode_string {
     u16 Length;
@@ -77,11 +158,6 @@ typedef union win32_large_integer {
     s64 QuadPart;
 } win32_large_integer;
 
-// typedef u32 win32_color_ref;
-
-// typedef s64
-// (API_ENTRY *win32_process)(void);
-
 typedef struct win32_window_class_a {
     u32 Style;
     func_Win32_WindowCallback Callback;
@@ -95,48 +171,23 @@ typedef struct win32_window_class_a {
     c08 *ClassName;
 } win32_window_class_a;
 
-// typedef struct win32_window_class_w
-// {
-//     u32 Style;
-//     _type__WindowProc WindowCallback;
-//     s32 WindowClassExtraBytes;
-//     s32 WindowInstanceExtraBytes;
-//     win32_instance Instance;
-//     win32_icon Icon;
-//     win32_cursor Cursor;
-//     win32_brush Background;
-//     c16 *MenuName;
-//     c16 *ClassName;
-// } win32_window_class_w;
-
-// typedef struct win32_rect
-// {
-//     s32 Left;
-//     s32 Top;
-//     s32 Right;
-//     s32 Bottom;
-// } win32_rect;
-
 typedef struct win32_point {
     s32 X;
     s32 Y;
 } win32_point;
 
-// typedef struct win32_overlapped
-// {
-//     u64 Internal;
-//     u64 InternalHigh;
-//     union
-//     {
-//         struct
-//         {
-//             u32 Offset;
-//             u32 OffsetHigh;
-//         };
-//         vptr Pointer;
-//     };
-//     win32_handle Event;
-// } win32_overlapped;
+typedef struct win32_overlapped {
+    u64 Internal;
+    u64 InternalHigh;
+    union {
+        struct {
+            u32 Offset;
+            u32 OffsetHigh;
+        };
+        vptr Pointer;
+    };
+    win32_handle Event;
+} win32_overlapped;
 
 typedef struct win32_security_attributes {
     u32 Length;
@@ -144,35 +195,34 @@ typedef struct win32_security_attributes {
     b08 InheritHandle;
 } win32_security_attributes;
 
-// typedef struct win32_pixel_format_descriptor
-// {
-//     u16 Size;
-//     u16 Version;
-//     u32 Flags;
-//     u08 PixelType;
-//     u08 ColorBits;
-//     u08 RedBits;
-//     u08 RedShift;
-//     u08 GreenBits;
-//     u08 GreenShift;
-//     u08 BlueBits;
-//     u08 BlueShift;
-//     u08 AlphaBits;
-//     u08 AlphaShift;
-//     u08 AccumBits;
-//     u08 AccumRedBits;
-//     u08 AccumGreenBits;
-//     u08 AccumBlueBits;
-//     u08 AccumAlphaBits;
-//     u08 DepthBits;
-//     u08 StencilBits;
-//     u08 AuxBuffers;
-//     u08 LayerType;
-//     u08 Reserved;
-//     u32 LayerMask;
-//     u32 VisibleMask;
-//     u32 DamageMask;
-// } win32_pixel_format_descriptor;
+typedef struct win32_pixel_format_descriptor {
+    u16 Size;
+    u16 Version;
+    u32 Flags;
+    u08 PixelType;
+    u08 ColorBits;
+    u08 RedBits;
+    u08 RedShift;
+    u08 GreenBits;
+    u08 GreenShift;
+    u08 BlueBits;
+    u08 BlueShift;
+    u08 AlphaBits;
+    u08 AlphaShift;
+    u08 AccumBits;
+    u08 AccumRedBits;
+    u08 AccumGreenBits;
+    u08 AccumBlueBits;
+    u08 AccumAlphaBits;
+    u08 DepthBits;
+    u08 StencilBits;
+    u08 AuxBuffers;
+    u08 LayerType;
+    u08 Reserved;
+    u32 LayerMask;
+    u32 VisibleMask;
+    u32 DamageMask;
+} win32_pixel_format_descriptor;
 
 typedef struct win32_message {
     win32_window Window;
@@ -184,80 +234,13 @@ typedef struct win32_message {
     u32 Private;
 } win32_message;
 
-// typedef struct win32_filetime
-// {
-//     u32 LowDateTime;
-//     u32 HighDateTime;
-// } win32_filetime;
-
-// typedef struct win32_find_data_a
-// {
-//     u32 FileAttributes;
-//     win32_filetime CreationTime;
-//     win32_filetime LastAccessTime;
-//     win32_filetime LastWriteTime;
-//     u32 FileSizeHigh;
-//     u32 FileSizeLow;
-//     u32 Reserved0;
-//     u32 Reserved1;
-//     c08 FileName[MAX_PATH];
-//     c08 AlternateFileName[14];
-// } win32_find_data_a;
-
-// typedef struct win32_find_data_w
-// {
-//     u32 FileAttributes;
-//     win32_filetime CreationTime;
-//     win32_filetime LastAccessTime;
-//     win32_filetime LastWriteTime;
-//     u32 FileSizeHigh;
-//     u32 FileSizeLow;
-//     u32 Reserved0;
-//     u32 Reserved1;
-//     c16 FileName[MAX_PATH];
-//     c16 AlternateFileName[14];
-// } win32_find_data_w;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-typedef enum win32_exception_disposition {
-    Win32Exception_ContinueExecution,
-    Win32Exception_ContinueSearch,
-    Win32Exception_NestedException,
-    Win32Exception_CollidedUnwind,
-} win32_exception_disposition;
-
-#define EXCEPTION_MAXIMUM_PARAMETERS 15
 typedef struct win32_exception_record {
     u32 ExceptionCode;
     u32 ExceptionFlags;
     struct win32_exception_record *ExceptionRecord;
     vptr ExceptionAddress;
     u32 NumberParameters;
-    u64 ExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
+    u64 ExceptionInformation[15];
 } win32_exception_record;
 
 typedef struct win32_context {
@@ -921,38 +904,6 @@ typedef struct win32_teb {
     struct win32_guid EffectiveContainerId;
 } win32_teb;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 typedef struct win32_image_dos_header {
     u16 e_magic;    // Magic number
     u16 e_cblp;     // Bytes on last page of file
@@ -1053,175 +1004,65 @@ typedef struct win32_image_export_directory {
     u32 AddressOfNameOrdinals;
 } win32_image_export_directory;
 
-// typedef struct win32_image_section_header
-// {
-//     u08 Name[8];
-//     union
-//     {
-//         u32 PhysicalAddress;
-//         u32 VirtualSize;
-//     } Misc;
-//     u32 VirtualAddress;
-//     u32 SizeOfRawData;
-//     u32 PointerToRawData;
-//     u32 PointerToRelocations;
-//     u32 PointerToLinenumbers;
-//     u16 NumberOfRelocations;
-//     u16 NumberOfLinenumbers;
-//     u32 Characteristics;
-// } win32_image_section_header;
 
-// typedef struct win32_display_device_w
-// {
-//     u32 CountBytes;
-//     c16 DeviceName[32];
-//     c16 DeviceString[128];
-//     u32 StateFlags;
-//     c16 DeviceID[128];
-//     c16 DeviceKey[128];
-// } win32_display_device_w;
 
-// typedef struct win32_raw_input_device
-// {
-//     u16 UsagePage;
-//     u16 Usage;
-//     u32 Flags;
-//     win32_window Target;
-// } win32_raw_input_device;
 
-// typedef struct win32_track_mouse_event
-// {
-//     u32 Size;
-//     u32 Flags;
-//     win32_window WindowTrack;
-//     u32 HoverTime;
-// } win32_track_mouse_event;
-
-// typedef struct win32_raw_input_header
-// {
-//     u32 Type;
-//     u32 Size;
-//     win32_handle Device;
-//     u64 WParam;
-// } win32_raw_input_header;
-
-// typedef struct win32_raw_mouse
-// {
-//     u16 Flags;
-//     union
-//     {
-//         u32 Buttons;
-//         struct
-//         {
-//             u16 ButtonFlags;
-//             u16 ButtonData;
-//         };
-//     };
-//     u32 RawButtons;
-//     s32 LastX;
-//     s32 LastY;
-//     u32 ExtraInformation;
-// } win32_raw_mouse;
-
-// typedef struct win32_raw_keyboard
-// {
-//     u16 MakeCode;
-//     u16 Flags;
-//     u16 Reserved;
-//     u16 VKey;
-//     u32 Message;
-//     u32 ExtraInformation;
-// } win32_raw_keyboard;
-
-// typedef struct win32_raw_hid
-// {
-//     u32 SizeHID;
-//     u32 Count;
-//     u08 RawData[1];
-// } win32_raw_hid;
-
-// typedef struct win32_raw_input
-// {
-//     win32_raw_input_header Header;
-//     union
-//     {
-//         win32_raw_mouse Mouse;
-//         win32_raw_keyboard Keyboard;
-//         win32_raw_hid HID;
-//     } Data;
-// } win32_raw_input;
-
-// typedef struct win32_min_max_info
-// {
-//     win32_point Reserved;
-//     win32_point MaxSize;
-//     win32_point MaxPosition;
-//     win32_point MinTrackSize;
-//     win32_point MaxTrackSize;
-// } win32_min_max_info;
-
-// typedef struct win32_window_placement
-// {
-//     u32 Length;
-//     u32 Flags;
-//     u32 ShowCmd;
-//     win32_point MinPosition;
-//     win32_point MaxPosition;
-//     win32_rect NormalPosition;
-// } win32_window_placement;
-
-// typedef struct win32_window_info
-// {
-//     u32 Size;
-//     win32_rect WindowRect;
-//     win32_rect ClientRect;
-//     u32 Style;
-//     u32 ExStyle;
-//     u32 WindowStatus;
-//     u32 WindowBordersX;
-//     u32 WindowBordersY;
-//     u16 WindowTypeAtom;
-//     u16 CreatorVersion;
-// } win32_window_info;
-
-// typedef struct win32_log_brush
-// {
-//     u32 Style;
-//     win32_color_ref Color;
-//     u64 Hatch;
-// } win32_log_brush;
-
-// typedef struct win32_monitor_info
-// {
-//     u32 Size;
-//     win32_rect MonitorRect;
-//     win32_rect WorkRect;
-//     u32 Flags;
-// } win32_monitor_info;
 
 #define WIN32_FUNCS \
-    PROC(Kernel32, win32_handle,     CreateThread,       win32_security_attributes *ThreadAttributes, u64 StackSize, func_Win32_ThreadCallback *StartAddress, vptr Parameter, u32 CreationFlags, u32 *ThreadId) \
-    PROC(User32,   win32_window,     CreateWindowExA,    u32 StyleEx, c08 *ClassName, c08 *WindowName, u32 Style, s32 x, s32 y, s32 Width, s32 Height, win32_window ParentWindow, win32_menu Menu, win32_instance Instance, vptr Param) \
-    PROC(User32,   s32,              DefWindowProcA,     win32_window Window, u32 Message, s64 WParam, s64 LParam) \
-    PROC(User32,   s64,              DispatchMessageA,   win32_message *Message) \
-    PROC(Kernel32, void,             ExitProcess,        u32 ExitCode) \
-    PROC(Gdi32,    win32_gdi_object, GetStockObject,     s32 I) \
-    PROC(User32,   b32,              GetMessageA,        win32_message *Msg, win32_window Window, u32 MessageFilterMin, u32 MessageFilterMax) \
-    PROC(Kernel32, win32_module,     GetModuleHandleA,   c08 *ModuleName) \
-    PROC(Kernel32, fptr,             GetProcAddress,     win32_module Module, c08 *Name) \
-    PROC(User32,   win32_cursor,     LoadCursorA,        win32_instance Instance, c08 *CursorName) \
-    PROC(User32,   win32_icon,       LoadIconA,          win32_instance Instance, c08 *IconName) \
-    PROC(Kernel32, win32_module,     LoadLibraryA,       c08 *Name) \
-    PROC(Kernel32, void,             OutputDebugStringA, c08 *String) \
-    PROC(User32,   b32,              PeekMessageA,       win32_message *Message, win32_window Window, u32 MessageFilterMin, u32 MessageFilterMax, u32 RemoveMessage) \
-    PROC(User32,   b32,              PostThreadMessageA, u32 Thread, u32 Message, s64 WParam, s64 LParam) \
-    PROC(User32,   win32_atom,       RegisterClassA,     win32_window_class_a *WindowClass) \
-    PROC(User32,   s64,              SendMessageA,       win32_window Window, u32 Message, s64 WParam, s64 LParam) \
-    PROC(User32,   b32,              TranslateMessage,   win32_message *Message) \
-    PROC(User32,   b08,              WaitMessage,        void) \
+    FUNC(Gdi32,    s32,                  ChoosePixelFormat,   win32_device_context DeviceContext, win32_pixel_format_descriptor *PixelFormatDescriptor) \
+    FUNC(Kernel32, b08,                  CloseHandle,         win32_handle Object) \
+    FUNC(Kernel32, win32_handle,         CreateFileA,         c08 *FileName, u32 DesiredAccess, u32 ShareMode, win32_security_attributes *SecurityAttributes, u32 CreationDisposition, u32 FlagsAndAttributes, win32_handle TemplateFile) \
+    FUNC(Kernel32, win32_handle,         CreateThread,        win32_security_attributes *ThreadAttributes, u64 StackSize, func_Win32_ThreadCallback *StartAddress, vptr Parameter, u32 CreationFlags, u32 *ThreadId) \
+    FUNC(User32,   win32_window,         CreateWindowExA,     u32 StyleEx, c08 *ClassName, c08 *WindowName, u32 Style, s32 x, s32 y, s32 Width, s32 Height, win32_window ParentWindow, win32_menu Menu, win32_instance Instance, vptr Param) \
+    FUNC(User32,   s32,                  DefWindowProcA,      win32_window Window, u32 Message, s64 WParam, s64 LParam) \
+    FUNC(Gdi32,    s32,                  DescribePixelFormat, win32_device_context DeviceContext, s32 PixelFormat, u32 BytesCount, win32_pixel_format_descriptor *PixelFormatDescriptor) \
+    FUNC(User32,   b08,                  DestroyWindow,       win32_window Window) \
+    FUNC(User32,   s64,                  DispatchMessageA,    win32_message *Message) \
+    FUNC(Kernel32, void,                 ExitProcess,         u32 ExitCode) \
+    FUNC(User32,   win32_device_context, GetDC,               win32_window Window) \
+    FUNC(Kernel32, b08,                  GetFileSizeEx,       win32_handle File, win32_large_integer *FileSize) \
+    FUNC(Kernel32, u32,                  GetLastError,        void) \
+    FUNC(User32,   b32,                  GetMessageA,         win32_message *Msg, win32_window Window, u32 MessageFilterMin, u32 MessageFilterMax) \
+    FUNC(Kernel32, win32_module,         GetModuleHandleA,    c08 *ModuleName) \
+    FUNC(Kernel32, fptr,                 GetProcAddress,      win32_module Module, c08 *Name) \
+    FUNC(Gdi32,    win32_gdi_object,     GetStockObject,      s32 I) \
+    FUNC(User32,   win32_cursor,         LoadCursorA,         win32_instance Instance, c08 *CursorName) \
+    FUNC(User32,   win32_icon,           LoadIconA,           win32_instance Instance, c08 *IconName) \
+    FUNC(Kernel32, win32_module,         LoadLibraryA,        c08 *Name) \
+    FUNC(Kernel32, void,                 OutputDebugStringA,  c08 *String) \
+    FUNC(User32,   b32,                  PeekMessageA,        win32_message *Message, win32_window Window, u32 MessageFilterMin, u32 MessageFilterMax, u32 RemoveMessage) \
+    FUNC(User32,   b32,                  PostThreadMessageA,  u32 Thread, u32 Message, s64 WParam, s64 LParam) \
+    FUNC(Kernel32, b08,                  ReadFile,            win32_handle File, vptr Buffer, u32 NumberOfBytesToRead, u32 *NumberOfBytesRead, win32_overlapped *Overlapped) \
+    FUNC(User32,   win32_atom,           RegisterClassA,      win32_window_class_a *WindowClass) \
+    FUNC(User32,   s32,                  ReleaseDC,           win32_window Window, win32_device_context DeviceContext) \
+    FUNC(User32,   s64,                  SendMessageA,        win32_window Window, u32 Message, s64 WParam, s64 LParam) \
+    FUNC(Gdi32,    b08,                  SetPixelFormat,      win32_device_context DeviceContext, s32 Format, win32_pixel_format_descriptor *PixelFormatDescriptor) \
+    FUNC(Gdi32,    b08,                  SwapBuffers,         win32_device_context DeviceContext) \
+    FUNC(User32,   b32,                  TranslateMessage,    win32_message *Message) \
+    FUNC(Kernel32, vptr,                 VirtualAlloc,        vptr Address, u64 Size, u32 AllocationType, u32 Protect) \
+    FUNC(Kernel32, b08,                  VirtualFree,         vptr Address, u64 Size, u32 FreeType) \
+    FUNC(User32,   b08,                  WaitMessage,         void) \
+    FUNC(Kernel32, b08,                  WriteFile,           win32_handle File, vptr Buffer, u32 NumberOfBytesToWrite, u32 *NumberOfBytesWritten, win32_overlapped *Overlapped) \
 
-#define PROC(Module, ReturnType, Name, ...) \
+#define WGL_FUNCS \
+    FUNC_TYPE2(b08,                         ChoosePixelFormatARB,    win32_device_context DeviceContext, s32 *AttribListI, r32 *AttribListF, u32 MaxFormats, s32 *Formats, u32 *NumFormats) \
+    FUNC_TYPE1(win32_opengl_render_context, CreateContext,           win32_device_context DeviceContext) \
+    FUNC_TYPE2(win32_opengl_render_context, CreateContextAttribsARB, win32_device_context DeviceContext, win32_opengl_render_context ShareContext, s32 *AttribList) \
+    FUNC_TYPE1(b08,                         DeleteContext,           win32_opengl_render_context RenderContext) \
+    FUNC_TYPE1(fptr,                        GetProcAddress,          c08 *Process) \
+    FUNC_TYPE1(b08,                         MakeCurrent,             win32_device_context DeviceContext, win32_opengl_render_context RenderContext) \
+    FUNC_TYPE2(b08,                         SwapIntervalEXT,         s32 Num) \
+
+#define FUNC(Module, ReturnType, Name, ...) \
     typedef ReturnType func_Win32_##Name(__VA_ARGS__); \
     global func_Win32_##Name *Win32_##Name;
 WIN32_FUNCS
-#undef PROC
+#undef FUNC
+
+#define FUNC_TYPE1(ReturnType, Name, ...) \
+    typedef ReturnType func_WGL_##Name(__VA_ARGS__); \
+    global func_WGL_##Name *WGL_##Name;
+#define FUNC_TYPE2 FUNC_TYPE1
+WGL_FUNCS
+#undef FUNC_TYPE1
+#undef FUNC_TYPE2

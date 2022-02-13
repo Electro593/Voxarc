@@ -7,20 +7,24 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-typedef union __declspec(intrin_type) __declspec(align(16)) __m128 {
-    r32 R32[4];
-    r64 R64[2];
-} r128;
-
-void __debugbreak(void);
-void __nop(void);
-u64  __readgsqword(u32 Offset);
-r128 _mm_sqrt_ps(r128);
-r128 _mm_set_ps(r32, r32, r32, r32);
-
-#define Asm_ReadGSQWord(u32__Offset) RETURNS(u64)  __readgsqword(u32__Offset)
-#define Intrin_DebugBreak()          RETURNS(void) __debugbreak();
-#define Intrin_Nop()                 RETURNS(void) __nop();
-
-#define R128_Set_4x32(_0,_1,_2,_3) _mm_set_ps(_0,_1,_2,_3)
-#define R128_Sqrt_4(R128) (_mm_sqrt_ps(R128))
+internal string
+File_Read(c08 *FileName,
+          u64 Length,
+          u64 Offset)
+{
+    file_handle FileHandle;
+    Assert(Platform_OpenFile(&FileHandle, FileName, FILE_READ),
+           "Invalid file name!");
+    
+    if(Length == 0) {
+        Length = Platform_GetFileLength(FileHandle);
+    }
+    
+    vptr Text = Stack_Allocate(Length);
+    u64 BytesRead = Platform_ReadFile(FileHandle, Text, Length, Offset);
+    string String = {BytesRead, Length, FALSE, Text};
+    
+    Platform_CloseFile(FileHandle);
+    
+    return String;
+}
