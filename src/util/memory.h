@@ -11,10 +11,14 @@
 #define HEAP(Type) heap_handle *
 
 typedef struct heap_handle {
-    vptr Data;
+    u08 *Data;
     u64 Size;
+    u64 Offset;
     u16 Index;
     u16 Next;
+    u16 Prev;
+    u16 PrevBlock;
+    u16 NextBlock;
     b08 Free;
 } heap_handle;
 
