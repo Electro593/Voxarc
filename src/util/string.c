@@ -35,7 +35,7 @@ String_Free(string String)
 {
     if(!String.Resizable) return;
     
-    Heap_Free(String.Text);
+    // Heap_Free(String.Text);
     String.Length = 0;
     String.Capacity = 0;
     String.Resizable = FALSE;

@@ -47,20 +47,19 @@ Mem_BytesUntil(u08 *Data,
 
 
 
-internal heap *
-Heap_Create(vptr Memory,
-            u64 Size)
+internal void
+Heap_Init(heap *Heap,
+          u64 Size)
 {
-    heap *Heap = (heap*)Memory;
-    
     Heap->TotalSize = Size;
+    Heap->DataCursor = (u08*)Heap + Size;
     Heap->HandleCount = 0;
-    Heap->FreeList = HEAP_NULL_HANDLE;
-    Heap->UsedList = HEAP_NULL_HANDLE;
-    Heap->BlockList = HEAP_NULL_HANDLE;
-    Heap->DataCursor = (u08*)Memory + Size;
-    
-    return Heap;
+    Heap->FirstFree = HEAP_NULL_HANDLE;
+    Heap->LastFree = HEAP_NULL_HANDLE;
+    Heap->FirstUsed = HEAP_NULL_HANDLE;
+    Heap->LastUsed = HEAP_NULL_HANDLE;
+    Heap->FirstBlock = HEAP_NULL_HANDLE;
+    Heap->LastBlock = HEAP_NULL_HANDLE;
 }
 
 internal void
@@ -73,13 +72,16 @@ internal heap_handle *
 Heap_Allocate(heap *Heap,
               u64 Size)
 {
+    heap_handle *Handle, *Handles, *PrevUsed;
+    b08 Defragmented;
+    
     Assert(Heap);
     
-    heap_handle *Handles = (heap_handle*)(Heap+1);
-    heap_handle *Handle = NULL;
-    b08 Defragmented = FALSE;
+    Handles = (heap_handle*)(Heap+1);
+    Handle = NULL;
+    Defragmented = FALSE;
     
-    if(Heap->FreeList = HEAP_NULL_HANDLE) {
+    if(Heap->FirstFree == HEAP_NULL_HANDLE) {
         Heap->HandleCount++;
         
         if((u08*)(Handles + Heap->HandleCount) > Heap->DataCursor) {
@@ -92,26 +94,53 @@ Heap_Allocate(heap *Heap,
         
         Handle = Handles + Heap->HandleCount-1;
         Handle->Index = Heap->HandleCount - 1;
+        Handle->Prev = Heap->LastUsed;
+        Handle->Next = HEAP_NULL_HANDLE;
+        if(Heap->LastUsed != HEAP_NULL_HANDLE)
+            Handles[Heap->LastUsed].Next = Handle->Index;
+        Heap->LastUsed = Handle->Index;
+        if(Heap->FirstUsed == HEAP_NULL_HANDLE)
+            Heap->FirstUsed = Handle->Index;
     } else {
-        Handle = Handles + Heap->FreeList;
-        Assert(Handle->Free);
-        Heap->FreeList = Handle->Next;
-        if(Handle->Next != HEAP_NULL_HANDLE) {
+        Handle = Handles + Heap->FirstFree;
+        
+        if(Handle->Next != HEAP_NULL_HANDLE)
             Handles[Handle->Next].Prev = HEAP_NULL_HANDLE;
+        Heap->FirstFree = Handle->Next;
+        if(Heap->LastFree == Handle->Index)
+            Heap->LastFree = HEAP_NULL_HANDLE;
+        
+        PrevUsed = Handle;
+        while(PrevUsed->Index) {
+            PrevUsed--;
+            if(!PrevUsed->Free) {
+                Handle->Next = PrevUsed->Next;
+                Handle->Prev = PrevUsed->Index;
+                if(PrevUsed->Next != HEAP_NULL_HANDLE)
+                    Handles[PrevUsed->Next].Prev = Handle->Index;
+                else
+                    Heap->LastUsed = Handle->Index;
+                PrevUsed->Next = Handle->Index;
+                goto FoundNextUsed;
+            }
         }
+        Handle->Prev = HEAP_NULL_HANDLE;
+        Handle->Next = Heap->FirstUsed;
+        if(Heap->FirstUsed != HEAP_NULL_HANDLE)
+            Handles[Heap->FirstUsed].Prev = Handle->Index;
+        Heap->FirstUsed = Handle->Index;
+        if(Heap->LastUsed < Handle->Index)
+            Heap->LastUsed = Handle->Index;
+        FoundNextUsed:;
     }
-    Handle->Free = FALSE;
     Handle->Size = Size;
-    Handle->Next = Heap->UsedList;
-    Heap->UsedList = Handle->Index;
-    Handles[Handle->Next].Prev = Handle->Index;
+    Handle->Free = FALSE;
     
-    u16 Index = Heap->BlockList;
-    while(Index != HEAP_NULL_HANDLE && Handles[Index].Offset < Size) {
-        Index = Handles[Index]->NextBlock;
+    u16 PrevBlockIndex = Heap->LastBlock;
+    while(PrevBlockIndex != HEAP_NULL_HANDLE && Handles[PrevBlockIndex].Offset < Size) {
+        PrevBlockIndex = Handles[PrevBlockIndex].PrevBlock;
     }
-    
-    if(Index == HEAP_NULL_HANDLE) {
+    if(PrevBlockIndex == HEAP_NULL_HANDLE) {
         if(!Defragmented && (u08*)(Handles + Heap->HandleCount) > Heap->DataCursor - Size) {
             Heap_Defragment(Heap);
             Defragmented = TRUE;
@@ -123,19 +152,25 @@ Heap_Allocate(heap *Heap,
         Heap->DataCursor -= Size;
         Handle->Data = Heap->DataCursor;
         Handle->PrevBlock = HEAP_NULL_HANDLE;
-        Handle->NextBlock = Heap->BlockList;
-        if(Heap->BlockList != HEAP_NULL_HANDLE) {
-            Handles[Heap->BlockList].PrevBlock = Handle->Index;
-        }
+        Handle->NextBlock = Heap->FirstBlock;
+        if(Heap->FirstBlock != HEAP_NULL_HANDLE)
+            Handles[Heap->FirstBlock].PrevBlock = Handle->Index;
+        else
+            Heap->LastBlock = Handle->Index;
+        Heap->FirstBlock = Handle->Index;
     } else {
-        heap_handle *NextBlock = Handles[Index];
-        heap_handle *PrevBlock = NextBlock->PrevBlock;
-        NextBlock->Offset -= Size;
-        NextBlock->PrevBlock = Handle->Index;
-        PrevBlock->NextBlock = Handle->Index;
+        heap_handle *PrevBlock = Handles + PrevBlockIndex;
+        
+        if(PrevBlock->NextBlock != HEAP_NULL_HANDLE)
+            Handles[PrevBlock->NextBlock].PrevBlock = Handle->Index;
+        else
+            Heap->LastBlock = Handle->Index;
+        
+        Handle->Data = PrevBlock->Data + PrevBlock->Size + PrevBlock->Offset - Size;
         Handle->PrevBlock = PrevBlock->Index;
-        Handle->NextBlock = NextBlock->Index;
-        Handle->Data = NextBlock->Data - NextBlock->Offset;
+        Handle->NextBlock = PrevBlock->NextBlock;
+        PrevBlock->NextBlock = Handle->Index;
+        PrevBlock->Offset -= Size;
     }
     Handle->Offset = 0;
     
@@ -149,22 +184,35 @@ Heap_Free(heap_handle *Handle)
     heap_handle *Handles, *PrevUsed, *PrevFree, *Iter;
     
     Assert(Handle);
+    Assert(!Handle->Free);
     
     Handles = Handle - Handle->Index;
     Heap = (heap*)Handles-1;
     
-    Handles[Handle->NextBlock].Offset += Handle->Size + Handle->Offset;
-    Handles[Handle->PrevBlock].NextBlock = Handle->NextBlock;
+    if(Handle->PrevBlock != HEAP_NULL_HANDLE) {
+        Handles[Handle->PrevBlock].NextBlock = Handle->NextBlock;
+        Handles[Handle->PrevBlock].Offset += Handle->Size + Handle->Offset;
+    } else {
+        Heap->FirstBlock = Handle->NextBlock;
+        Heap->DataCursor += Handle->Size + Handle->Offset;
+    }
+    
+    if(Handle->NextBlock != HEAP_NULL_HANDLE)
+        Handles[Handle->NextBlock].PrevBlock = Handle->PrevBlock;
+    else
+        Heap->LastBlock = Handle->PrevBlock;
     
     if(Handle->Next == HEAP_NULL_HANDLE) {
         if(Handle->Prev == HEAP_NULL_HANDLE) {
-            Heap->UsedList = HEAP_NULL_HANDLE;
-            Heap->FreeList = HEAP_NULL_HANDLE;
-            Heap->HandleCount = 0;
+            Heap->FirstFree = HEAP_NULL_HANDLE;
+            Heap->LastFree = HEAP_NULL_HANDLE;
+            Heap->FirstUsed = HEAP_NULL_HANDLE;
+            Heap->LastUsed = HEAP_NULL_HANDLE;
             Mem_Set(Heap+1, 0, Heap->HandleCount * sizeof(heap_handle));
+            Heap->HandleCount = 0;
         } else {
-            PrevUsed = Handles[Handle->Prev];
-            
+            Heap->LastUsed = Handle->Prev;
+            PrevUsed = Handles + Handle->Prev;
             PrevUsed->Next = HEAP_NULL_HANDLE;
             Mem_Set(PrevUsed+1, 0, (Heap->HandleCount-PrevUsed->Index-1)*sizeof(heap_handle));
             Heap->HandleCount = PrevUsed->Index + 1;
@@ -174,11 +222,13 @@ Heap_Free(heap_handle *Handle)
                 PrevFree--;
                 if(PrevFree->Free) {
                     PrevFree->Next = HEAP_NULL_HANDLE;
-                    goto SkipJankIf1;
+                    Heap->LastFree = PrevFree->Index;
+                    goto FoundPrevFree1;
                 }
             }
-            Heap->FreeList = HEAP_NULL_HANDLE;
-            SkipJankIf1:
+            Heap->FirstFree = HEAP_NULL_HANDLE;
+            Heap->LastFree = HEAP_NULL_HANDLE;
+            FoundPrevFree1:;
         }
     } else {
         Handle->Data = NULL;
@@ -188,26 +238,35 @@ Heap_Free(heap_handle *Handle)
         Handle->NextBlock = HEAP_NULL_HANDLE;
         Handle->Free = TRUE;
         
-        if(Handle->Prev == HEAP_NULL_HANDLE) {
-            Heap->UsedList = Handle->Next;
-        } else {
-            Handles[Handle->Prev]->Next = Handle->Next;
-        }
+        if(Handle->Prev != HEAP_NULL_HANDLE)
+            Handles[Handle->Prev].Next = Handle->Next;
+        else
+            Heap->FirstUsed = Handle->Next;
+        
+        Handles[Handle->Next].Prev = Handle->Prev;
         
         PrevFree = Handle;
         while(PrevFree->Index) {
             PrevFree--;
             if(PrevFree->Free) {
-                Handle->Next = PrevFree->Next;
                 Handle->Prev = PrevFree->Index;
+                Handle->Next = PrevFree->Next;
+                if(PrevFree->Next != HEAP_NULL_HANDLE)
+                    Handles[PrevFree->Next].Prev = Handle->Index;
+                else
+                    Heap->LastFree = Handle->Index;
                 PrevFree->Next = Handle->Index;
-                goto SkipJankIf2;
+                goto FoundNextFree;
             }
         }
-        Handle->Next = Heap->FreeList;
         Handle->Prev = HEAP_NULL_HANDLE;
-        Heap->FreeList = Handle->Index;
-        SkipJankIf2:
+        Handle->Next = Heap->FirstFree;
+        if(Handle->Next != HEAP_NULL_HANDLE)
+            Handles[Handle->Next].Prev = Handle->Index;
+        else
+            Heap->LastFree = Handle->Index;
+        Heap->FirstFree = Handle->Index;
+        FoundNextFree:;
     }
 }
 
