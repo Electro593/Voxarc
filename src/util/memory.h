@@ -7,10 +7,11 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#define HEAP_NULL_HANDLE 0xFFFF
+#define HEAP_NULL_HANDLE 0
 #define HEAP(Type) heap_handle *
 
-// TODO null handle at 0?
+// TODO no null node, instead, have the first real link be a loop
+// TODO free handles refer to blocks, remove offset
 
 typedef struct heap_handle {
     u08 *Data;
@@ -26,15 +27,11 @@ typedef struct heap_handle {
 
 typedef struct heap {
     u64 TotalSize;
-    u08 *DataCursor;
+    // u08 *DataCursor;
     
     u16 HandleCount;
-    u16 FirstFree;
     u16 LastFree;
-    u16 FirstUsed;
-    u16 LastUsed;
-    u16 FirstBlock;
-    u16 LastBlock;
+    u16 FirstFree;
 } heap;
 
 typedef struct stack {

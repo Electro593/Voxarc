@@ -46,7 +46,7 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
     FUNC_TYPE2(void, CompileShader,           u32 Shader) \
     FUNC_TYPE2(u32,  CreateProgram,           void) \
     FUNC_TYPE2(u32,  CreateShader,            u32 Type) \
-    FUNC_TYPE2(void, DrawArrays,              u32 Mode, s32 First, s32 Count) \
+    FUNC_TYPE1(void, DrawArrays,              u32 Mode, s32 First, s32 Count) \
     FUNC_TYPE2(void, DebugMessageCallback,    func_OpenGL_DebugProc Callback, vptr UserParam) \
     FUNC_TYPE2(void, DebugMessageControl,     u32 Source, u32 Type, u32 Severity, s32 Count, u32 *IDs, u08 Enabled) \
     FUNC_TYPE2(void, DeleteShader,            u32 Shader) \
