@@ -9,24 +9,21 @@
 
 #define HEAP(Type) heap_handle *
 
-// TODO no null node, instead, have the first real link be a loop
-// TODO free handles refer to blocks, remove offset
-
+typedef vptr heap;
 typedef struct heap_handle {
     u08 *Data;
-    u64 Size;
-    u64 Offset;
-    u16 Index;
+    u64 Offset : 39;
+    u64 Free   :  1;
+    u64 Index  : 16;
+    u64 SizeU  :  8;
+    u32 SizeL;
+    u16 _Prev;
+    u16 _Next;
     u16 Prev;
     u16 Next;
     u16 PrevBlock;
     u16 NextBlock;
-    b08 Free;
 } heap_handle;
-
-typedef struct heap {
-    u64 TotalSize;
-} heap;
 
 typedef struct stack {
     u64 Size;
