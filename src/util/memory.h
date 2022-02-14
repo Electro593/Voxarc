@@ -7,7 +7,6 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#define HEAP_NULL_HANDLE 0
 #define HEAP(Type) heap_handle *
 
 // TODO no null node, instead, have the first real link be a loop
@@ -27,11 +26,6 @@ typedef struct heap_handle {
 
 typedef struct heap {
     u64 TotalSize;
-    // u08 *DataCursor;
-    
-    u16 HandleCount;
-    u16 LastFree;
-    u16 FirstFree;
 } heap;
 
 typedef struct stack {
