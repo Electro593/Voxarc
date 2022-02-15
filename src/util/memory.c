@@ -47,33 +47,30 @@ Mem_BytesUntil(u08 *Data,
 
 
 
+#define GETSIZE(I) ((Handles[I].SizeU << 32) | (Handles[I].SizeL))
+#define SETSIZE(I, S) \
+    do { \
+        Handles[I].SizeU = ((u64)S)>>32; \
+        Handles[I].SizeL = (u32)(S); \
+    } while(0)
+
 internal void
 Heap_Init(heap *Heap,
           u64 Size)
 {
     heap_handle *NullUsedHandle = (heap_handle*)(Heap+1);
     NullUsedHandle->Data = (u08*)(Heap+1);
-    NullUsedHandle->SizeU = (u08)(((u64)2*sizeof(heap_handle)) >> 32);
-    NullUsedHandle->SizeL = (u32)(2*sizeof(heap_handle));
-    NullUsedHandle->Offset = Size - 2*sizeof(heap_handle);
+    NullUsedHandle->SizeU = (u08)(((u64)sizeof(heap_handle)) >> 32);
+    NullUsedHandle->SizeL = (u32)(sizeof(heap_handle));
+    NullUsedHandle->Offset = Size - sizeof(heap_handle);
     NullUsedHandle->Index = 0;
-    NullUsedHandle->Prev = 0;
-    NullUsedHandle->Next = 0;
+    NullUsedHandle->PrevFree = 0;
+    NullUsedHandle->NextFree = 0;
+    NullUsedHandle->PrevUsed = 0;
+    NullUsedHandle->NextUsed = 0;
     NullUsedHandle->PrevBlock = 0;
     NullUsedHandle->NextBlock = 0;
     NullUsedHandle->Free = FALSE;
-    
-    heap_handle *NullFreeHandle = NullUsedHandle+1;
-    NullFreeHandle->Data = 0;
-    NullFreeHandle->SizeU = 0;
-    NullFreeHandle->SizeL = 0;
-    NullFreeHandle->Offset = 0;
-    NullFreeHandle->Index = 1;
-    NullFreeHandle->Prev = 1;
-    NullFreeHandle->Next = 1;
-    NullFreeHandle->PrevBlock = 1;
-    NullFreeHandle->NextBlock = 1;
-    NullFreeHandle->Free = TRUE;
 }
 
 internal void
@@ -81,14 +78,6 @@ Heap_Defragment(heap *Heap)
 {
     
 }
-
-#define GETSIZE(I) ((Handles[I].SizeU << 32) | (Handles[I].SizeL))
-#define SETSIZE(I, S) \
-    do { \
-        u64 NS = GETSIZE(I) + S; \
-        Handles[I].SizeU = (NS >> 32); \
-        Handles[I].SizeL = (u32)NS; \
-    } while(0)
 
 internal heap_handle *
 Heap_Allocate(heap *Heap,
@@ -101,7 +90,7 @@ Heap_Allocate(heap *Heap,
     b08 Defragmented = FALSE;
     
     heap_handle *PrevUsed;
-    if(Handles[1].Next == 1) {
+    if(Handles[0].NextFree == 0) {
         if(Handles[0].Offset < sizeof(heap_handle)) {
             Heap_Defragment(Heap);
             Defragmented = TRUE;
@@ -112,22 +101,24 @@ Heap_Allocate(heap *Heap,
         Handle = Handles + HandleCount;
         Handle->Index = HandleCount;
         
-        SETSIZE(0, sizeof(heap_handle));
+        SETSIZE(0, GETSIZE(0) + sizeof(heap_handle));
         Handles[0].Offset -= sizeof(heap_handle);
         
-        PrevUsed = Handles + Handles[0].Prev;
+        PrevUsed = Handles + Handles[0].PrevUsed;
     } else {
-        Handle = Handles + Handles[1].Next;
-        Handles[Handle->Prev].Next = Handle->Next;
-        Handles[Handle->Next].Prev = Handle->Prev;
+        Handle = Handles + Handles[0].NextFree;
+        Handles[Handle->PrevFree].NextFree = Handle->NextFree;
+        Handles[Handle->NextFree].PrevFree = Handle->PrevFree;
         
-        PrevUsed = Handle-1;
+        PrevUsed = Handle;
         while(PrevUsed->Index && PrevUsed->Free) PrevUsed--;
     }
-    Handle->Prev = PrevUsed->Index;
-    Handle->Next = PrevUsed->Next;
-    Handles[Handle->Prev].Next = Handle->Index;
-    Handles[Handle->Next].Prev = Handle->Index;
+    Handle->PrevUsed = PrevUsed->Index;
+    Handle->NextUsed = PrevUsed->NextUsed;
+    Handle->PrevFree = 0;
+    Handle->NextFree = 0;
+    Handles[Handle->PrevUsed].NextUsed = Handle->Index;
+    Handles[Handle->NextUsed].PrevUsed = Handle->Index;
     SETSIZE(Handle->Index, Size);
     Handle->Free = FALSE;
     
@@ -162,39 +153,37 @@ Heap_Free(heap_handle *Handle)
     Handles[Handle->PrevBlock].Offset += GETSIZE(Handle->Index) + Handle->Offset;
     Handles[Handle->PrevBlock].NextBlock = Handle->NextBlock;
     Handles[Handle->NextBlock].PrevBlock = Handle->PrevBlock;
-    Handles[Handle->Next].Prev = Handle->Prev;
-    Handles[Handle->Prev].Next = Handle->Next;
+    Handles[Handle->NextUsed].PrevUsed = Handle->PrevUsed;
+    Handles[Handle->PrevUsed].NextUsed = Handle->NextUsed;
     
-    if(Handle->Next == 0) {
-        heap_handle *PrevFree;
-        if(Handle->Prev == 0) {
-            PrevFree = Handles+1;
-        } else {
-            PrevFree = Handles + Handle->Prev;
-            while(PrevFree->Index > 1 && !PrevFree->Free) PrevFree--;
-        }
-        Handles[1].Prev = PrevFree->Index;
-        PrevFree->Next = 1;
+    if(Handle->NextUsed == 0) {
+        heap_handle *PrevFree = Handles + Handle->PrevUsed;
+        while(PrevFree->Index && !PrevFree->Free) PrevFree--;
+        Handles[0].PrevFree = PrevFree->Index;
+        PrevFree->NextFree = 0;
         
-        u16 Offset = Handle->Prev + 1;
-        u64 DeltaSize = GETSIZE(0) - Offset*sizeof(heap_handle);
-        SETSIZE(0, Offset*sizeof(heap_handle));
+        u16 Offset = Handle->PrevUsed + 1;
+        u64 NewSize = Offset*sizeof(heap_handle);
+        u64 DeltaSize = GETSIZE(0) - NewSize;
+        SETSIZE(0, NewSize);
         Handles[0].Offset += DeltaSize;
         Mem_Set(Handles+Offset, 0, DeltaSize);
     } else {
-        Handle->Data = NULL;
-        Handle->Size = 0;
-        Handle->Offset = 0;
-        Handle->PrevBlock = 0;
-        Handle->NextBlock = 0;
-        Handle->Free = TRUE;
-        
         heap_handle *PrevFree = Handle;
         while(PrevFree->Index && !PrevFree->Free) PrevFree--;
-        Handle->Prev = PrevFree->Index;
-        Handle->Next = PrevFree->Next;
-        Handles[Handle->Next].Prev = Handle->Index;
-        Handles[Handle->Prev].Next = Handle->Index;
+        
+        Handle->Data = NULL;
+        Handle->Offset = 0;
+        Handle->Free = TRUE;
+        SETSIZE(Handle->Index, 0);
+        Handle->PrevFree = PrevFree->Index;
+        Handle->NextFree = PrevFree->NextFree;
+        Handle->PrevUsed = 0;
+        Handle->NextUsed = 0;
+        Handle->PrevBlock = 0;
+        Handle->NextBlock = 0;
+        Handles[Handle->NextFree].PrevFree = Handle->Index;
+        Handles[Handle->PrevFree].NextFree = Handle->Index;
     }
 }
 

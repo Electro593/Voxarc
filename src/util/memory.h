@@ -17,10 +17,10 @@ typedef struct heap_handle {
     u64 Index  : 16;
     u64 SizeU  :  8;
     u32 SizeL;
-    u16 _Prev;
-    u16 _Next;
-    u16 Prev;
-    u16 Next;
+    u16 PrevFree;
+    u16 NextFree;
+    u16 PrevUsed;
+    u16 NextUsed;
     u16 PrevBlock;
     u16 NextBlock;
 } heap_handle;
