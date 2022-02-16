@@ -25,11 +25,25 @@ Mem_Cpy(vptr Dest,
         vptr Src,
         u64 Size)
 {
+    if(Size == 0)   return Dest;
+    if(Dest == Src) return Dest;
+    
+    s08 Dir = 1;
     u08 *Dest08 = (u08*)Dest;
     u08 *Src08 = (u08*)Src;
-    while(Size--) {
-        *Dest08++ = *Src08++;
+    
+    if(Dest > Src) {
+        Dir = -1;
+        Dest08 += Size - 1;
+        Src08 += Size - 1;
     }
+    
+    while(Size--) {
+        *Dest08 = *Src08;
+        Dest08 += Dir;
+        Src08 += Dir;
+    }
+    
     return Dest;
 }
 
@@ -76,7 +90,24 @@ Heap_Init(heap *Heap,
 internal void
 Heap_Defragment(heap *Heap)
 {
+    STOP; // Hasn't been debugged
     
+    Assert(Heap);
+    heap_handle *Handles = (heap_handle*)Heap;
+    
+    u64 Offset = 0;
+    heap_handle *Block = Handles + Handles[0].PrevBlock;
+    while(Block->Index) {
+        Offset += Block->Offset;
+        Block->Offset = 0;
+        
+        if(Offset) {
+            Mem_Cpy(Block->Data+Offset, Block->Data, GETSIZE(Block->Index));
+            Block->Data += Offset;
+        }
+        
+        Block = Handles + Block->PrevBlock;
+    }
 }
 
 internal heap_handle *
@@ -84,8 +115,7 @@ Heap_Allocate(heap *Heap,
               u64 Size)
 {
     Assert(Heap);
-    
-    heap_handle *Handles = (heap_handle*)(Heap+1);
+    heap_handle *Handles = (heap_handle*)Heap;
     heap_handle *Handle = NULL;
     b08 Defragmented = FALSE;
     
@@ -145,10 +175,7 @@ internal void
 Heap_Free(heap_handle *Handle)
 {
     Assert(Handle);
-    Assert(!Handle->Free);
-    
     heap_handle *Handles = Handle - Handle->Index;
-    heap *Heap = (heap*)Handles-1;
     
     Handles[Handle->PrevBlock].Offset += GETSIZE(Handle->Index) + Handle->Offset;
     Handles[Handle->PrevBlock].NextBlock = Handle->NextBlock;

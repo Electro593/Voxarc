@@ -77,13 +77,6 @@ typedef s32 b32;
 typedef u08 c08;
 typedef u16 c16;
 
-typedef struct context {
-    struct stack *Stack;
-    
-    struct context *PrevContext;
-} context;
-global context Context;
-
 #include <util/intrin.h>
 #include <util/vector.h>
 #include <util/memory.h>
@@ -97,6 +90,13 @@ global context Context;
 #include <platform/win32/entry.h>
 #include <game/file.h>
 #include <game/game.h>
+
+typedef struct context {
+    stack *Stack;
+    
+    struct context *PrevContext;
+} context;
+global context Context;
 
 #include <util/scalar.c>
 #include <util/memory.c>

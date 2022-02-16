@@ -9,6 +9,10 @@
 
 #define HEAP(Type) heap_handle *
 
+// TODO: Free handles point to free blocks
+//       Can remove offset, so no more size jankness
+//       It might effect Prev/NextBlock, too, so check that
+
 typedef vptr heap;
 typedef struct heap_handle {
     u08 *Data;
