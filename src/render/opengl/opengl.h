@@ -8,6 +8,10 @@
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #define GL_TRIANGLES        0x0004
+#define GL_FRONT            0x0404
+#define GL_CULL_FACE        0x0B44
+#define GL_DEPTH_TEST       0x0B71
+#define GL_SCISSOR_TEST     0x0C11
 #define GL_DONT_CARE        0x1100
 #define GL_UNSIGNED_BYTE    0x1401
 #define GL_FLOAT            0x1406
@@ -42,10 +46,12 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
     FUNC_TYPE2(void, BindVertexArray,         u32 ArrayID) \
     FUNC_TYPE2(void, BufferData,              u32 Target, s64 Size, vptr Data, u32 Usage) \
     FUNC_TYPE1(void, Clear,                   u32 Mask) \
+    FUNC_TYPE1(void, Scissor,                 s32 X, s32 Y, s32 Width, s32 Height) \
     FUNC_TYPE1(void, ClearColor,              r32 Red, r32 Green, r32 Blue, r32 Alpha) \
     FUNC_TYPE2(void, CompileShader,           u32 Shader) \
     FUNC_TYPE2(u32,  CreateProgram,           void) \
     FUNC_TYPE2(u32,  CreateShader,            u32 Type) \
+    FUNC_TYPE1(void, CullFace,                u32 Mode) \
     FUNC_TYPE1(void, DrawArrays,              u32 Mode, s32 First, s32 Count) \
     FUNC_TYPE2(void, DebugMessageCallback,    func_OpenGL_DebugProc Callback, vptr UserParam) \
     FUNC_TYPE2(void, DebugMessageControl,     u32 Source, u32 Type, u32 Severity, s32 Count, u32 *IDs, u08 Enabled) \
@@ -63,6 +69,7 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
     FUNC_TYPE2(void, ShaderSource,            u32 Shader, s32 Count, c08 **String, s32 *Length) \
     FUNC_TYPE2(void, UseProgram,              u32 Program) \
     FUNC_TYPE2(void, VertexAttribPointer,     u32 Index, s32 Size, u32 Type, b08 Normalized, s32 Stride, vptr Offset) \
+    FUNC_TYPE1(void, Viewport,                s32 X, s32 Y, s32 Width, s32 Height) \
 
 #define FUNC_TYPE1(ReturnType, Name, ...) \
     typedef ReturnType func_OpenGL_##Name(__VA_ARGS__); \

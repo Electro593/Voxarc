@@ -60,7 +60,6 @@ Mem_BytesUntil(u08 *Data,
 
 
 
-
 #define GETSIZE(I) ((Handles[I].SizeU << 32) | (Handles[I].SizeL))
 #define SETSIZE(I, S) \
     do { \
@@ -233,23 +232,23 @@ Stack_Init(vptr Mem,
 internal void
 Stack_Push(void)
 {
-    vptr *Marker = (vptr*)Context.Stack->Cursor;
-    *Marker = Context.Stack->FirstMarker;
-    Context.Stack->FirstMarker = Marker;
-    Context.Stack->Cursor += sizeof(vptr);
+    vptr *Marker = (vptr*)Ctx->Stack->Cursor;
+    *Marker = Ctx->Stack->FirstMarker;
+    Ctx->Stack->FirstMarker = Marker;
+    Ctx->Stack->Cursor += sizeof(vptr);
 }
 
 internal vptr
 Stack_Allocate(u64 Size)
 {
-    vptr Result = Context.Stack->Cursor;
-    Context.Stack->Cursor += Size;
+    vptr Result = Ctx->Stack->Cursor;
+    Ctx->Stack->Cursor += Size;
     return Result;
 }
 
 internal void
 Stack_Pop(void)
 {
-    Context.Stack->FirstMarker = *Context.Stack->FirstMarker;
-    Context.Stack->Cursor = (u08*)Context.Stack->FirstMarker + sizeof(vptr);
+    Ctx->Stack->FirstMarker = *Ctx->Stack->FirstMarker;
+    Ctx->Stack->Cursor = (u08*)Ctx->Stack->FirstMarker + sizeof(vptr);
 }

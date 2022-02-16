@@ -9,9 +9,7 @@
 
 #include <shared.h>
 
-global execution_state ExecutionState;
-// global u32 MainThreadID;
-global u32 GlobalAllocCounter;
+global platform_state *Platform;
 
 internal void
 Platform_LoadWin32Funcs(void)
@@ -76,9 +74,6 @@ Platform_LoadWGLFuncs(void)
     #undef FUNC_TYPE2
     
     win32_window_class_a DummyWindowClass = {0};
-    DummyWindowClass.Style = Win32_ClassStyle_HRedraw |
-                             Win32_ClassStyle_VRedraw |
-                             Win32_ClassStyle_OwnDC;
     DummyWindowClass.Callback = (func_Win32_WindowCallback)Win32_DefWindowProcA;
     DummyWindowClass.Instance = Win32_GetModuleHandleA(NULL);
     DummyWindowClass.ClassName = "VoxarcDummyWindowClass";
@@ -96,13 +91,11 @@ Platform_LoadWGLFuncs(void)
     win32_pixel_format_descriptor PixelFormatDescriptor = {0};
     PixelFormatDescriptor.Size = sizeof(win32_pixel_format_descriptor);
     PixelFormatDescriptor.Version = 1;
-    PixelFormatDescriptor.PixelType = Win32_PixelFormatDescriptor_TypeRGBA;
-    PixelFormatDescriptor.Flags = Win32_PixelFormatDescriptor_DrawToWindow |
-                                  Win32_PixelFormatDescriptor_SupportOpenGL |
-                                  Win32_PixelFormatDescriptor_DoubleBuffer;
+    PixelFormatDescriptor.PixelType = PFD_TYPE_RGBA;
+    PixelFormatDescriptor.Flags = PFD_DRAW_TO_WINDOW|PFD_SUPPORT_OPENGL|PFD_DOUBLE_BUFFER;
     PixelFormatDescriptor.ColorBits = 32;
     PixelFormatDescriptor.AlphaBits = 8;
-    PixelFormatDescriptor.LayerType = Win32_PixelFormatDescriptor_MainPlane;
+    PixelFormatDescriptor.LayerType = PFD_MAIN_PLANE;
     PixelFormatDescriptor.DepthBits = 24;
     PixelFormatDescriptor.StencilBits = 8;
     
@@ -129,16 +122,16 @@ internal void
 Platform_LoadOpenGLFuncs(win32_device_context DeviceContext)
 {
     s32 PixelFormatAttribs[] = {
-        WGL_ARB_DrawToWindow,  TRUE,
-        WGL_ARB_SupportOpenGL, TRUE,
-        WGL_ARB_DoubleBuffer,  TRUE,
-        WGL_ARB_Acceleration,  WGL_ARB_FullAcceleration,
-        WGL_ARB_PixelType,     WGL_ARB_TypeRGBA,
-        WGL_ARB_ColorBits,     32,
-        WGL_ARB_DepthBits,     24,
-        WGL_ARB_StencilBits,   8,
-        WGL_ARB_SampleBuffers, 1,
-        WGL_ARB_Samples,       4,
+        WGL_DRAW_TO_WINDOW_ARB, TRUE,
+        WGL_SUPPORT_OPENGL_ARB, TRUE,
+        WGL_DOUBLE_BUFFER_ARB,  TRUE,
+        WGL_ACCELERATION_ARB,   WGL_FULL_ACCELERATION_ARB,
+        WGL_PIXEL_TYPE_ARB,     WGL_TYPE_RGBA_ARB,
+        WGL_COLOR_BITS_ARB,     32,
+        WGL_DEPTH_BITS_ARB,     24,
+        WGL_STENCIL_BITS_ARB,   8,
+        WGL_SAMPLE_BUFFERS_ARB, 1,
+        WGL_SAMPLES_ARB,        4,
         0
     };
     
@@ -149,17 +142,17 @@ Platform_LoadOpenGLFuncs(win32_device_context DeviceContext)
     Win32_DescribePixelFormat(DeviceContext, PixelFormat, sizeof(win32_pixel_format_descriptor), &PixelFormatDescriptor);
     
     #if defined(_DEBUG)
-        u32 DebugBit = WGL_ARB_Context_Debug;
+        u32 DebugBit = WGL_CONTEXT_DEBUG_BIT_ARB;
     #else
         u32 DebugBit = 0;
     #endif
     
     Win32_SetPixelFormat(DeviceContext, PixelFormat, &PixelFormatDescriptor);
     s32 AttribList[] = {
-        WGL_ARB_Context_MajorVersion, 4,
-        WGL_ARB_Context_MinorVersion, 6,
-        WGL_ARB_Context_Flags,        DebugBit | WGL_ARB_Context_ForwardCompatible,
-        WGL_ARB_Context_ProfileMask,  WGL_ARB_Context_CoreProfile,
+        WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
+        WGL_CONTEXT_MINOR_VERSION_ARB, 6,
+        WGL_CONTEXT_FLAGS_ARB,         DebugBit | WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+        WGL_CONTEXT_PROFILE_MASK_ARB,  WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
         0
     };
     
@@ -214,20 +207,15 @@ _Assert(c08 *File,
 internal vptr
 Platform_AllocateMemory(u64 Size)
 {
-    ++GlobalAllocCounter;
-    
-    vptr MemoryBlock = Win32_VirtualAlloc(0, Size, Win32_Alloc_Commit|Win32_Alloc_Reserve, Win32_Page_ReadWrite);
+    vptr MemoryBlock = Win32_VirtualAlloc(0, Size, MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE);
     Assert(MemoryBlock);
-    
     return MemoryBlock;
 }
 
 internal void
 Platform_FreeMemory(vptr Base)
 {
-    --GlobalAllocCounter;
-    
-    Win32_VirtualFree(Base, 0, Win32_Alloc_Release);
+    Win32_VirtualFree(Base, 0, MEM_RELEASE);
 }
 
 internal u64
@@ -355,15 +343,16 @@ Platform_WindowCallback(win32_window Window,
                         s64 WParam,
                         s64 LParam)
 {
-    if(ExecutionState == EXECUTION_UNINITIALIZED) {
-        return Win32_DefWindowProcA(Window, Message, WParam, LParam);
-    }
-    
-    Assert(Message != Win32_WindowMessage_Destroy);
-
     switch(Message) {
-        case Win32_WindowMessage_Close: {
-            ExecutionState = EXECUTION_ENDED;
+        case WM_DESTROY:
+        case WM_CLOSE: {
+            Platform->ExecutionState = EXECUTION_ENDED;
+        } return 0;
+        
+        case WM_SIZE: {
+            Platform->WindowSize.X = (s16)LParam;
+            Platform->WindowSize.Y = (s16)(LParam >> 16);
+            Platform->Updates |= WINDOW_RESIZED;
         } return 0;
     }
     
@@ -373,7 +362,13 @@ Platform_WindowCallback(win32_window Window,
 external void API_ENTRY
 Platform_Entry(void)
 {
-    Context.PrevContext = &Context;
+    platform_state _P = {0};
+    game_state Game = {0};
+    renderer_state Renderer = {0};
+    context _C = {0};
+    Platform = &_P;
+    Ctx = &_C;
+    Ctx->PrevCtx = Ctx;
     
     Platform_LoadWin32Funcs();
     Platform_LoadWGLFuncs();
@@ -389,50 +384,29 @@ Platform_Entry(void)
     
     win32_window Window = Win32_CreateWindowExA(
         0, WindowClass.ClassName, "Voxarc",
-        Win32_WindowStyle_Overlapped|Win32_WindowStyle_SysMenu|Win32_WindowStyle_Caption|Win32_WindowStyle_Visible,
+        WS_OVERLAPPED|WS_SYSMENU|WS_CAPTION|WS_VISIBLE|WS_THICKFRAME|WS_MINIMIZEBOX|WS_MAXIMIZEBOX,
         CW_USEDEFAULT, CW_USEDEFAULT,
         CW_USEDEFAULT, CW_USEDEFAULT,
         NULL, NULL, WindowClass.Instance, NULL
     );
-    
     Assert(Window);
     
     u64 StackSize = 32*1024*1024;
     vptr MemBase = Platform_AllocateMemory(StackSize);
-    Context.Stack = Stack_Init(MemBase, StackSize);
-    
-    vptr FileHandle;
-    Platform_OpenFile(&FileHandle, "assets\\fonts\\cour.ttf", FILE_READ);
-    u64 FileLength = Platform_GetFileLength(FileHandle);
-    u08 *TTFData = Stack_Allocate(FileLength);
-    Platform_ReadFile(FileHandle, TTFData, FileLength, 0);
-    Platform_CloseFile(FileHandle);
-    
-    vptr FontFile, FontBitmap;
-    u64 FontFileSize, FontBitmapSize;
-    MakeFont(TTFData, 40, &FontFile, &FontFileSize, &FontBitmap, &FontBitmapSize);
-    Platform_OpenFile(&FileHandle, "assets\\fonts\\cour.font", FILE_WRITE);
-    Platform_WriteFile(FileHandle, FontFile, FontFileSize, 0);
-    Platform_CloseFile(FileHandle);
-    Platform_OpenFile(&FileHandle, "assets\\textures\\cour.bmp", FILE_WRITE);
-    Platform_WriteFile(FileHandle, FontBitmap, FontBitmapSize, 0);
-    Platform_CloseFile(FileHandle);
+    Ctx->Stack = Stack_Init(MemBase, StackSize);
     
     win32_device_context DeviceContext = Win32_GetDC(Window);
     Platform_LoadOpenGLFuncs(DeviceContext);
     
-    game_state Game = {0};
-    renderer_state Renderer = {0};
-    Game_Init(&Game, &Renderer);
+    Game_Init(Platform, &Game, &Renderer);
+    Platform->ExecutionState = EXECUTION_RUNNING;
     
-    s08 Time = 0;
-    ExecutionState = EXECUTION_RUNNING;
-    while(ExecutionState == EXECUTION_RUNNING)
+    while(Platform->ExecutionState == EXECUTION_RUNNING)
     {
         win32_message Message;
-        while(Win32_PeekMessageA(&Message, Window, 0, 0, Win32_PeekMessage_Remove)) {
-            if(Message.Message == Win32_WindowMessage_Quit) {
-                ExecutionState = EXECUTION_ENDED;
+        while(Win32_PeekMessageA(&Message, Window, 0, 0, PM_REMOVE)) {
+            if(Message.Message == WM_QUIT) {
+                Platform->ExecutionState = EXECUTION_ENDED;
                 break;
             }
             
@@ -440,13 +414,10 @@ Platform_Entry(void)
             Win32_DispatchMessageA(&Message);
         }
         
-        Game_Update(&Game, &Renderer);
+        Game_Update(Platform, &Game, &Renderer);
         
         Win32_SwapBuffers(DeviceContext);
     }
-    
-    Platform_FreeMemory(MemBase);
-    Assert(GlobalAllocCounter == 0, "Not everything was freed!");
     
     Win32_ExitProcess(0);
 }

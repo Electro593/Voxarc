@@ -20,8 +20,8 @@ OpenGL_DebugCallback(u32 Source,
 }
 
 internal u32
-File_LoadShaders(c08 *VertFileName,
-                 c08 *FragFileName)
+OpenGL_LoadShaders(c08 *VertFileName,
+                   c08 *FragFileName)
 {
     s32 Result=FALSE, InfoLogLength;
     u32 VertID=0, FragID=0;
@@ -88,6 +88,29 @@ File_LoadShaders(c08 *VertFileName,
 }
 
 internal void
+Renderer_Resize(v2u32 NewSize)
+{
+    v2u32 Pos;
+    v2u32 Size;
+    v2u32 Res = {16, 9};
+    
+    if(NewSize.X/Res.X < NewSize.Y/Res.Y) {
+        Size.X = NewSize.X;
+        Size.Y = (u32)((r32)Size.X*Res.Y/Res.X);
+        Pos.X = 0;
+        Pos.Y = (NewSize.Y - Size.Y)/2;
+    } else {
+        Size.Y = NewSize.Y;
+        Size.X = (u32)((r32)Size.Y*Res.X/Res.Y);
+        Pos.X = (NewSize.X - Size.X)/2;
+        Pos.Y = 0;
+    }
+    
+    OpenGL_Viewport(Pos.X, Pos.Y, Size.X, Size.Y);
+    OpenGL_Scissor(Pos.X, Pos.Y, Size.X, Size.Y);
+}
+
+internal void
 Renderer_Init(renderer_state *Renderer)
 {
     #if defined(_DEBUG)
@@ -97,7 +120,12 @@ Renderer_Init(renderer_state *Renderer)
         OpenGL_DebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DONT_CARE, 1, &ID, FALSE);
     #endif
     
-    Renderer->PCShader = File_LoadShaders(SHADERS_DIR "pc.vert", SHADERS_DIR "pc.frag");
+    OpenGL_Enable(GL_DEPTH_TEST);
+    OpenGL_Enable(GL_SCISSOR_TEST);
+    OpenGL_Enable(GL_CULL_FACE);
+    OpenGL_CullFace(GL_FRONT);
+    
+    Renderer->PCShader = OpenGL_LoadShaders(SHADERS_DIR "pc.vert", SHADERS_DIR "pc.frag");
     OpenGL_UseProgram(Renderer->PCShader);
     
     OpenGL_GenVertexArrays(1, &Renderer->VAO);

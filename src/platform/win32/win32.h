@@ -58,38 +58,59 @@ typedef s64 (API_ENTRY *func_Win32_WindowCallback)(win32_window Window, u32 Mess
 
 
 
-typedef enum win32_page_flags {
-    Win32_Page_ReadWrite = 0x04,
-} win32_page_flags;
+#define PAGE_READWRITE 0x04
 
-typedef enum win32_alloc_flags {
-    Win32_Alloc_Commit  = 0x1000,
-    Win32_Alloc_Reserve = 0x2000,
-    Win32_Alloc_Release = 0x8000,
-} win32_alloc_flags;
+#define MEM_COMMIT  0x1000
+#define MEM_RESERVE 0x2000
+#define MEM_RELEASE 0x8000
 
-typedef enum win32_class_style_flags {
-    Win32_ClassStyle_VRedraw = 0x0001,
-    Win32_ClassStyle_HRedraw = 0x0002,
-    Win32_ClassStyle_OwnDC   = 0x0020,
-} win32_class_style_flags;
+#define WS_OVERLAPPED  0x00000000
+#define WS_MAXIMIZEBOX 0x00010000
+#define WS_MINIMIZEBOX 0x00020000
+#define WS_THICKFRAME  0x00040000
+#define WS_SYSMENU     0x00080000
+#define WS_CAPTION     0x00C00000
+#define WS_VISIBLE     0x10000000
 
-typedef enum win32_window_style_flags {
-    Win32_WindowStyle_Overlapped = 0x00000000L,
-    Win32_WindowStyle_SysMenu    = 0x00080000L,
-    Win32_WindowStyle_Caption    = 0x00C00000L,
-    Win32_WindowStyle_Visible    = 0x10000000L,
-} win32_window_style_flags;
+#define WM_DESTROY    0x0002
+#define WM_SIZE       0x0005
+#define WM_CLOSE      0x0010
+#define WM_QUIT       0x0012
+#define WM_SIZING     0x0214
 
-typedef enum win32_window_message {
-    Win32_WindowMessage_Destroy       = 0x0002,
-    Win32_WindowMessage_Close         = 0x0010,
-    Win32_WindowMessage_Quit          = 0x0012,
-} win32_window_message;
+#define PM_REMOVE 0x1
 
-typedef enum win32_peek_message_flags {
-    Win32_PeekMessage_Remove = 0x1,
-} win32_peek_message_flags;
+#define PFD_TYPE_RGBA      0x00
+#define PFD_MAIN_PLANE     0x00
+#define PFD_DOUBLE_BUFFER  0x01
+#define PFD_DRAW_TO_WINDOW 0x04
+#define PFD_SUPPORT_OPENGL 0x20
+
+#define WGL_DRAW_TO_WINDOW_ARB    0x2001
+#define WGL_ACCELERATION_ARB      0x2003
+#define WGL_SUPPORT_OPENGL_ARB    0x2010
+#define WGL_DOUBLE_BUFFER_ARB     0x2011
+#define WGL_PIXEL_TYPE_ARB        0x2013
+#define WGL_COLOR_BITS_ARB        0x2014
+#define WGL_DEPTH_BITS_ARB        0x2022
+#define WGL_STENCIL_BITS_ARB      0x2023
+#define WGL_FULL_ACCELERATION_ARB 0x2027
+#define WGL_TYPE_RGBA_ARB         0x202B
+#define WGL_SAMPLE_BUFFERS_ARB    0x2041
+#define WGL_SAMPLES_ARB           0x2042
+
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB       0x0001
+#define WGL_CONTEXT_DEBUG_BIT_ARB              0x0001
+#define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB 0x0002
+#define WGL_CONTEXT_MAJOR_VERSION_ARB          0x2091
+#define WGL_CONTEXT_MINOR_VERSION_ARB          0x2092
+#define WGL_CONTEXT_LAYER_PLANE_ARB            0x2093
+#define WGL_CONTEXT_FLAGS_ARB                  0x2094
+#define WGL_CONTEXT_PROFILE_MASK_ARB           0x9126
+
+
+
+
 
 typedef enum win32_exception_disposition {
     Win32Exception_ContinueExecution,
@@ -97,40 +118,6 @@ typedef enum win32_exception_disposition {
     Win32Exception_NestedException,
     Win32Exception_CollidedUnwind,
 } win32_exception_disposition;
-
-typedef enum win32_pixel_format_descriptor_flags {
-    Win32_PixelFormatDescriptor_TypeRGBA      = 0x00,
-    Win32_PixelFormatDescriptor_MainPlane     = 0x00,
-    Win32_PixelFormatDescriptor_DoubleBuffer  = 0x01,
-    Win32_PixelFormatDescriptor_DrawToWindow  = 0x04,
-    Win32_PixelFormatDescriptor_SupportOpenGL = 0x20,
-} win32_pixel_format_descriptor_flags;
-
-typedef enum wgl_attributes {
-    WGL_ARB_DrawToWindow     = 0x2001,
-    WGL_ARB_Acceleration     = 0x2003,
-    WGL_ARB_SupportOpenGL    = 0x2010,
-    WGL_ARB_DoubleBuffer     = 0x2011,
-    WGL_ARB_PixelType        = 0x2013,
-    WGL_ARB_ColorBits        = 0x2014,
-    WGL_ARB_DepthBits        = 0x2022,
-    WGL_ARB_StencilBits      = 0x2023,
-    WGL_ARB_FullAcceleration = 0x2027,
-    WGL_ARB_TypeRGBA         = 0x202B,
-    WGL_ARB_SampleBuffers    = 0x2041,
-    WGL_ARB_Samples          = 0x2042,
-    
-    WGL_ARB_Context_MajorVersion = 0x2091,
-    WGL_ARB_Context_MinorVersion = 0x2092,
-    WGL_ARB_Context_LayerPlane   = 0x2093,
-    WGL_ARB_Context_Flags        = 0x2094,
-    WGL_ARB_Context_ProfileMask  = 0x9126,
-    
-    WGL_ARB_Context_CoreProfile = 0x00000001,
-    
-    WGL_ARB_Context_Debug             = 0x00000001,
-    WGL_ARB_Context_ForwardCompatible = 0x00000002,
-} wgl_attributes;
 
 
 
@@ -1012,7 +999,6 @@ typedef struct win32_image_export_directory {
     FUNC(Gdi32,    s32,                  ChoosePixelFormat,   win32_device_context DeviceContext, win32_pixel_format_descriptor *PixelFormatDescriptor) \
     FUNC(Kernel32, b08,                  CloseHandle,         win32_handle Object) \
     FUNC(Kernel32, win32_handle,         CreateFileA,         c08 *FileName, u32 DesiredAccess, u32 ShareMode, win32_security_attributes *SecurityAttributes, u32 CreationDisposition, u32 FlagsAndAttributes, win32_handle TemplateFile) \
-    FUNC(Kernel32, win32_handle,         CreateThread,        win32_security_attributes *ThreadAttributes, u64 StackSize, func_Win32_ThreadCallback *StartAddress, vptr Parameter, u32 CreationFlags, u32 *ThreadId) \
     FUNC(User32,   win32_window,         CreateWindowExA,     u32 StyleEx, c08 *ClassName, c08 *WindowName, u32 Style, s32 x, s32 y, s32 Width, s32 Height, win32_window ParentWindow, win32_menu Menu, win32_instance Instance, vptr Param) \
     FUNC(User32,   s32,                  DefWindowProcA,      win32_window Window, u32 Message, s64 WParam, s64 LParam) \
     FUNC(Gdi32,    s32,                  DescribePixelFormat, win32_device_context DeviceContext, s32 PixelFormat, u32 BytesCount, win32_pixel_format_descriptor *PixelFormatDescriptor) \
@@ -1025,18 +1011,19 @@ typedef struct win32_image_export_directory {
     FUNC(User32,   b32,                  GetMessageA,         win32_message *Msg, win32_window Window, u32 MessageFilterMin, u32 MessageFilterMax) \
     FUNC(Kernel32, win32_module,         GetModuleHandleA,    c08 *ModuleName) \
     FUNC(Kernel32, fptr,                 GetProcAddress,      win32_module Module, c08 *Name) \
+    FUNC(User32,   vptr,                 GetPropA,            win32_window Window, c08 *Name) \
     FUNC(Gdi32,    win32_gdi_object,     GetStockObject,      s32 I) \
     FUNC(User32,   win32_cursor,         LoadCursorA,         win32_instance Instance, c08 *CursorName) \
     FUNC(User32,   win32_icon,           LoadIconA,           win32_instance Instance, c08 *IconName) \
     FUNC(Kernel32, win32_module,         LoadLibraryA,        c08 *Name) \
     FUNC(Kernel32, void,                 OutputDebugStringA,  c08 *String) \
     FUNC(User32,   b32,                  PeekMessageA,        win32_message *Message, win32_window Window, u32 MessageFilterMin, u32 MessageFilterMax, u32 RemoveMessage) \
-    FUNC(User32,   b32,                  PostThreadMessageA,  u32 Thread, u32 Message, s64 WParam, s64 LParam) \
     FUNC(Kernel32, b08,                  ReadFile,            win32_handle File, vptr Buffer, u32 NumberOfBytesToRead, u32 *NumberOfBytesRead, win32_overlapped *Overlapped) \
     FUNC(User32,   win32_atom,           RegisterClassA,      win32_window_class_a *WindowClass) \
     FUNC(User32,   s32,                  ReleaseDC,           win32_window Window, win32_device_context DeviceContext) \
     FUNC(User32,   s64,                  SendMessageA,        win32_window Window, u32 Message, s64 WParam, s64 LParam) \
     FUNC(Gdi32,    b08,                  SetPixelFormat,      win32_device_context DeviceContext, s32 Format, win32_pixel_format_descriptor *PixelFormatDescriptor) \
+    FUNC(User32,   s32,                  SetPropA,            win32_window Window, c08 *Name, vptr Data) \
     FUNC(Gdi32,    b08,                  SwapBuffers,         win32_device_context DeviceContext) \
     FUNC(User32,   b32,                  TranslateMessage,    win32_message *Message) \
     FUNC(Kernel32, vptr,                 VirtualAlloc,        vptr Address, u64 Size, u32 AllocationType, u32 Protect) \

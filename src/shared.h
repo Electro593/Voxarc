@@ -85,18 +85,18 @@ typedef u16 c16;
 #include <render/software/render.h>
 #include <render/opengl/opengl.h>
 #include <render/opengl/render.h>
-#include <platform/platform.h>
 #include <platform/win32/win32.h>
 #include <platform/win32/entry.h>
+#include <platform/platform.h>
 #include <game/file.h>
 #include <game/game.h>
 
 typedef struct context {
     stack *Stack;
     
-    struct context *PrevContext;
+    struct context *PrevCtx;
 } context;
-global context Context;
+global context *Ctx;
 
 #include <util/scalar.c>
 #include <util/memory.c>
