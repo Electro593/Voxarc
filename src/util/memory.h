@@ -30,3 +30,21 @@ typedef struct stack {
     vptr *FirstMarker;
     u08 *Cursor;
 } stack;
+
+
+
+
+
+internal vptr Mem_Set(vptr Dest, s32 Data, u64 Size);
+internal vptr Mem_Cpy(vptr Dest, vptr Src, u64 Size);
+internal u64 Mem_BytesUntil(u08 *Data, u08 Byte);
+
+internal void Heap_Init(heap *Heap, u64 Size);
+internal void Heap_Defragment(heap *Heap);
+internal heap_handle *Heap_Allocate(heap *Heap, u64 Size);
+internal void Heap_Free(heap_handle *Handle);
+
+internal stack *Stack_Init(vptr Mem, u64 Size);
+internal void Stack_Push(void); 
+internal vptr Stack_Allocate(u64 Size);
+internal void Stack_Pop(void);

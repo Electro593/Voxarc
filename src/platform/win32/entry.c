@@ -12,7 +12,7 @@
 global platform_state *Platform;
 
 internal void
-Platform_LoadWin32Funcs(void)
+Platform_LoadWin32(void)
 {
     win32_teb *TEB = (win32_teb*)Asm_ReadGSQWord(48);
     win32_list_entry *Entry = TEB->PEB->Ldr->MemoryOrderList.Next;
@@ -54,24 +54,22 @@ Platform_LoadWin32Funcs(void)
     win32_module Gdi32 = Win32_LoadLibraryA("gdi32.dll");
     win32_module User32 = Win32_LoadLibraryA("user32.dll");
     
-    #define FUNC(Module, ReturnType, Name, ...) \
+    #define IMPORT(Module, ReturnType, Name, ...) \
         Win32_##Name = (func_Win32_##Name*)Win32_GetProcAddress(Module, #Name); \
         Assert(Win32_##Name);
-    WIN32_FUNCS
-    #undef FUNC
+    #define X WIN32_FUNCS
+    #include <x.h>
 }
 
 internal void
-Platform_LoadWGLFuncs(void)
+Platform_LoadWGL(void)
 {
     win32_module OpenGL32 = Win32_LoadLibraryA("opengl32.dll");
-    #define FUNC_TYPE1(ReturnType, Name, ...) \
+    #define IMPORT(ReturnType, Name, ...) \
         WGL_##Name = (func_WGL_##Name*)Win32_GetProcAddress(OpenGL32, "wgl" #Name); \
         Assert(WGL_##Name);
-    #define FUNC_TYPE2(ReturnType, Name, ...)
-    WGL_FUNCS
-    #undef FUNC_TYPE1
-    #undef FUNC_TYPE2
+    #define X WGL_FUNCS_TYPE_1
+    #include <x.h>
     
     win32_window_class_a DummyWindowClass = {0};
     DummyWindowClass.Callback = (func_Win32_WindowCallback)Win32_DefWindowProcA;
@@ -104,13 +102,11 @@ Platform_LoadWGLFuncs(void)
     vptr DummyRenderContext = WGL_CreateContext(DummyDeviceContext);
     WGL_MakeCurrent(DummyDeviceContext, DummyRenderContext);
     
-    #define FUNC_TYPE1(ReturnType, Name, ...)
-    #define FUNC_TYPE2(ReturnType, Name, ...) \
+    #define IMPORT(ReturnType, Name, ...) \
         WGL_##Name = (func_WGL_##Name*)WGL_GetProcAddress("wgl" #Name); \
         Assert(WGL_##Name);
-    WGL_FUNCS
-    #undef FUNC_TYPE1
-    #undef FUNC_TYPE2
+    #define X WGL_FUNCS_TYPE_2
+    #include <x.h>
     
     WGL_MakeCurrent(DummyDeviceContext, 0);
     WGL_DeleteContext(DummyRenderContext);
@@ -118,8 +114,8 @@ Platform_LoadWGLFuncs(void)
     Win32_DestroyWindow(DummyWindow);
 }
 
-internal void
-Platform_LoadOpenGLFuncs(win32_device_context DeviceContext)
+internal opengl_funcs
+Platform_LoadOpenGL(win32_device_context DeviceContext)
 {
     s32 PixelFormatAttribs[] = {
         WGL_DRAW_TO_WINDOW_ARB, TRUE,
@@ -162,22 +158,28 @@ Platform_LoadOpenGLFuncs(win32_device_context DeviceContext)
     win32_handle OpenGL32 = Win32_GetModuleHandleA("opengl32.dll");
     Assert(OpenGL32);
     
-    #define FUNC_TYPE1(ReturnType, Name, ...) \
-        OpenGL_##Name = (func_OpenGL_##Name*)Win32_GetProcAddress(OpenGL32, "gl" #Name); \
-        Assert(OpenGL_##Name);
-    #define FUNC_TYPE2(ReturnType, Name, ...) \
-        OpenGL_##Name = (func_OpenGL_##Name*)WGL_GetProcAddress("gl" #Name); \
-        Assert(OpenGL_##Name);
-    OPENGL_FUNCS
-    #undef FUNC_TYPE1
-    #undef FUNC_TYPE2
+    opengl_funcs Funcs;
+    
+    #define IMPORT(ReturnType, Name, ...) \
+        Funcs.OpenGL_##Name = (func_OpenGL_##Name*)Win32_GetProcAddress(OpenGL32, "gl" #Name); \
+        Assert(Funcs.OpenGL_##Name);
+    #define X OPENGL_FUNCS_TYPE_1
+    #include <x.h>
+    
+    #define IMPORT(ReturnType, Name, ...) \
+        Funcs.OpenGL_##Name = (func_OpenGL_##Name*)WGL_GetProcAddress("gl" #Name); \
+        Assert(Funcs.OpenGL_##Name);
+    #define X OPENGL_FUNCS_TYPE_2
+    #include <x.h>
+    
+    return Funcs;
 }
 
 internal void
-_Assert(c08 *File,
-        u32 Line,
-        c08 *Expression,
-        c08 *Message)
+Platform_Assert(c08 *File,
+                u32 Line,
+                c08 *Expression,
+                c08 *Message)
 {
     c08 LineStr[11];
     u32 Index = sizeof(LineStr);
@@ -337,7 +339,45 @@ Platform_CloseFile(file_handle FileHandle)
     Win32_CloseHandle(FileHandle);
 }
 
-internal s64 API_ENTRY
+internal void
+Platform_LoadGame(module *Module,
+                  game_state *GameState,
+                  platform_exports *PlatformExports,
+                  opengl_funcs *OpenGLFuncs)
+{
+    file_handle FileHandle;
+    win32_file_time LastWriteTime;
+    Platform_OpenFile(&FileHandle, "build\\Voxarc_Game.dll", FILE_READ);
+    Win32_GetFileTime(FileHandle, NULL, NULL, &LastWriteTime);
+    Platform_CloseFile(FileHandle);
+    if(Module->DLL) {
+        Win32_GetFileTime(FileHandle, NULL, NULL, &Module->LastWriteTime);
+        if(Win32_CompareFileTime(&Module->LastWriteTime, &LastWriteTime) >= 0)
+            return;
+        
+        Game_Unload(GameState);
+        Win32_FreeLibrary(Module->DLL);
+    }
+    Module->LastWriteTime = LastWriteTime;
+    
+    Win32_CopyFileA("build\\Voxarc_Game.dll", "build\\Voxarc_Game_Locked.dll", FALSE);
+    Module->DLL = Win32_LoadLibraryA("build\\Voxarc_Game_Locked.dll");
+    
+    #define EXTERN(ReturnType, Namespace, Name, ...) \
+        Namespace##_##Name = (func_##Namespace##_##Name*)Win32_GetProcAddress(Module->DLL, #Namespace "_" #Name);
+    #define X GAME_FUNCS
+    #include <x.h>
+    
+    game_exports GameExports;
+    Game_Load(PlatformExports, &GameExports, GameState, OpenGLFuncs);
+    
+    #define EXPORT(ReturnType, Namespace, Name, ...) \
+        Namespace##_##Name = GameExports.Namespace##_##Name;
+    #define X GAME_FUNCS
+    #include <x.h>
+}
+
+internal s64
 Platform_WindowCallback(win32_window Window,
                         u32 Message,
                         s64 WParam,
@@ -359,19 +399,22 @@ Platform_WindowCallback(win32_window Window,
     return Win32_DefWindowProcA(Window, Message, WParam, LParam);
 }
 
-external void API_ENTRY
+external void
 Platform_Entry(void)
 {
     platform_state _P = {0};
-    game_state Game = {0};
+    game_state GameState = {0};
     renderer_state Renderer = {0};
-    context _C = {0};
     Platform = &_P;
-    Ctx = &_C;
-    Ctx->PrevCtx = Ctx;
     
-    Platform_LoadWin32Funcs();
-    Platform_LoadWGLFuncs();
+    platform_exports PlatformExports;
+    #define EXPORT(ReturnType, Namespace, Name, ...) \
+        PlatformExports.Namespace##_##Name = Namespace##_##Name;
+    #define X PLATFORM_FUNCS
+    #include <x.h>
+    
+    Platform_LoadWin32();
+    Platform_LoadWGL();
     
     win32_window_class_a WindowClass = {0};
     WindowClass.Callback = Platform_WindowCallback;
@@ -391,18 +434,18 @@ Platform_Entry(void)
     );
     Assert(Window);
     
-    u64 StackSize = 32*1024*1024;
-    vptr MemBase = Platform_AllocateMemory(StackSize);
-    Ctx->Stack = Stack_Init(MemBase, StackSize);
-    
     win32_device_context DeviceContext = Win32_GetDC(Window);
-    Platform_LoadOpenGLFuncs(DeviceContext);
+    opengl_funcs OpenGLFuncs = Platform_LoadOpenGL(DeviceContext);
     
-    Game_Init(Platform, &Game, &Renderer);
+    module GameModule;
+    Platform_LoadGame(&GameModule, &GameState, &PlatformExports, &OpenGLFuncs);
+    Game_Init(Platform, &GameState, &Renderer);
+    
     Platform->ExecutionState = EXECUTION_RUNNING;
-    
     while(Platform->ExecutionState == EXECUTION_RUNNING)
     {
+        Platform_LoadGame(&GameModule, &GameState, &PlatformExports, &OpenGLFuncs);
+        
         win32_message Message;
         while(Win32_PeekMessageA(&Message, Window, 0, 0, PM_REMOVE)) {
             if(Message.Message == WM_QUIT) {
@@ -414,7 +457,7 @@ Platform_Entry(void)
             Win32_DispatchMessageA(&Message);
         }
         
-        Game_Update(Platform, &Game, &Renderer);
+        Game_Update(Platform, &GameState, &Renderer);
         
         Win32_SwapBuffers(DeviceContext);
     }

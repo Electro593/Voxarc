@@ -167,3 +167,14 @@ Renderer_Draw(renderer_state *Renderer)
 {
     OpenGL_DrawArrays(GL_TRIANGLES, 0, 3);
 }
+
+internal void
+Renderer_Load(opengl_funcs *OpenGLFuncs)
+{
+    if(OpenGLFuncs) {
+        #define IMPORT(ReturnType, Name, ...) \
+            OpenGL_##Name = OpenGLFuncs->OpenGL_##Name;
+        #define X OPENGL_FUNCS
+        #include <x.h>
+    }
+}

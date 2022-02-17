@@ -9,9 +9,16 @@ set CompilerSwitches=%CompilerSwitches% /wd4101 /wd5045 /wd4820 /wd4242 /wd4244 
 set CompilerSwitches=%CompilerSwitches% /D_MSVC /D_X64 /D_DEBUG
 set CompilerSwitches=%CompilerSwitches% /Od /Z7 /Oi
 set LinkerSwitches=%LinkerSwitches% /wx /incremental:no /opt:ref /opt:icf /nodefaultlib /subsystem:windows /stack:0x100000,0x100000 /machine:x64
-set DLLSwitches=%DLLSwitches% /noimplib /noentry
+set DLLCompilerSwitches=%DLLCompilerSwitches% /LD
+set DLLLinkerSwitches=%DLLLinkerSwitches% /noimplib /noentry
 
-cl %CompilerSwitches% /I ..\src\ ..\src\platform\win32\entry.c /link %LinkerSwitches% /entry:Platform_Entry /out:Voxarc.exe
+if exist *.pdb del *.pdb > NUL 2> NUL
+echo WAITING FOR PDB > lock.tmp
+
+cl %CompilerSwitches% %DLLCompilerSwitches% /D_RENDERER_MODULE /D_GAME_MODULE /I ..\src\ ..\src\game\game.c /link %LinkerSwitches% %DLLLinkerSwitches% /pdb:Voxarc_Game_%random%.pdb /out:Voxarc_Game.dll
+
+del lock.tmp
+cl %CompilerSwitches% /D_PLATFORM_MODULE /I ..\src\ ..\src\platform\win32\entry.c /link %LinkerSwitches% /entry:Platform_Entry /out:Voxarc.exe
 
 if exist *.obj del *.obj
 if exist *.exp del *.exp

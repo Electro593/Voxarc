@@ -8,7 +8,9 @@
             "defines": [
                 "_MSVC=1",
                 "_X64=1",
-                "_DEBUG=1"
+                "_DEBUG=1",
+                "_GAME_MODULE",
+                "_PLATFORM_MODULE"
             ],
             "cStandard": "c17",
             "cppStandard": "c++17",

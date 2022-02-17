@@ -7,6 +7,12 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#if defined(_WIN32)
+    #include <platform/win32/win32.h>
+    #include <platform/win32/entry.h>
+    typedef win32_handle file_handle;
+#endif
+
 typedef enum platform_updates {
     WINDOW_RESIZED = 0x01,
 } platform_updates;
@@ -30,17 +36,51 @@ typedef enum file_mode {
     FILE_APPEND,
 } file_mode;
 
-typedef struct platform_state {
+#define PLATFORM_FUNCS \
+    EXPORT(vptr,         Platform, AllocateMemory, u64 Size) \
+    EXPORT(void,         Platform, Assert,         c08 *File, u32 Line, c08 *Expression, c08 *Message) \
+    EXPORT(void,         Platform, CloseFile,      file_handle FileHandle) \
+    EXTERN(void,         Platform, Entry,          void) \
+    EXPORT(void,         Platform, FreeMemory,     vptr Base) \
+    EXPORT(u64,          Platform, GetFileLength,  file_handle FileHandle) \
+    INTERN(void,         Platform, LoadGame,       module *Module, game_state *GameState, platform_exports *PlatformExports, opengl_funcs *OpenGLFuncs) \
+    INTERN(opengl_funcs, Platform, LoadOpenGL,     win32_device_context DeviceContext) \
+    INTERN(void,         Platform, LoadWGL,        void) \
+    INTERN(void,         Platform, LoadWin32,      void) \
+    EXPORT(b08,          Platform, OpenFile,       file_handle *FileHandle, c08 *FileName, file_mode OpenMode) \
+    EXPORT(u64,          Platform, ReadFile,       file_handle FileHandle, vptr Dest, u64 Length, u64 Offset) \
+    INTERN(s64,          Platform, WindowCallback, win32_window Window, u32 Message, s64 WParam, s64 LParam) \
+    EXPORT(u64,          Platform, WriteFile,      file_handle FileHandle, vptr Src, u64 Length, u64 Offset) \
+
+#define EXPORT(ReturnType, Namespace, Name, ...) \
+    typedef ReturnType func_##Namespace##_##Name(__VA_ARGS__);
+#define EXTERN EXPORT
+#define X PLATFORM_FUNCS
+#include <x.h>
+
+struct platform_exports {
+    #define EXPORT(ReturnType, Namespace, Name, ...) \
+        func_##Namespace##_##Name *Namespace##_##Name;
+    #define X PLATFORM_FUNCS
+    #include <x.h>
+};
+
+#if defined(_PLATFORM_MODULE)
+    #define DEFAULT(ReturnType, Namespace, Name, ...) \
+        internal ReturnType Namespace##_##Name(__VA_ARGS__);
+    #define EXTERN(ReturnType, Namespace, Name, ...) \
+        external ReturnType Namespace##_##Name(__VA_ARGS__);
+    #define X PLATFORM_FUNCS
+    #include <x.h>
+#else
+    #define EXPORT(ReturnType, Namespace, Name, ...) \
+        global func_##Namespace##_##Name *Namespace##_##Name;
+    #define X PLATFORM_FUNCS
+    #include <x.h>
+#endif
+
+struct platform_state {
     v2u32 WindowSize; 
     execution_state ExecutionState;
     platform_updates Updates;
-} platform_state;
-
-internal void _Assert(c08 *File, u32 Line, c08 *Expression, c08 *Message);
-internal b08 Platform_OpenFile(file_handle *FileHandle, c08 *FileName, file_mode OpenMode);
-internal u64 Platform_GetFileLength(file_handle FileHandle);
-internal u64 Platform_ReadFile(file_handle FileHandle, vptr Dest, u64 Length, u64 Offset);
-internal u64 Platform_WriteFile(file_handle FileHandle, vptr Src, u64 Length, u64 Offset);
-internal void Platform_CloseFile(file_handle FileHandle);
-internal vptr Platform_AllocateMemory(u64 Size);
-internal void Platform_FreeMemory(vptr Base);
+};

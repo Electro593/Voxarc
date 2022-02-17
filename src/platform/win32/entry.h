@@ -11,4 +11,7 @@
 #define SHADERS_DIR  "assets\\shaders\\"
 #define TEXTURES_DIR "assets\\textures\\"
 
-typedef win32_handle file_handle;
+typedef struct module {
+    win32_file_time LastWriteTime;
+    win32_module DLL;
+} module;

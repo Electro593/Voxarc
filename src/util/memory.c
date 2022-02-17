@@ -232,23 +232,23 @@ Stack_Init(vptr Mem,
 internal void
 Stack_Push(void)
 {
-    vptr *Marker = (vptr*)Ctx->Stack->Cursor;
-    *Marker = Ctx->Stack->FirstMarker;
-    Ctx->Stack->FirstMarker = Marker;
-    Ctx->Stack->Cursor += sizeof(vptr);
+    vptr *Marker = (vptr*)__Global.Stack->Cursor;
+    *Marker = __Global.Stack->FirstMarker;
+    __Global.Stack->FirstMarker = Marker;
+    __Global.Stack->Cursor += sizeof(vptr);
 }
 
 internal vptr
 Stack_Allocate(u64 Size)
 {
-    vptr Result = Ctx->Stack->Cursor;
-    Ctx->Stack->Cursor += Size;
+    vptr Result = __Global.Stack->Cursor;
+    __Global.Stack->Cursor += Size;
     return Result;
 }
 
 internal void
 Stack_Pop(void)
 {
-    Ctx->Stack->FirstMarker = *Ctx->Stack->FirstMarker;
-    Ctx->Stack->Cursor = (u08*)Ctx->Stack->FirstMarker + sizeof(vptr);
+    __Global.Stack->FirstMarker = *__Global.Stack->FirstMarker;
+    __Global.Stack->Cursor = (u08*)__Global.Stack->FirstMarker + sizeof(vptr);
 }

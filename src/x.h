@@ -7,20 +7,27 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#define TERMINAL__INIT_CHAR_COUNT 256
-#define TERMINAL__INIT_LINE_COUNT 32
+#if !defined(DEFAULT)
+    #define DEFAULT(...)
+#endif
+#if !defined(EXTERN)
+    #define EXTERN DEFAULT
+#endif
+#if !defined(INTERN)
+    #define INTERN DEFAULT
+#endif
+#if !defined(EXPORT)
+    #define EXPORT DEFAULT
+#endif
+#if !defined(IMPORT)
+    #define IMPORT DEFAULT
+#endif
 
-typedef struct terminal {
-    u32 LineCount;
-    u32 MaxLines;
-    u32 *Lines;
-    
-    string Text;
-    
-    font *Font;
-} terminal;
+X
 
-typedef struct renderer {
-    v2u32 Size;
-    v4u08 *Buffer;
-} renderer;
+#undef IMPORT
+#undef EXPORT
+#undef INTERN
+#undef EXTERN
+#undef DEFAULT
+#undef X

@@ -7,17 +7,7 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-typedef struct string {
-    u64 Length;
-    u64 Capacity;
-    
-    b08 Resizable;
-    
-    c08 *Text;
-} string;
-
-internal void String_Free(string String);
-internal string U64_ToString(u64 N, u08 Radix);
-internal string U32_ToString(u32 N, u08 Radix);
-internal string U16_ToString(u16 N, u08 Radix);
-internal string U08_ToString(u08 N, u08 Radix);
+internal r32 R32_Floor(r32 N);
+internal r32 R32_Ceil(r32 N);
+internal r32 R32_Sqrt(r32 N);
+internal r32 R32_Abs(r32 N);

@@ -7,17 +7,14 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-typedef struct string {
-    u64 Length;
-    u64 Capacity;
-    
-    b08 Resizable;
-    
-    c08 *Text;
-} string;
+#if defined(_OPENGL)
+    #include <renderer/opengl/opengl.h>
+    #include <renderer/opengl/render.h>
+#endif
 
-internal void String_Free(string String);
-internal string U64_ToString(u64 N, u08 Radix);
-internal string U32_ToString(u32 N, u08 Radix);
-internal string U16_ToString(u16 N, u08 Radix);
-internal string U08_ToString(u08 N, u08 Radix);
+#define RENDERER_FUNCS \
+    EXPORT(void, Renderer, Init,        renderer_state *Renderer) \
+    EXPORT(void, Renderer, Draw,        renderer_state *Renderer) \
+    EXPORT(void, Renderer, Resize,      v2u32 NewSize) \
+    INTERN(u32,  OpenGL,   LoadShaders, c08 *VertFileName, c08 *FragFileName) \
+    INTERN(void API_ENTRY, OpenGL, DebugCallback, u32 Source, u32 Type, u32 ID, u32 Severity, s32 Length, c08 *Message, vptr UserParam) \

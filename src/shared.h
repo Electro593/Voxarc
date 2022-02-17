@@ -7,14 +7,16 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#define _OPENGL
+
 #if defined(_MSVC)
     #define API_ENTRY  __stdcall
     #define API_IMPORT __declspec(dllimport)
     #define API_EXPORT __declspec(dllexport)
 #elif defined(_GCC)
-    #define API_ENTRY  __stdcall
-    #define API_IMPORT __declspec(dllimport)
-    #define API_EXPORT __declspec(dllexport)
+    #define API_ENTRY
+    #define API_IMPORT
+    #define API_EXPORT
 #endif
 
 #define global     static
@@ -29,11 +31,11 @@
 #define OFFSET_OF(Type, Element) ((u64)&(((Type*)0)->Element))
 #define INDEX_2D(X, Y, MaxX) ((X) + ((Y) * (MaxX)))
 
-#define Error(Message) _Assert(__FILE__, __LINE__, "", Message)
+#define Error(Message) Platform_Assert(__FILE__, __LINE__, "", Message)
 #define Assert(Expression, ...) \
     do { \
         if(!(Expression)) { \
-            _Assert(__FILE__, __LINE__, #Expression, "" __VA_ARGS__); \
+            Platform_Assert(__FILE__, __LINE__, #Expression, "" __VA_ARGS__); \
             STOP; \
         } \
     } while(0)
@@ -77,34 +79,24 @@ typedef s32 b32;
 typedef u08 c08;
 typedef u16 c16;
 
+typedef struct platform_state platform_state;
+typedef struct renderer_state renderer_state;
+typedef struct game_state game_state;
+
+typedef struct platform_exports platform_exports;
+typedef struct renderer_exports renderer_exports;
+typedef struct opengl_funcs opengl_funcs;
+typedef struct game_exports game_exports;
+
 #include <util/intrin.h>
+#include <util/scalar.h>
 #include <util/vector.h>
 #include <util/memory.h>
 #include <util/string.h>
-#include <render/font.h>
-#include <render/software/render.h>
-#include <render/opengl/opengl.h>
-#include <render/opengl/render.h>
-#include <platform/win32/win32.h>
-#include <platform/win32/entry.h>
+#include <renderer/font.h>
+#include <renderer/renderer.h>
 #include <platform/platform.h>
 #include <game/file.h>
 #include <game/game.h>
-
-typedef struct context {
-    stack *Stack;
-    
-    struct context *PrevCtx;
-} context;
-global context *Ctx;
-
-#include <util/scalar.c>
-#include <util/memory.c>
-#include <util/string.c>
-#include <render/font.c>
-#include <render/opengl/render.c>
-#include <game/file.c>
-#include <game/game.c>
-// #include <render/software/terminal.c>
 
 s32 _fltused;

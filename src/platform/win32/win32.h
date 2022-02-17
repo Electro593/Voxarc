@@ -145,6 +145,16 @@ typedef union win32_large_integer {
     s64 QuadPart;
 } win32_large_integer;
 
+typedef struct win32_point {
+    s32 X;
+    s32 Y;
+} win32_point;
+
+typedef struct win32_file_time {
+    u32 LowDateTime;
+    u32 HighDateTime;
+} win32_file_time;
+
 typedef struct win32_window_class_a {
     u32 Style;
     func_Win32_WindowCallback Callback;
@@ -157,11 +167,6 @@ typedef struct win32_window_class_a {
     c08 *MenuName;
     c08 *ClassName;
 } win32_window_class_a;
-
-typedef struct win32_point {
-    s32 X;
-    s32 Y;
-} win32_point;
 
 typedef struct win32_overlapped {
     u64 Internal;
@@ -996,60 +1001,64 @@ typedef struct win32_image_export_directory {
 
 
 #define WIN32_FUNCS \
-    FUNC(Gdi32,    s32,                  ChoosePixelFormat,   win32_device_context DeviceContext, win32_pixel_format_descriptor *PixelFormatDescriptor) \
-    FUNC(Kernel32, b08,                  CloseHandle,         win32_handle Object) \
-    FUNC(Kernel32, win32_handle,         CreateFileA,         c08 *FileName, u32 DesiredAccess, u32 ShareMode, win32_security_attributes *SecurityAttributes, u32 CreationDisposition, u32 FlagsAndAttributes, win32_handle TemplateFile) \
-    FUNC(User32,   win32_window,         CreateWindowExA,     u32 StyleEx, c08 *ClassName, c08 *WindowName, u32 Style, s32 x, s32 y, s32 Width, s32 Height, win32_window ParentWindow, win32_menu Menu, win32_instance Instance, vptr Param) \
-    FUNC(User32,   s32,                  DefWindowProcA,      win32_window Window, u32 Message, s64 WParam, s64 LParam) \
-    FUNC(Gdi32,    s32,                  DescribePixelFormat, win32_device_context DeviceContext, s32 PixelFormat, u32 BytesCount, win32_pixel_format_descriptor *PixelFormatDescriptor) \
-    FUNC(User32,   b08,                  DestroyWindow,       win32_window Window) \
-    FUNC(User32,   s64,                  DispatchMessageA,    win32_message *Message) \
-    FUNC(Kernel32, void,                 ExitProcess,         u32 ExitCode) \
-    FUNC(User32,   win32_device_context, GetDC,               win32_window Window) \
-    FUNC(Kernel32, b08,                  GetFileSizeEx,       win32_handle File, win32_large_integer *FileSize) \
-    FUNC(Kernel32, u32,                  GetLastError,        void) \
-    FUNC(User32,   b32,                  GetMessageA,         win32_message *Msg, win32_window Window, u32 MessageFilterMin, u32 MessageFilterMax) \
-    FUNC(Kernel32, win32_module,         GetModuleHandleA,    c08 *ModuleName) \
-    FUNC(Kernel32, fptr,                 GetProcAddress,      win32_module Module, c08 *Name) \
-    FUNC(User32,   vptr,                 GetPropA,            win32_window Window, c08 *Name) \
-    FUNC(Gdi32,    win32_gdi_object,     GetStockObject,      s32 I) \
-    FUNC(User32,   win32_cursor,         LoadCursorA,         win32_instance Instance, c08 *CursorName) \
-    FUNC(User32,   win32_icon,           LoadIconA,           win32_instance Instance, c08 *IconName) \
-    FUNC(Kernel32, win32_module,         LoadLibraryA,        c08 *Name) \
-    FUNC(Kernel32, void,                 OutputDebugStringA,  c08 *String) \
-    FUNC(User32,   b32,                  PeekMessageA,        win32_message *Message, win32_window Window, u32 MessageFilterMin, u32 MessageFilterMax, u32 RemoveMessage) \
-    FUNC(Kernel32, b08,                  ReadFile,            win32_handle File, vptr Buffer, u32 NumberOfBytesToRead, u32 *NumberOfBytesRead, win32_overlapped *Overlapped) \
-    FUNC(User32,   win32_atom,           RegisterClassA,      win32_window_class_a *WindowClass) \
-    FUNC(User32,   s32,                  ReleaseDC,           win32_window Window, win32_device_context DeviceContext) \
-    FUNC(User32,   s64,                  SendMessageA,        win32_window Window, u32 Message, s64 WParam, s64 LParam) \
-    FUNC(Gdi32,    b08,                  SetPixelFormat,      win32_device_context DeviceContext, s32 Format, win32_pixel_format_descriptor *PixelFormatDescriptor) \
-    FUNC(User32,   s32,                  SetPropA,            win32_window Window, c08 *Name, vptr Data) \
-    FUNC(Gdi32,    b08,                  SwapBuffers,         win32_device_context DeviceContext) \
-    FUNC(User32,   b32,                  TranslateMessage,    win32_message *Message) \
-    FUNC(Kernel32, vptr,                 VirtualAlloc,        vptr Address, u64 Size, u32 AllocationType, u32 Protect) \
-    FUNC(Kernel32, b08,                  VirtualFree,         vptr Address, u64 Size, u32 FreeType) \
-    FUNC(User32,   b08,                  WaitMessage,         void) \
-    FUNC(Kernel32, b08,                  WriteFile,           win32_handle File, vptr Buffer, u32 NumberOfBytesToWrite, u32 *NumberOfBytesWritten, win32_overlapped *Overlapped) \
+    IMPORT(Gdi32,    s32,                  ChoosePixelFormat,   win32_device_context DeviceContext, win32_pixel_format_descriptor *PixelFormatDescriptor) \
+    IMPORT(Kernel32, b08,                  CloseHandle,         win32_handle Object) \
+    IMPORT(Kernel32, s32,                  CompareFileTime,     win32_file_time *FileTime1, win32_file_time *FileTime2) \
+    IMPORT(Kernel32, b32,                  CopyFileA,           c08 *ExistingFileName, c08 *NewFileName, b32 FailIfExists) \
+    IMPORT(Kernel32, win32_handle,         CreateFileA,         c08 *FileName, u32 DesiredAccess, u32 ShareMode, win32_security_attributes *SecurityAttributes, u32 CreationDisposition, u32 FlagsAndAttributes, win32_handle TemplateFile) \
+    IMPORT(User32,   win32_window,         CreateWindowExA,     u32 StyleEx, c08 *ClassName, c08 *WindowName, u32 Style, s32 x, s32 y, s32 Width, s32 Height, win32_window ParentWindow, win32_menu Menu, win32_instance Instance, vptr Param) \
+    IMPORT(User32,   s32,                  DefWindowProcA,      win32_window Window, u32 Message, s64 WParam, s64 LParam) \
+    IMPORT(Gdi32,    s32,                  DescribePixelFormat, win32_device_context DeviceContext, s32 PixelFormat, u32 BytesCount, win32_pixel_format_descriptor *PixelFormatDescriptor) \
+    IMPORT(User32,   b08,                  DestroyWindow,       win32_window Window) \
+    IMPORT(User32,   s64,                  DispatchMessageA,    win32_message *Message) \
+    IMPORT(Kernel32, void,                 ExitProcess,         u32 ExitCode) \
+    IMPORT(Kernel32, b32,                  FreeLibrary,         win32_module Library) \
+    IMPORT(User32,   win32_device_context, GetDC,               win32_window Window) \
+    IMPORT(Kernel32, b08,                  GetFileSizeEx,       win32_handle File, win32_large_integer *FileSize) \
+    IMPORT(Kernel32, u32,                  GetLastError,        void) \
+    IMPORT(Kernel32, b32,                  GetFileTime,         win32_handle File, win32_file_time *CreationTime, win32_file_time *LastAccessTime, win32_file_time *LastWriteTime) \
+    IMPORT(User32,   b32,                  GetMessageA,         win32_message *Msg, win32_window Window, u32 MessageFilterMin, u32 MessageFilterMax) \
+    IMPORT(Kernel32, win32_module,         GetModuleHandleA,    c08 *ModuleName) \
+    IMPORT(Kernel32, fptr,                 GetProcAddress,      win32_module Module, c08 *Name) \
+    IMPORT(User32,   vptr,                 GetPropA,            win32_window Window, c08 *Name) \
+    IMPORT(Gdi32,    win32_gdi_object,     GetStockObject,      s32 I) \
+    IMPORT(User32,   win32_cursor,         LoadCursorA,         win32_instance Instance, c08 *CursorName) \
+    IMPORT(User32,   win32_icon,           LoadIconA,           win32_instance Instance, c08 *IconName) \
+    IMPORT(Kernel32, win32_module,         LoadLibraryA,        c08 *Name) \
+    IMPORT(Kernel32, void,                 OutputDebugStringA,  c08 *String) \
+    IMPORT(User32,   b32,                  PeekMessageA,        win32_message *Message, win32_window Window, u32 MessageFilterMin, u32 MessageFilterMax, u32 RemoveMessage) \
+    IMPORT(Kernel32, b08,                  ReadFile,            win32_handle File, vptr Buffer, u32 NumberOfBytesToRead, u32 *NumberOfBytesRead, win32_overlapped *Overlapped) \
+    IMPORT(User32,   win32_atom,           RegisterClassA,      win32_window_class_a *WindowClass) \
+    IMPORT(User32,   s32,                  ReleaseDC,           win32_window Window, win32_device_context DeviceContext) \
+    IMPORT(User32,   s64,                  SendMessageA,        win32_window Window, u32 Message, s64 WParam, s64 LParam) \
+    IMPORT(Gdi32,    b08,                  SetPixelFormat,      win32_device_context DeviceContext, s32 Format, win32_pixel_format_descriptor *PixelFormatDescriptor) \
+    IMPORT(User32,   b32,                  SetPropA,            win32_window Window, c08 *Name, vptr Data) \
+    IMPORT(Gdi32,    b08,                  SwapBuffers,         win32_device_context DeviceContext) \
+    IMPORT(User32,   b32,                  TranslateMessage,    win32_message *Message) \
+    IMPORT(Kernel32, vptr,                 VirtualAlloc,        vptr Address, u64 Size, u32 AllocationType, u32 Protect) \
+    IMPORT(Kernel32, b08,                  VirtualFree,         vptr Address, u64 Size, u32 FreeType) \
+    IMPORT(User32,   b08,                  WaitMessage,         void) \
+    IMPORT(Kernel32, b08,                  WriteFile,           win32_handle File, vptr Buffer, u32 NumberOfBytesToWrite, u32 *NumberOfBytesWritten, win32_overlapped *Overlapped) \
 
-#define WGL_FUNCS \
-    FUNC_TYPE2(b08,                         ChoosePixelFormatARB,    win32_device_context DeviceContext, s32 *AttribListI, r32 *AttribListF, u32 MaxFormats, s32 *Formats, u32 *NumFormats) \
-    FUNC_TYPE1(win32_opengl_render_context, CreateContext,           win32_device_context DeviceContext) \
-    FUNC_TYPE2(win32_opengl_render_context, CreateContextAttribsARB, win32_device_context DeviceContext, win32_opengl_render_context ShareContext, s32 *AttribList) \
-    FUNC_TYPE1(b08,                         DeleteContext,           win32_opengl_render_context RenderContext) \
-    FUNC_TYPE1(fptr,                        GetProcAddress,          c08 *Process) \
-    FUNC_TYPE1(b08,                         MakeCurrent,             win32_device_context DeviceContext, win32_opengl_render_context RenderContext) \
-    FUNC_TYPE2(b08,                         SwapIntervalEXT,         s32 Num) \
+#define WGL_FUNCS_TYPE_1 \
+    IMPORT(win32_opengl_render_context, CreateContext,           win32_device_context DeviceContext) \
+    IMPORT(b08,                         DeleteContext,           win32_opengl_render_context RenderContext) \
+    IMPORT(fptr,                        GetProcAddress,          c08 *Process) \
+    IMPORT(b08,                         MakeCurrent,             win32_device_context DeviceContext, win32_opengl_render_context RenderContext) \
 
-#define FUNC(Module, ReturnType, Name, ...) \
+#define WGL_FUNCS_TYPE_2 \
+    IMPORT(b08,                         ChoosePixelFormatARB,    win32_device_context DeviceContext, s32 *AttribListI, r32 *AttribListF, u32 MaxFormats, s32 *Formats, u32 *NumFormats) \
+    IMPORT(win32_opengl_render_context, CreateContextAttribsARB, win32_device_context DeviceContext, win32_opengl_render_context ShareContext, s32 *AttribList) \
+    IMPORT(b08,                         SwapIntervalEXT,         s32 Num) \
+
+#define IMPORT(Module, ReturnType, Name, ...) \
     typedef ReturnType func_Win32_##Name(__VA_ARGS__); \
     global func_Win32_##Name *Win32_##Name;
-WIN32_FUNCS
-#undef FUNC
+#define X WIN32_FUNCS
+#include <x.h>
 
-#define FUNC_TYPE1(ReturnType, Name, ...) \
+#define IMPORT(ReturnType, Name, ...) \
     typedef ReturnType func_WGL_##Name(__VA_ARGS__); \
     global func_WGL_##Name *WGL_##Name;
-#define FUNC_TYPE2 FUNC_TYPE1
-WGL_FUNCS
-#undef FUNC_TYPE1
-#undef FUNC_TYPE2
+#define X WGL_FUNCS_TYPE_1 WGL_FUNCS_TYPE_2
+#include <x.h>
