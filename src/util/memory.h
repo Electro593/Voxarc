@@ -12,10 +12,11 @@
 typedef vptr heap;
 typedef struct heap_handle {
     u08 *Data;
-    u64 Offset : 39;
-    u64 Free   :  1;
-    u64 Index  : 16;
-    u64 SizeU  :  8;
+    u64 Index    : 16;
+    u64 Offset   : 39;
+    u64 Free     :  1;
+    u64 Anchored :  1;
+    u64 SizeU    :  7;
     u32 SizeL;
     u16 PrevFree;
     u16 NextFree;
@@ -42,6 +43,7 @@ internal u64 Mem_BytesUntil(u08 *Data, u08 Byte);
 internal void Heap_Init(heap *Heap, u64 Size);
 internal void Heap_Defragment(heap *Heap);
 internal heap_handle *Heap_Allocate(heap *Heap, u64 Size);
+internal vptr Heap_AllocateA(heap *Heap, u64 Size);
 internal void Heap_Free(heap_handle *Handle);
 
 internal stack *Stack_Init(vptr Mem, u64 Size);
