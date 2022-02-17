@@ -97,6 +97,7 @@ typedef struct game_exports game_exports;
 #include <renderer/renderer.h>
 #include <platform/platform.h>
 #include <game/file.h>
+#include <game/gui.h>
 #include <game/game.h>
 
 s32 _fltused;

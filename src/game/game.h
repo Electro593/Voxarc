@@ -14,6 +14,8 @@ typedef struct global_state {
 struct game_state {
     u32 DebugCounter;
     
+    gui_node *GUI;
+    
     global_state GlobalState;
 };
 

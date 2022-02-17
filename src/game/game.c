@@ -18,6 +18,7 @@ global_state __Global;
 #include <renderer/font.c>
 #include <renderer/opengl/render.c>
 #include <game/file.c>
+#include <game/gui.c>
 
 internal void
 Game_Init(platform_state *Platform,
@@ -28,8 +29,8 @@ Game_Init(platform_state *Platform,
     vptr MemBase = Platform_AllocateMemory(StackSize);
     __Global.Stack = Stack_Init(MemBase, StackSize);
     
-    
     Renderer_Init(Renderer);
+    
     
     
 }

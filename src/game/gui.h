@@ -7,9 +7,24 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-typedef struct gui {
+typedef enum gui_node_type {
+    GUI_TEXT,
+} gui_node_type;
+
+typedef struct gui_text {
+    string Text;
+} gui_text;
+
+typedef struct gui_node {
+    v2r32 Offset;
+    u32 ChildCount;
+    struct gui_node *Children;
     
-} gui;
+    gui_node_type Type;
+    union {
+        gui_text Text;
+    };
+} gui_node;
 
 typedef struct gui_text_box {
     string Text;
