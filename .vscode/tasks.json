@@ -3,12 +3,9 @@
     "tasks": [
         {
             "type": "shell",
-            "label": "Build Program",
-            "command": "./do build -1 0",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
+            "label": "Build Program (MS)",
+            "command": "./scripts/do build -1 0",
+            "group": "build",
             "problemMatcher": "$msCompile"
         },
         {
@@ -55,7 +52,7 @@
         },
         {
             "type": "shell",
-            "label": "Run Program",
+            "label": "Run Program (MS)",
             "command": "./build/Voxarc_win_x64.exe",
             "group": {
                 "kind": "test",

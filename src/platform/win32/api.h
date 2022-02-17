@@ -7,13 +7,6 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef PLATFORM_WIN32_API_H_
-#define PLATFORM_WIN32_API_H_
-
-//TODO: Sort these, remove unused at end of development
-
-//NOTE: Copied/modified from Windows headers:
-
 #define DECLARE_HANDLE(Name) \
     struct Name##__{int Unused;}; \
     typedef struct Name##__ *Name;
@@ -275,7 +268,6 @@
 #define HTBOTTOMLEFT  16
 #define HTBOTTOMRIGHT 17
 
-//NOTE: VK_* defines
 #if 1
 #define VK_LBUTTON                         0x01
 #define VK_RBUTTON                         0x02
@@ -559,51 +551,36 @@
 #define WGL_CONTEXT_DEBUG_BIT_ARB               0x00000001
 #define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB  0x00000002
 
-DECLARE_HANDLE(win32_instance)
-DECLARE_HANDLE(win32_icon);
-DECLARE_HANDLE(win32_cursor);
-DECLARE_HANDLE(win32_brush);
-DECLARE_HANDLE(win32_window);
-DECLARE_HANDLE(win32_menu);
-DECLARE_HANDLE(win32_device_context);
-DECLARE_HANDLE(win32_raw_input_handle);
-DECLARE_HANDLE(win32_region);
-DECLARE_HANDLE(win32_key);
-DECLARE_HANDLE(win32_pen);
-DECLARE_HANDLE(win32_gdi_object);
-DECLARE_HANDLE(win32_monitor);
-DECLARE_HANDLE(win32_opengl_render_context)
-
 typedef vptr win32_handle;
+typedef win32_handle win32_instance;
+typedef win32_handle win32_icon;
+typedef win32_handle win32_cursor;
+typedef win32_handle win32_brush;
+typedef win32_handle win32_window;
+typedef win32_handle win32_menu;
+typedef win32_handle win32_device_context;
+typedef win32_handle win32_raw_input_handle;
+typedef win32_handle win32_region;
+typedef win32_handle win32_key;
+typedef win32_handle win32_pen;
+typedef win32_handle win32_gdi_object;
+typedef win32_handle win32_monitor;
+typedef win32_handle win32_opengl_render_context;
 typedef win32_instance win32_module;
 typedef u32 win32_color_ref;
 
-typedef s64
-(_API_ENTRY *win32_process)(void);
+typedef s64 (_API_ENTRY *func_WindowProc)(win32_window Window, u32 Message, u64 WParam, s64 LParam);
+typedef b08 (_API_ENTRY *func_EnumCallback)(win32_window Window, s64 LParam);
+typedef u32 (_API_ENTRY *func_ThreadStartRoutine)(vptr ThreadParameter);
 
-typedef s64
-(_API_ENTRY *_type__WindowProc)(win32_window Window,
-                                u32 Message,
-                                u64 WParam,
-                                s64 LParam);
-
-typedef b08
-(_API_ENTRY *_type__EnumCallback)(win32_window Window,
-                                  s64 LParam);
-
-typedef u32
-(_API_ENTRY *_type__ThreadStartRoutine)(vptr ThreadParameter);
-
-typedef enum win32_exception_disposition
-{
+typedef enum win32_exception_disposition {
     WIN32_EXCEPTION_CONTINUE_EXECUTION,
     WIN32_EXCEPTION_CONTINUE_SEARCH,
     WIN32_EXCEPTION_NESTED_EXCEPTION,
     WIN32_EXCEPTION_COLLIDED_UNWIND
 } win32_exception_disposition;
 
-typedef enum win32_ldr_dll_load_reason
-{
+typedef enum win32_ldr_dll_load_reason {
     LoadReasonStaticDependency           = 0,
     LoadReasonStaticForwarderDependency  = 1,
     LoadReasonDynamicForwarderDependency = 2,
@@ -616,8 +593,7 @@ typedef enum win32_ldr_dll_load_reason
     LoadReasonUnknown                    = -1
 } win32_ldr_dll_load_reason;
 
-typedef enum win32_ldr_ddag_state
-{
+typedef enum win32_ldr_ddag_state {
     LdrModulesMerged                  = -5,
     LdrModulesInitError               = -4,
     LdrModulesSnapError               = -3,
@@ -638,7 +614,7 @@ typedef enum win32_ldr_ddag_state
 typedef struct win32_window_class_a
 {
     u32 Style;
-    _type__WindowProc WindowCallback;
+    func_WindowProc WindowCallback;
     s32 WindowClassExtraBytes;
     s32 WindowInstanceExtraBytes;
     win32_instance Instance;
@@ -652,7 +628,7 @@ typedef struct win32_window_class_a
 typedef struct win32_window_class_w
 {
     u32 Style;
-    _type__WindowProc WindowCallback;
+    func_WindowProc WindowCallback;
     s32 WindowClassExtraBytes;
     s32 WindowInstanceExtraBytes;
     win32_instance Instance;
@@ -924,11 +900,11 @@ typedef struct win32_context
 } win32_context;
 
 typedef win32_exception_disposition _API_ENTRY
-_type__Win32ExceptionRoutine(win32_exception_record *ExceptionRecord,
+func_Win32ExceptionRoutine(win32_exception_record *ExceptionRecord,
                             vptr EstablisherFrame,
                             win32_context *ContextRecord,
                             vptr DispatcherContext);
-typedef _type__Win32ExceptionRoutine *Win32ExceptionRoutine;
+typedef func_Win32ExceptionRoutine *Win32ExceptionRoutine;
 
 typedef struct win32_exception_registration_record
 {
@@ -1855,7 +1831,7 @@ typedef struct win32_monitor_info
     PROC(Kernel32, win32_handle,                CreateFileA,                Win32_CreateFileA,                chr *FileName, u32 DesiredAccess, u32 ShareMode, win32_security_attributes *SecurityAttributes, u32 CreationDisposition, u32 FlagsAndAttributes, win32_handle TemplateFile) \
     PROC(Kernel32, win32_handle,                CreateFileW,                Win32_CreateFileW,                wchr *FileName, u32 DesiredAccess, u32 ShareMode, win32_security_attributes *SecurityAttributes, u32 CreationDisposition, u32 FlagsAndAttributes, win32_handle TemplateFile) \
     PROC(Kernel32, win32_handle,                CreateSemaphoreExW,         Win32_CreateSemaphoreExW,         win32_security_attributes *SemaphoreAttributes, s32 InitialCount, s32 MaximumCount, wchr *Name, u32 Flags, u32 DesiredAccess) \
-    PROC(Kernel32, win32_handle,                CreateThread,               Win32_CreateThread,               win32_security_attributes *ThreadAttributes, u64 StackSize, _type__ThreadStartRoutine StartAddress, vptr Parameter, u32 CreationFlags, u32 *ThreadId) \
+    PROC(Kernel32, win32_handle,                CreateThread,               Win32_CreateThread,               win32_security_attributes *ThreadAttributes, u64 StackSize, func_ThreadStartRoutine StartAddress, vptr Parameter, u32 CreationFlags, u32 *ThreadId) \
     PROC(Kernel32, win32_handle,                FindFirstFileA,             Win32_FindFirstFileA,             chr *FileName, win32_find_data_a *FindFileData) \
     PROC(Kernel32, win32_handle,                FindFirstFileW,             Win32_FindFirstFileW,             wchr *FileName, win32_find_data_w *FindFileData) \
     PROC(Kernel32, win32_handle,                GetProcessHeap,             Win32_GetProcessHeap,             void) \
@@ -1863,17 +1839,17 @@ typedef struct win32_monitor_info
     PROC(Kernel32, win32_module,                GetModuleHandleW,           Win32_GetModuleHandleW,           wchr *ModuleName) \
     PROC(Kernel32, win32_module,                LoadLibraryA,               Win32_LoadLibraryA,               chr *LibraryFileName) \
     PROC(Kernel32, win32_module,                LoadLibraryW,               Win32_LoadLibraryW,               wchr *LibraryFileName) \
-    PROC(Kernel32, win32_process,               GetProcAddress,             Win32_GetProcAddress,             win32_module Module, chr *ProcName) \
+    PROC(Kernel32, fptr,                        GetProcAddress,             Win32_GetProcAddress,             win32_module Module, chr *ProcName) \
     PROC(Opengl32, b08,                         wglDeleteContext,           WGL_DeleteContext,                win32_opengl_render_context RenderContext) \
     PROC(Opengl32, b08,                         wglMakeCurrent,             WGL_MakeCurrent,                  win32_device_context DeviceContext, win32_opengl_render_context RenderContext) \
     PROC(Opengl32, win32_opengl_render_context, wglCreateContext,           WGL_CreateContext,                win32_device_context DeviceContext) \
-    PROC(Opengl32, win32_process,               wglGetProcAddress,          WGL_GetProcAddress,               chr *Process) \
+    PROC(Opengl32, fptr,                        wglGetProcAddress,          WGL_GetProcAddress,               chr *Process) \
     PROC(User32,   b08,                         AdjustWindowRectEx,         Win32_AdjustWindowRectEx,         win32_rect *Rect, u32 Style, b08 Menu, u32 ExStyle) \
     PROC(User32,   b08,                         BringWindowToTop,           Win32_BringWindowToTop,           win32_window Window) \
     PROC(User32,   b08,                         ClientToScreen,             Win32_ClientToScreen,             win32_window Window, win32_point *Point) \
     PROC(User32,   b08,                         ClipCursor,                 Win32_ClipCursor,                 win32_rect *Rect) \
     PROC(User32,   b08,                         DestroyWindow,              Win32_DestroyWindow,              win32_window Window) \
-    PROC(User32,   b08,                         EnumWindows,                Win32_EnumWindows,                _type__EnumCallback EnumCallback, s64 LParam) \
+    PROC(User32,   b08,                         EnumWindows,                Win32_EnumWindows,                func_EnumCallback EnumCallback, s64 LParam) \
     PROC(User32,   b08,                         GetClientRect,              Win32_GetClientRect,              win32_window Window, win32_rect *Rect) \
     PROC(User32,   b08,                         GetCursorPos,               Win32_GetCursorPos,               win32_point *Point) \
     PROC(User32,   b08,                         GetMonitorInfoW,            Win32_GetMonitorInfoW,            win32_monitor Monitor, win32_monitor_info *MonitorInfo) \
@@ -1941,6 +1917,128 @@ typedef struct win32_monitor_info
     PROC(User32,   win32_window,                SetCapture,                 Win32_SetCapture,                 win32_window Window) \
     PROC(User32,   win32_window,                SetFocus,                   Win32_SetFocus,                   win32_window Window) \
 
+#define WIN32_FUNCS \
+    IMPORT(Gdi32,    b08,                         DeleteObject,               Win32_DeleteObject,               win32_gdi_object Object) \
+    IMPORT(Gdi32,    b08,                         Rectangle,                  Win32_Rectangle,                  win32_device_context DeviceContext, s32 Left, s32 Top, s32 Right, s32 Bottom) \
+    IMPORT(Gdi32,    b08,                         SetPixelFormat,             Win32_SetPixelFormat,             win32_device_context DeviceContext, s32 Format, win32_pixel_format_descriptor *PixelFormatDescriptor) \
+    IMPORT(Gdi32,    b08,                         SwapBuffers,                Win32_SwapBuffers,                win32_device_context DeviceContext) \
+    IMPORT(Gdi32,    s32,                         ChoosePixelFormat,          Win32_ChoosePixelFormat,          win32_device_context DeviceContext, win32_pixel_format_descriptor *PixelFormatDescriptor) \
+    IMPORT(Gdi32,    s32,                         DescribePixelFormat,        Win32_DescribePixelFormat,        win32_device_context DeviceContext, s32 PixelFormat, u32 BytesCount, win32_pixel_format_descriptor *PixelFormatDescriptor) \
+    IMPORT(Gdi32,    win32_brush,                 CreateBrushIndirect,        Win32_CreateBrushIndirect,        win32_log_brush *LogBrush) \
+    IMPORT(Gdi32,    win32_gdi_object,            SelectObject,               Win32_SelectObject,               win32_device_context DeviceContext, win32_gdi_object Object) \
+    IMPORT(Gdi32,    win32_pen,                   CreatePen,                  Win32_CreatePen,                  s32 Style, s32 Width, win32_color_ref Color) \
+    IMPORT(Kernel32, b08,                         CloseHandle,                Win32_CloseHandle,                win32_handle Object) \
+    IMPORT(Kernel32, b08,                         CopyFileA,                  Win32_CopyFileA,                  chr *ExistingFileName, chr *NewFileName, b08 FailIfExists) \
+    IMPORT(Kernel32, b08,                         CopyFileW,                  Win32_CopyFileW,                  wchr *ExistingFileName, wchr *NewFileName, b08 FailIfExists) \
+    IMPORT(Kernel32, b08,                         CreateDirectoryA,           Win32_CreateDirectoryA,           chr *PathName, win32_security_attributes *SecurityAttributes) \
+    IMPORT(Kernel32, b08,                         FindClose,                  Win32_FindClose,                  win32_handle FindFile) \
+    IMPORT(Kernel32, b08,                         FindNextFileA,              Win32_FindNextFileA,              win32_handle FindFile, win32_find_data_a *FindFileData) \
+    IMPORT(Kernel32, b08,                         FindNextFileW,              Win32_FindNextFileW,              win32_handle FindFile, win32_find_data_w *FindFileData) \
+    IMPORT(Kernel32, b08,                         FreeLibrary,                Win32_FreeLibrary,                win32_module LibraryModule) \
+    IMPORT(Kernel32, b08,                         GetFileSizeEx,              Win32_GetFileSizeEx,              win32_handle File, win32_large_integer *FileSize) \
+    IMPORT(Kernel32, b08,                         QueryPerformanceCounter,    Win32_QueryPerformanceCounter,    win32_large_integer *PerformanceCount) \
+    IMPORT(Kernel32, b08,                         ReadFile,                   Win32_ReadFile,                   win32_handle File, vptr Buffer, u32 NumberOfBytesToRead, u32 *NumberOfBytesRead, win32_overlapped *OVerlapped) \
+    IMPORT(Kernel32, b08,                         ReleaseSemaphore,           Win32_ReleaseSemaphore,           win32_handle Semaphore, s32 ReleaseCount, s32 *PreviousCount) \
+    IMPORT(Kernel32, b08,                         VirtualFree,                Win32_VirtualFree,                vptr Address, u64 Size, u32 FreeType) \
+    IMPORT(Kernel32, b08,                         WriteFile,                  Win32_WriteFile,                  win32_handle File, vptr Buffer, u32 NumberOfBytesToWrite, u32 *NumberOfBytesWritten, win32_overlapped *Overlapped) \
+    IMPORT(Kernel32, s32,                         CompareFileTime,            Win32_CompareFileTime,            win32_filetime *FileTime1, win32_filetime *FileTime2) \
+    IMPORT(Kernel32, s32,                         WideCharToMultiByte,        Win32_WideCharToMultiByte,        u32 CodePage, u32 Flags, wchr *WideCharStr, s32 WideCharCount, chr *MultiByteStr, s32 MultiByteCount, chr *DefualtChar, b08 *UsedDefaultChar) \
+    IMPORT(Kernel32, u32,                         GetLastError,               Win32_GetLastError,               void) \
+    IMPORT(Kernel32, u32,                         WaitForSingleObjectEx,      Win32_WaitForSingleObjectEx,      win32_handle Handle, u32 Milliseconds, b08 Alertable) \
+    IMPORT(Kernel32, void,                        ExitProcess,                Win32_ExitProcess,                u32 ExitCode) \
+    IMPORT(Kernel32, void,                        OutputDebugStringA,         Win32_OutputDebugStringA,         chr *OutputString) \
+    IMPORT(Kernel32, vptr,                        HeapAlloc,                  Win32_HeapAlloc,                  win32_handle Heap, u32 Flags, u64 Bytes) \
+    IMPORT(Kernel32, vptr,                        TlsGetValue,                Win32_TlsGetValue,                u32 TlsIndex) \
+    IMPORT(Kernel32, vptr,                        VirtualAlloc,               Win32_VirtualAlloc,               vptr Address, u64 Size, u32 AllocationType, u32 Protect) \
+    IMPORT(Kernel32, win32_handle,                CreateFileA,                Win32_CreateFileA,                chr *FileName, u32 DesiredAccess, u32 ShareMode, win32_security_attributes *SecurityAttributes, u32 CreationDisposition, u32 FlagsAndAttributes, win32_handle TemplateFile) \
+    IMPORT(Kernel32, win32_handle,                CreateFileW,                Win32_CreateFileW,                wchr *FileName, u32 DesiredAccess, u32 ShareMode, win32_security_attributes *SecurityAttributes, u32 CreationDisposition, u32 FlagsAndAttributes, win32_handle TemplateFile) \
+    IMPORT(Kernel32, win32_handle,                CreateSemaphoreExW,         Win32_CreateSemaphoreExW,         win32_security_attributes *SemaphoreAttributes, s32 InitialCount, s32 MaximumCount, wchr *Name, u32 Flags, u32 DesiredAccess) \
+    IMPORT(Kernel32, win32_handle,                CreateThread,               Win32_CreateThread,               win32_security_attributes *ThreadAttributes, u64 StackSize, func_ThreadStartRoutine StartAddress, vptr Parameter, u32 CreationFlags, u32 *ThreadId) \
+    IMPORT(Kernel32, win32_handle,                FindFirstFileA,             Win32_FindFirstFileA,             chr *FileName, win32_find_data_a *FindFileData) \
+    IMPORT(Kernel32, win32_handle,                FindFirstFileW,             Win32_FindFirstFileW,             wchr *FileName, win32_find_data_w *FindFileData) \
+    IMPORT(Kernel32, win32_handle,                GetProcessHeap,             Win32_GetProcessHeap,             void) \
+    IMPORT(Kernel32, win32_module,                GetModuleHandleA,           Win32_GetModuleHandleA,           chr *ModuleName) \
+    IMPORT(Kernel32, win32_module,                GetModuleHandleW,           Win32_GetModuleHandleW,           wchr *ModuleName) \
+    IMPORT(Kernel32, win32_module,                LoadLibraryA,               Win32_LoadLibraryA,               chr *LibraryFileName) \
+    IMPORT(Kernel32, win32_module,                LoadLibraryW,               Win32_LoadLibraryW,               wchr *LibraryFileName) \
+    IMPORT(Kernel32, fptr,                        GetProcAddress,             Win32_GetProcAddress,             win32_module Module, chr *ProcName) \
+    IMPORT(Opengl32, b08,                         wglDeleteContext,           WGL_DeleteContext,                win32_opengl_render_context RenderContext) \
+    IMPORT(Opengl32, b08,                         wglMakeCurrent,             WGL_MakeCurrent,                  win32_device_context DeviceContext, win32_opengl_render_context RenderContext) \
+    IMPORT(Opengl32, win32_opengl_render_context, wglCreateContext,           WGL_CreateContext,                win32_device_context DeviceContext) \
+    IMPORT(Opengl32, fptr,                        wglGetProcAddress,          WGL_GetProcAddress,               chr *Process) \
+    IMPORT(User32,   b08,                         AdjustWindowRectEx,         Win32_AdjustWindowRectEx,         win32_rect *Rect, u32 Style, b08 Menu, u32 ExStyle) \
+    IMPORT(User32,   b08,                         BringWindowToTop,           Win32_BringWindowToTop,           win32_window Window) \
+    IMPORT(User32,   b08,                         ClientToScreen,             Win32_ClientToScreen,             win32_window Window, win32_point *Point) \
+    IMPORT(User32,   b08,                         ClipCursor,                 Win32_ClipCursor,                 win32_rect *Rect) \
+    IMPORT(User32,   b08,                         DestroyWindow,              Win32_DestroyWindow,              win32_window Window) \
+    IMPORT(User32,   b08,                         EnumWindows,                Win32_EnumWindows,                func_EnumCallback EnumCallback, s64 LParam) \
+    IMPORT(User32,   b08,                         GetClientRect,              Win32_GetClientRect,              win32_window Window, win32_rect *Rect) \
+    IMPORT(User32,   b08,                         GetCursorPos,               Win32_GetCursorPos,               win32_point *Point) \
+    IMPORT(User32,   b08,                         GetMonitorInfoW,            Win32_GetMonitorInfoW,            win32_monitor Monitor, win32_monitor_info *MonitorInfo) \
+    IMPORT(User32,   b08,                         GetWindowInfo,              Win32_GetWindowInfo,              win32_window Window, win32_window_info *WindowInfo) \
+    IMPORT(User32,   b08,                         GetWindowPlacement,         Win32_GetWindowPlacement,         win32_window Window, win32_window_placement *WindowPlacement) \
+    IMPORT(User32,   b08,                         GetWindowRect,              Win32_GetWindowRect,              win32_window Window, win32_rect *Rect) \
+    IMPORT(User32,   b08,                         IsIconic,                   Win32_IsIconic,                   win32_window Window) \
+    IMPORT(User32,   b08,                         IsWindowVisible,            Win32_IsWindowVisible,            win32_window Window) \
+    IMPORT(User32,   b08,                         IsZoomed,                   Win32_IsZoomed,                   win32_window Window) \
+    IMPORT(User32,   b08,                         OffsetRect,                 Win32_OffsetRect,                 win32_rect *Rect, s32 DX, s32 DY) \
+    IMPORT(User32,   b08,                         PeekMessageA,               Win32_PeekMessageA,               win32_message *Message, win32_window Window, u32 MessageFilterMin, u32 MessageFilterMax, u32 RemoveMessage) \
+    IMPORT(User32,   b08,                         PeekMessageW,               Win32_PeekMessageW,               win32_message *Message, win32_window Window, u32 MessageFilterMin, u32 MessageFilterMax, u32 RemoveMessage) \
+    IMPORT(User32,   b08,                         RedrawWindow,               Win32_RedrawWindow,               win32_window Window, win32_rect *RectUpdate, win32_region RegionUpdate, u32 Flags) \
+    IMPORT(User32,   b08,                         RegisterRawInputDevices,    Win32_RegisterRawInputDevices,    win32_raw_input_device *RawInputDevices, u32 NumDevices, u32 Size) \
+    IMPORT(User32,   b08,                         ReleaseCapture,             Win32_ReleaseCapture,             void) \
+    IMPORT(User32,   b08,                         ScreenToClient,             Win32_ScreenToClient,             win32_window Window, win32_point *Point) \
+    IMPORT(User32,   b08,                         SetCursorPos,               Win32_SetCursorPos,               s32 X, s32 Y) \
+    IMPORT(User32,   b08,                         SetForegroundWindow,        Win32_SetForegroundWindow,        win32_window Window) \
+    IMPORT(User32,   b08,                         SetLayeredWindowAttributes, Win32_SetLayeredWindowAttributes, win32_window Window, win32_color_ref ColorRefKey, u08 Alpha, u32 Flags) \
+    IMPORT(User32,   b08,                         SetPropA,                   Win32_SetPropA,                   win32_window Window, chr *String, win32_handle Data) \
+    IMPORT(User32,   b08,                         SetPropW,                   Win32_SetPropW,                   win32_window Window, wchr *String, win32_handle Data) \
+    IMPORT(User32,   b08,                         SetWindowPlacement,         Win32_SetWindowPlacement,         win32_window Window, win32_window_placement *WindowPlacement) \
+    IMPORT(User32,   b08,                         SetWindowPos,               Win32_SetWindowPos,               win32_window Window, win32_window WindowInsertAfter, s32 X, s32 Y, s32 CX, s32 CY, u32 Flags) \
+    IMPORT(User32,   b08,                         ShowWindow,                 Win32_ShowWindow,                 win32_window Window, s32 CmdShow) \
+    IMPORT(User32,   b08,                         SystemParametersInfoW,      Win32_SystemParametersInfoW,      u32 Action, u32 UParam, vptr VParam, u32 WinIni) \
+    IMPORT(User32,   b08,                         TrackMouseEvent,            Win32_TrackMouseEvent,            win32_track_mouse_event *EventTrack) \
+    IMPORT(User32,   b08,                         TranslateMessage,           Win32_TranslateMessage,           win32_message *Message) \
+    IMPORT(User32,   b08,                         WaitMessage,                Win32_WaitMessage,                void) \
+    IMPORT(User32,   s16,                         GetKeyState,                Win32_GetKeyState,                s32 VirtualKey) \
+    IMPORT(User32,   s32,                         GetSystemMetrics,           Win32_GetSystemMetrics,           s32 Index) \
+    IMPORT(User32,   s32,                         GetWindowLongW,             Win32_GetWindowLongW,             win32_window Window, s32 Index) \
+    IMPORT(User32,   s32,                         ReleaseDC,                  Win32_ReleaseDC,                  win32_window Window, win32_device_context DeviceContext) \
+    IMPORT(User32,   s32,                         ShowCursor,                 Win32_ShowCursor,                 b08 Show) \
+    IMPORT(User32,   s32,                         ToUnicode,                  Win32_ToUnicode,                  u32 VirtualKey, u32 Scancode, u08 *KeyState, wchr *Buffer, s32 BufferSize, u32 Flags) \
+    IMPORT(User32,   s32,                         MapWindowPoints,            Win32_MapWindowPoints,            win32_window From, win32_window To, win32_point *Points, u32 PointsCount) \
+    IMPORT(User32,   s64,                         DefWindowProcA,             Win32_DefWindowProcA,             win32_window Window, u32 Message, u64 WParam, s64 LParam) \
+    IMPORT(User32,   s64,                         DefWindowProcW,             Win32_DefWindowProcW,             win32_window Window, u32 Message, u64 WParam, s64 LParam) \
+    IMPORT(User32,   s64,                         DispatchMessageA,           Win32_DispatchMessageA,           win32_message *Message) \
+    IMPORT(User32,   s64,                         DispatchMessageW,           Win32_DispatchMessageW,           win32_message *Message) \
+    IMPORT(User32,   s64,                         GetMessageTime,             Win32_GetMessageTime,             void) \
+    IMPORT(User32,   s64,                         SendMessageW,               Win32_SendMessageW,               win32_window Window, u32 Message, u64 WParam, s64 LParam) \
+    IMPORT(User32,   u16,                         RegisterClassA,             Win32_RegisterClassA,             win32_window_class_a *WindowClass) \
+    IMPORT(User32,   u16,                         RegisterClassW,             Win32_RegisterClassW,             win32_window_class_w *WindowClass) \
+    IMPORT(User32,   u32,                         GetRawInputData,            Win32_GetRawInputData,            win32_raw_input_handle RawInput, u32 Command, vptr Data, u32 *Size, u32 SizeHeader) \
+    IMPORT(User32,   u32,                         GetSysColor,                Win32_GetSysColor,                s32 Index) \
+    IMPORT(User32,   u32,                         GetWindowThreadProcessId,   Win32_GetWindowThreadProcessId,   win32_window Window, u32 *ProcessId) \
+    IMPORT(User32,   u32,                         MapVirtualKeyW,             Win32_MapVirtualKeyW,             u32 Code, u32 MapType) \
+    IMPORT(User32,   win32_brush,                 GetSysColorBrush,           Win32_GetSysColorBrush,           s32 Index) \
+    IMPORT(User32,   win32_cursor,                LoadCursorA,                Win32_LoadCursorA,                win32_instance Instance, chr *CursorName) \
+    IMPORT(User32,   win32_cursor,                LoadCursorW,                Win32_LoadCursorW,                win32_instance Instance, wchr *CursorName) \
+    IMPORT(User32,   win32_cursor,                SetCursor,                  Win32_SetCursor,                  win32_cursor Cursor) \
+    IMPORT(User32,   win32_device_context,        GetDC,                      Win32_GetDC,                      win32_window Window) \
+    IMPORT(User32,   win32_handle,                GetPropA,                   Win32_GetPropA,                   win32_window Window, chr *String) \
+    IMPORT(User32,   win32_handle,                GetPropW,                   Win32_GetPropW,                   win32_window Window, wchr *String) \
+    IMPORT(User32,   win32_menu,                  GetMenu,                    Win32_GetMenu,                    win32_window Window) \
+    IMPORT(User32,   win32_monitor,               MonitorFromPoint,           Win32_MonitorFromPoint,           win32_point Point, u32 Flags) \
+    IMPORT(User32,   win32_window,                CreateWindowExA,            Win32_CreateWindowExA,            u32 ExtendedStyle, chr *ClassName, chr *WindowName, u32 Style, s32 X, s32 Y, s32 Width, s32 Height, win32_window Parent, win32_menu Menu, win32_instance Instance, vptr Param) \
+    IMPORT(User32,   win32_window,                CreateWindowExW,            Win32_CreateWindowExW,            u32 ExtendedStyle, wchr *ClassName, wchr *WindowName, u32 Style, s32 X, s32 Y, s32 Width, s32 Height, win32_window Parent, win32_menu Menu, win32_instance Instance, vptr Param) \
+    IMPORT(User32,   win32_window,                GetActiveWindow,            Win32_GetActiveWindow,            void) \
+    IMPORT(User32,   win32_window,                GetCapture,                 Win32_GetCapture,                 void) \
+    IMPORT(User32,   win32_window,                GetDesktopWindow,           Win32_GetDesktopWindow,           void) \
+    IMPORT(User32,   win32_window,                GetForegroundWindow,        Win32_GetForegroundWindow,        void) \
+    IMPORT(User32,   win32_window,                GetParent,                  Win32_GetParent,                  win32_window Window) \
+    IMPORT(User32,   win32_window,                GetShellWindow,             Win32_GetShellWindow,             void) \
+    IMPORT(User32,   win32_window,                SetCapture,                 Win32_SetCapture,                 win32_window Window) \
+    IMPORT(User32,   win32_window,                SetFocus,                   Win32_SetFocus,                   win32_window Window) \
+
 #define WGL__PROCS \
     PROC(,b08,                         wglChoosePixelFormatARB,    WGL_ChoosePixelFormatARB,    win32_device_context DeviceContext, s32 *AttribListI, r32 *AttribListF, u32 MaxFormats, s32 *Formats, u32 *NumFormats) \
     PROC(,b08,                         wglSwapIntervalEXT,         WGL_SwapIntervalEXT,         s32 Num) \
@@ -1949,5 +2047,3 @@ typedef struct win32_monitor_info
 #define PLATFORM__LOADER__PROCS \
     WIN32__PROCS \
     WGL__PROCS \
-
-#endif

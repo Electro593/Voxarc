@@ -1018,7 +1018,7 @@ _Heap_Print_DEBUG(heap *Heap,
     }
     
     mem FileHandle;
-    Platform_OpenFile(&FileHandle, "DEBUGOutput.txt", FileMode_Write);
+    Platform_OpenFile(&FileHandle, "build\\DEBUGOutput.txt", FileMode_Write);
     Platform_WriteFile(Str, &FileHandle, Str_Len(Str), 0);
     Platform_CloseFile(&FileHandle);
     

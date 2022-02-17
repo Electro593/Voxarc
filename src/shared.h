@@ -10,8 +10,6 @@
 #ifndef SHARED_H_
 #define SHARED_H_
 
-//SUBSECTION: Defines
-
 #if _MODULE == 0 // PLATFORM
 #   define _MODULE_PLATFORM 1
 #   define   _API_PLATFORM   _API_EXPORT
@@ -27,12 +25,10 @@
 #   define _API_PLATFORM   _API_IMPORT
 #   define _API_GAME       _API_IMPORT
 #   define   _API_UTIL       _API_EXPORT
-
 #else
 #   error "Unknown module ID"
 #endif
-// #undef _MODULE
-
+#undef _MODULE
 
 #if _MODE == 0 // DEBUG
 #   define _MODE_DEBUG 1
@@ -43,16 +39,14 @@
 #else
 #   error "Unknown build mode"
 #endif
-// #undef _MODE
-
+#undef _MODE
 
 #if _COMPILER == 0 // MSVC
 #   define _COMPILER_MSVC 1
 #else
 #   error "Unknown compiler"
 #endif
-// #undef _COMPILER
-
+#undef _COMPILER
 
 #if _PLATFORM == 0 // WINDOWS
 #   define _PLATFORM_WINDOWS 1
@@ -62,8 +56,7 @@
 #else
 #   error "Unknown OS"
 #endif
-// #undef _PLATFORM
-
+#undef _PLATFORM
 
 #if _LOADER == 0 // WIN32
 #   if !_PLATFORM_WINDOWS
@@ -73,8 +66,7 @@
 #else
 #   error "Unknown Loading API"
 #endif
-// #undef _LOADER
-
+#undef _LOADER
 
 #if _ARCH == 0 // X64
 #   define _ARCH_X64 1
@@ -83,8 +75,7 @@
 #else
 #   error "Unknown architecture"
 #endif
-// #undef _ARCH
-
+#undef _ARCH
 
 #define global  static
 #define persist static

@@ -7,8 +7,6 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-global s32 GlobalAllocCounter;
-
 internal win32_teb *
 Platform_GetTEB(void)
 {
@@ -574,24 +572,6 @@ Platform_FlushWorkQueue(platform_work_queue *WorkQueue)
     WorkQueue->CreatedEntryCount = 0;
 }
 
-// internal win32_find_data_w
-// Platform_GetFileDataW(wstr FileName)
-// {
-//     win32_find_data_w Result;
-    
-//     win32_handle FindHandle = FindFirstFileW(FileName, &Result);
-//     if(FindHandle != INVALID_HANDLE_VALUE)
-//     {
-//         FindClose(FindHandle);
-//     }
-//     else
-//     {
-//         Platform_ThrowError_DEBUG("Failed to find file\n");
-//     }
-    
-//     return Result;
-// }
-
 internal win32_find_data_a
 Platform_GetFileDataA(chr *FileName)
 {
@@ -895,19 +875,14 @@ Platform_WriteFile(vptr Src,
 internal vptr
 Platform_AllocateMemory(u64 Size)
 {
-    ++GlobalAllocCounter;
-    
     vptr MemoryBlock = Win32_VirtualAlloc(0, Size, MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE);
     ASSERT(MemoryBlock);
-    // vptr MemoryBlock = HeapAlloc(GetProcessHeap(), 0, Size);
     return MemoryBlock;
 }
 
 internal void
 Platform_FreeMemory(vptr Base)
 {
-    --GlobalAllocCounter;
-    
     Win32_VirtualFree(Base, 0, MEM_RELEASE);
 }
 
@@ -1515,9 +1490,7 @@ Platform_Entry(void)
                                                 NULL, NULL, Instance, NULL);
     
     if(!Window)
-    {
         Platform_ThrowError_DEBUG("Failed to create window\n");
-    }
     
     Win32_SetPropA(Window, "PlatformModule", &PlatformModule);
     Win32_SetPropA(Window, "GameModule", &GameModule);
@@ -1607,9 +1580,7 @@ Platform_Entry(void)
         #endif
         
         if(PlatformState->ExecutionState == EXECUTION_PAUSED)
-        {
             Win32_WaitMessage();
-        }
         
         // Win32CreateWorkQueueEntry(&WorkQueue, Platform_ProcessMessages, Platform.S);
         Platform_ProcessMessages(PlatformState);
@@ -1646,8 +1617,6 @@ Platform_Entry(void)
     }
     
     Game_Cleanup(UtilState, GameState);
-    Platform_FreeMemory(PlatformState->AllocationBase);
-    ASSERT(GlobalAllocCounter == 0);
     
     Win32_ExitProcess(0);
 }
