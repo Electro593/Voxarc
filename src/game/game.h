@@ -7,14 +7,14 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#include <game/file.h>
+
 typedef struct global_state {
     stack *Stack;
 } global_state;
 
 struct game_state {
     u32 DebugCounter;
-    
-    gui_node *GUI;
     
     global_state GlobalState;
 };

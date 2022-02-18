@@ -1,12 +1,12 @@
-#version 450
+#version 460 core
 
-layout(location = 0) in vec3 PositionIn;
-layout(location = 2) in vec4 ColorIn;
+layout(location = 0) in vec4 PositionIn;
+layout(location = 3) in vec4 ColorIn;
 
 out vec4 VertColor;
 
 void main()
 {
-    gl_Position = vec4(PositionIn, 1);
+    gl_Position = PositionIn;
     VertColor = ColorIn;
 }

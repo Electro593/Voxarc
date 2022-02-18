@@ -7,6 +7,8 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#include <renderer/opengl/mesh.c>
+
 internal void API_ENTRY
 OpenGL_DebugCallback(u32 Source,
                      u32 Type,
@@ -24,67 +26,61 @@ OpenGL_LoadShaders(c08 *VertFileName,
                    c08 *FragFileName)
 {
     s32 Result=FALSE, InfoLogLength;
-    u32 VertID=0, FragID=0;
+    u32 Vert=0, Frag=0;
     c08 *VertErrorMessage, *FragErrorMessage, *ProgramErrorMessage;
     string VertCode, FragCode;
     
-    u32 ProgramID = OpenGL_CreateProgram();
+    u32 Program = OpenGL_CreateProgram();
     
     if(VertFileName) {
-        VertID = OpenGL_CreateShader(GL_VERTEX_SHADER);
+        Vert = OpenGL_CreateShader(GL_VERTEX_SHADER);
         VertCode = File_Read(VertFileName, 0, 0);
-        OpenGL_ShaderSource(VertID, 1, &VertCode.Text, NULL);
-        OpenGL_CompileShader(VertID);
+        OpenGL_ShaderSource(Vert, 1, &VertCode.Text, NULL);
+        OpenGL_CompileShader(Vert);
         String_Free(VertCode);
         
-        OpenGL_GetShaderiv(VertID, GL_COMPILE_STATUS, &Result);
-        OpenGL_GetShaderiv(VertID, GL_INFO_LOG_LENGTH, &InfoLogLength);
+        OpenGL_GetShaderiv(Vert, GL_COMPILE_STATUS, &Result);
+        OpenGL_GetShaderiv(Vert, GL_INFO_LOG_LENGTH, &InfoLogLength);
         VertErrorMessage = Stack_Allocate(InfoLogLength);
-        OpenGL_GetShaderInfoLog(VertID, InfoLogLength, NULL, VertErrorMessage);
-        if(!Result) {
-            Error(VertErrorMessage);
-        }
+        OpenGL_GetShaderInfoLog(Vert, InfoLogLength, NULL, VertErrorMessage);
+        if(!Result) Error(VertErrorMessage);
         
-        OpenGL_AttachShader(ProgramID, VertID);
+        OpenGL_AttachShader(Program, Vert);
     }
     
     if(FragFileName) {
-        FragID = OpenGL_CreateShader(GL_FRAGMENT_SHADER);
+        Frag = OpenGL_CreateShader(GL_FRAGMENT_SHADER);
         FragCode = File_Read(FragFileName, 0, 0);
-        OpenGL_ShaderSource(FragID, 1, &FragCode.Text, NULL);
-        OpenGL_CompileShader(FragID);
+        OpenGL_ShaderSource(Frag, 1, &FragCode.Text, NULL);
+        OpenGL_CompileShader(Frag);
         String_Free(FragCode);
         
-        OpenGL_GetShaderiv(FragID, GL_COMPILE_STATUS, &Result);
-        OpenGL_GetShaderiv(FragID, GL_INFO_LOG_LENGTH, &InfoLogLength);
+        OpenGL_GetShaderiv(Frag, GL_COMPILE_STATUS, &Result);
+        OpenGL_GetShaderiv(Frag, GL_INFO_LOG_LENGTH, &InfoLogLength);
         FragErrorMessage = Stack_Allocate(InfoLogLength);
-        OpenGL_GetShaderInfoLog(FragID, InfoLogLength, NULL, FragErrorMessage);
-        if(!Result) {
-            Error(FragErrorMessage);
-        }
+        OpenGL_GetShaderInfoLog(Frag, InfoLogLength, NULL, FragErrorMessage);
+        if(!Result) Error(FragErrorMessage);
         
-        OpenGL_AttachShader(ProgramID, FragID);
+        OpenGL_AttachShader(Program, Frag);
     }
     
-    OpenGL_LinkProgram(ProgramID);
-    OpenGL_GetProgramiv(ProgramID, GL_LINK_STATUS, &Result);
-    OpenGL_GetProgramiv(ProgramID, GL_INFO_LOG_LENGTH, &InfoLogLength);
+    OpenGL_LinkProgram(Program);
+    OpenGL_GetProgramiv(Program, GL_LINK_STATUS, &Result);
+    OpenGL_GetProgramiv(Program, GL_INFO_LOG_LENGTH, &InfoLogLength);
     ProgramErrorMessage = Stack_Allocate(InfoLogLength);
-    OpenGL_GetProgramInfoLog(ProgramID, InfoLogLength, NULL, ProgramErrorMessage);
-    if(!Result) {
-        Error(ProgramErrorMessage);
-    }
+    OpenGL_GetProgramInfoLog(Program, InfoLogLength, NULL, ProgramErrorMessage);
+    if(!Result) Error(ProgramErrorMessage);
     
     if(VertFileName) {
-        OpenGL_DetachShader(ProgramID, VertID);
-        OpenGL_DeleteShader(VertID);
+        OpenGL_DetachShader(Program, Vert);
+        OpenGL_DeleteShader(Vert);
     }
     if(FragFileName) {
-        OpenGL_DetachShader(ProgramID, FragID);
-        OpenGL_DeleteShader(FragID);
+        OpenGL_DetachShader(Program, Frag);
+        OpenGL_DeleteShader(Frag);
     }
     
-    return ProgramID;
+    return Program;
 }
 
 internal void
@@ -92,7 +88,7 @@ Renderer_Resize(v2u32 NewSize)
 {
     v2u32 Pos;
     v2u32 Size;
-    v2u32 Res = {16, 9};
+    v2u32 Res = {1, 1};
     
     if(NewSize.X/Res.X < NewSize.Y/Res.Y) {
         Size.X = NewSize.X;
@@ -111,8 +107,11 @@ Renderer_Resize(v2u32 NewSize)
 }
 
 internal void
-Renderer_Init(renderer_state *Renderer)
+Renderer_Init(renderer_state *Renderer,
+              heap *Heap)
 {
+    Renderer->Heap = Heap;
+    
     #if defined(_DEBUG)
         OpenGL_Enable(GL_DEBUG_OUTPUT);
         OpenGL_DebugMessageCallback(OpenGL_DebugCallback, NULL);
@@ -125,47 +124,36 @@ Renderer_Init(renderer_state *Renderer)
     OpenGL_Enable(GL_CULL_FACE);
     OpenGL_CullFace(GL_FRONT);
     
-    Renderer->PCShader = OpenGL_LoadShaders(SHADERS_DIR "pc.vert", SHADERS_DIR "pc.frag");
-    OpenGL_UseProgram(Renderer->PCShader);
+    Renderer->PCProgram = OpenGL_LoadShaders(SHADERS_DIR "pc.vert", SHADERS_DIR "pc.frag");
+    // Renderer->PTProgram = OpenGL_LoadShaders(SHADERS_DIR "pt.vert", SHADERS_DIR "pt.frag");
     
-    OpenGL_GenVertexArrays(1, &Renderer->VAO);
-    OpenGL_GenBuffers(1, &Renderer->VBO);
-    
-    OpenGL_BindVertexArray(Renderer->VAO);
-    OpenGL_BindBuffer(GL_ARRAY_BUFFER, Renderer->VBO);
-    
-    u64 Offset = 0;
-    u32 Stride = sizeof(v3r32) + sizeof(v4u08);
-    // s32 Stride = sizeof(bfs32) + sizeof(v4u08);
-    
-    OpenGL_EnableVertexAttribArray(0);
-    OpenGL_VertexAttribPointer(0, 3, GL_FLOAT, TRUE, Stride, (vptr)Offset);
-    // OpenGL_VertexAttribPointer(0, 4, GL_INT_2_10_10_10_REV, TRUE, Stride, (vptr)Offset);
-    Offset += sizeof(v3r32);
-    // Offset += sizeof(bfs32);
-    
-    OpenGL_EnableVertexAttribArray(2);
-    OpenGL_VertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, TRUE, Stride, (vptr)Offset);
-    Offset += sizeof(v4u08);
-    
-    Assert(Offset == Stride);
-    
-    struct vertex {
-        v3r32 Pos;
+    Mesh_Init(&Renderer->Mesh, Renderer->Heap, Renderer->PCProgram, MESH_HAS_COLORS);
+    struct {
+        u32 Position;
         v4u08 Color;
     } Vertices[] = {
-        {{-0.75,-0.75,0}, {255,0,0,255}},
-        {{ 0.00, 0.75,0}, {0,255,0,255}},
-        {{ 0.75,-0.75,0}, {0,0,255,255}}
+        {0b01000000000010001000001000100000, {255,0,0,255}},
+        {0b01000000000001111000001000100000, {0,255,0,255}},
+        {0b01000000000001111000000111100000, {0,0,255,255}},
+        {0b01000000000010001000000111100000, {255,255,0,255}},
     };
     
-    OpenGL_BufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
+    u32 Indices[] = {0,1,2,0,2,3};
+    mesh_object Object;
+    Object.Vertices = Heap_Allocate(Heap, sizeof(Vertices));
+    Object.Indices = Heap_Allocate(Heap, sizeof(Indices));
+    Mem_Cpy(Object.Vertices->Data, Vertices, sizeof(Vertices));
+    Mem_Cpy(Object.Indices->Data, Indices, sizeof(Indices));
+    Mesh_AddObjects(&Renderer->Mesh, 1, &Object);
+    Mesh_Update(&Renderer->Mesh);
 }
 
 internal void
 Renderer_Draw(renderer_state *Renderer)
 {
-    OpenGL_DrawArrays(GL_TRIANGLES, 0, 3);
+    OpenGL_Clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    
+    Mesh_Draw(&Renderer->Mesh);
 }
 
 internal void

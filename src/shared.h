@@ -91,13 +91,11 @@ typedef struct game_exports game_exports;
 #include <util/intrin.h>
 #include <util/scalar.h>
 #include <util/vector.h>
+#include <util/bit.h>
 #include <util/memory.h>
 #include <util/string.h>
-#include <renderer/font.h>
 #include <renderer/renderer.h>
 #include <platform/platform.h>
-#include <game/file.h>
-#include <game/gui.h>
 #include <game/game.h>
 
 s32 _fltused;

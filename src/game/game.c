@@ -18,7 +18,6 @@ global_state __Global;
 #include <renderer/font.c>
 #include <renderer/opengl/render.c>
 #include <game/file.c>
-#include <game/gui.c>
 
 internal void
 Game_Init(platform_state *Platform,
@@ -26,13 +25,16 @@ Game_Init(platform_state *Platform,
           renderer_state *Renderer)
 {
     u64 StackSize = 32*1024*1024;
-    vptr MemBase = Platform_AllocateMemory(StackSize);
+    u64 RendererHeapSize = 32*1024*1024;
+    vptr MemBase = Platform_AllocateMemory(StackSize+RendererHeapSize);
+    
     __Global.Stack = Stack_Init(MemBase, StackSize);
+    (u08*)MemBase += StackSize;
     
-    Renderer_Init(Renderer);
+    heap *RendererHeap = Heap_Init(MemBase, RendererHeapSize);
+    (u08*)MemBase += RendererHeapSize;
     
-    
-    
+    Renderer_Init(Renderer, RendererHeap);
 }
 
 internal void
@@ -51,8 +53,6 @@ Game_Update(platform_state *Platform,
     
     OpenGL_ClearColor(R, G, B, 1);
     Game->DebugCounter++;
-    
-    OpenGL_Clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     
     Renderer_Draw(Renderer);
 }
