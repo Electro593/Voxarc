@@ -278,8 +278,8 @@ Stack_Init(vptr Mem,
 {
     stack *Result = Mem;
     Result->Size = Size - sizeof(stack);
-    Result->FirstMarker = (vptr*)&Result->FirstMarker;
-    Result->Cursor = (u08*)Mem + sizeof(stack) + sizeof(vptr);
+    Result->FirstMarker = NULL;
+    Result->Cursor = (u08*)Mem + sizeof(stack);
     return Result;
 }
 
@@ -303,6 +303,6 @@ Stack_Allocate(u64 Size)
 internal void
 Stack_Pop(void)
 {
+    __Global.Stack->Cursor = (u08*)__Global.Stack->FirstMarker;
     __Global.Stack->FirstMarker = *__Global.Stack->FirstMarker;
-    __Global.Stack->Cursor = (u08*)__Global.Stack->FirstMarker + sizeof(vptr);
 }

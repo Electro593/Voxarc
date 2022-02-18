@@ -117,14 +117,13 @@ Mesh_AddObjects(mesh *Mesh,
     Heap_Resize(Mesh->Vertices, Mesh->Vertices->Size + AddedVerticesSize);
     Heap_Resize(Mesh->Indices, Mesh->Indices->Size + AddedIndicesSize);
     
-    u32 *VertexOffsets = (u32*)Mesh->VertexOffsets->Data;
-    u32 *IndexOffsets = (u32*)Mesh->IndexOffsets->Data;
+    u32 *VertexOffsets = (u32*)Mesh->VertexOffsets->Data + Mesh->ObjectCount;
+    u32 *IndexOffsets = (u32*)Mesh->IndexOffsets->Data + Mesh->ObjectCount;
     for(u32 I = 0; I < ObjectCount; I++) {
-        u32 J = Mesh->ObjectCount + I;
-        Mem_Cpy(Mesh->Vertices->Data+VertexOffsets[J], Objects[I].Vertices->Data, Objects[I].Vertices->Size);
-        Mem_Cpy(Mesh->Indices->Data+IndexOffsets[J], Objects[I].Indices->Data, Objects[I].Indices->Size);
-        VertexOffsets[J+1] = VertexOffsets[J] + Objects[I].Vertices->Size / Mesh->VertexSize;
-        IndexOffsets[J+1] = IndexOffsets[J] + Objects[I].Indices->Size / sizeof(u32);
+        Mem_Cpy(Mesh->Vertices->Data+VertexOffsets[I]*Mesh->VertexSize, Objects[I].Vertices->Data, Objects[I].Vertices->Size);
+        Mem_Cpy(Mesh->Indices->Data+IndexOffsets[I]*sizeof(u32), Objects[I].Indices->Data, Objects[I].Indices->Size);
+        VertexOffsets[I+1] = VertexOffsets[I] + Objects[I].Vertices->Size / Mesh->VertexSize;
+        IndexOffsets[I+1] = IndexOffsets[I] + Objects[I].Indices->Size / sizeof(u32);
     }
     
     Mesh->ObjectCount += ObjectCount;
@@ -174,18 +173,12 @@ Mesh_Draw(mesh *Mesh/*,
     
     OpenGL_UseProgram(Mesh->Program);
     
-    s32 **IndexOffsets = Stack_Allocate(Mesh->ObjectCount * sizeof(u32*));
+    vptr *IndexOffsets = Stack_Allocate(Mesh->ObjectCount * sizeof(vptr));
     for(u32 I = 0; I < Mesh->ObjectCount; ++I)
-        IndexOffsets[I] = (s32*)Mesh->Indices->Data + ((u32*)Mesh->IndexOffsets->Data)[I];
+        IndexOffsets[I] = (vptr)(u64)(((u32*)Mesh->IndexOffsets->Data)[I] * sizeof(u32));
     
-    s32 Offset = 0;
-    // OpenGL_MultiDrawElementsBaseVertex(GL_TRIANGLES, (s32*)Mesh->IndexOffsets->Data+1, GL_UNSIGNED_INT,
-    //                                    IndexOffsets, Mesh->ObjectCount, (s32*)Mesh->VertexOffsets->Data);
-    // OpenGL_MultiDrawElementsBaseVertex(GL_TRIANGLES, ((s32*)Mesh->IndexOffsets->Data)+1, GL_UNSIGNED_INT,
-    //                                    &(&Offset), Mesh->ObjectCount, (s32*)Mesh->VertexOffsets->Data);
-    
-    OpenGL_DrawArrays(GL_TRIANGLES, 0, 3);
-    // OpenGL_DrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, Mesh->Indices->Data);
+    OpenGL_MultiDrawElementsBaseVertex(GL_TRIANGLES, (s32*)Mesh->IndexOffsets->Data+1, GL_UNSIGNED_INT,
+                                       IndexOffsets, Mesh->ObjectCount, (s32*)Mesh->VertexOffsets->Data);
     
     Stack_Pop();
 }

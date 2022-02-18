@@ -27,8 +27,8 @@ typedef struct heap_handle {
 
 typedef struct stack {
     u64 Size;
-    vptr *FirstMarker;
     u08 *Cursor;
+    vptr *FirstMarker;
 } stack;
 
 

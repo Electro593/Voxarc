@@ -103,7 +103,7 @@ Renderer_Resize(v2u32 NewSize)
     }
     
     OpenGL_Viewport(Pos.X, Pos.Y, Size.X, Size.Y);
-    OpenGL_Scissor(Pos.X, Pos.Y, Size.X, Size.Y);
+    // OpenGL_Scissor(Pos.X, Pos.Y, Size.X, Size.Y);
 }
 
 internal void
@@ -120,7 +120,7 @@ Renderer_Init(renderer_state *Renderer,
     #endif
     
     OpenGL_Enable(GL_DEPTH_TEST);
-    OpenGL_Enable(GL_SCISSOR_TEST);
+    // OpenGL_Enable(GL_SCISSOR_TEST);
     OpenGL_Enable(GL_CULL_FACE);
     OpenGL_CullFace(GL_FRONT);
     
@@ -131,20 +131,30 @@ Renderer_Init(renderer_state *Renderer,
     struct {
         u32 Position;
         v4u08 Color;
-    } Vertices[] = {
-        {0b01000000000010001000001000100000, {255,0,0,255}},
+    } Vertices1[] = {
+        {0b01000000000011111000001000100000, {255,0,0,255}},
         {0b01000000000001111000001000100000, {0,255,0,255}},
-        {0b01000000000001111000000111100000, {0,0,255,255}},
-        {0b01000000000010001000000111100000, {255,255,0,255}},
+        {0b01000000000001111000000000100000, {0,0,255,255}},
+        {0b01000000000011111000000000100000, {0,0,0,255}},
+    }, Vertices2[] = {
+        {0b01000000000010001000001111100000, {0,255,255,255}},
+        {0b01000000000000001000001111100000, {255,0,255,255}},
+        {0b01000000000000001000000111100000, {255,255,0,255}},
+        {0b01000000000010001000000111100000, {255,255,255,255}},
     };
     
-    u32 Indices[] = {0,1,2,0,2,3};
-    mesh_object Object;
-    Object.Vertices = Heap_Allocate(Heap, sizeof(Vertices));
-    Object.Indices = Heap_Allocate(Heap, sizeof(Indices));
-    Mem_Cpy(Object.Vertices->Data, Vertices, sizeof(Vertices));
-    Mem_Cpy(Object.Indices->Data, Indices, sizeof(Indices));
-    Mesh_AddObjects(&Renderer->Mesh, 1, &Object);
+    u32 Indices1[] = {0,1,2,0,2,3};
+    mesh_object Objects[] = {
+        { Heap_Allocate(Heap, sizeof(Vertices1)), Heap_Allocate(Heap, sizeof(Indices1)) },
+        { Heap_Allocate(Heap, sizeof(Vertices2)), Heap_Allocate(Heap, sizeof(Indices1)) }
+    };
+    
+    Mem_Cpy(Objects[0].Vertices->Data, Vertices1, sizeof(Vertices1));
+    Mem_Cpy(Objects[0].Indices->Data, Indices1, sizeof(Indices1));
+    Mem_Cpy(Objects[1].Vertices->Data, Vertices2, sizeof(Vertices2));
+    Mem_Cpy(Objects[1].Indices->Data, Indices1, sizeof(Indices1));
+    
+    Mesh_AddObjects(&Renderer->Mesh, 2, Objects);
     Mesh_Update(&Renderer->Mesh);
 }
 
