@@ -88,6 +88,25 @@ typedef struct renderer_exports renderer_exports;
 typedef struct opengl_funcs opengl_funcs;
 typedef struct game_exports game_exports;
 
+#define TYPES \
+    ENUM(U32, sizeof(u32)) \
+
+typedef enum type_id {
+    TYPE_NONE,
+    
+    #define ENUM(Name, Size) \
+        TYPE_##Name,
+    TYPES
+    #undef ENUM
+} type_id;
+
+typedef struct type {
+    type_id ID;
+    u32 Size;
+} type;
+
+#undef TYPES
+
 #include <util/intrin.h>
 #include <util/scalar.h>
 #include <util/vector.h>
