@@ -34,6 +34,8 @@ Game_Init(platform_state *Platform,
     heap *RendererHeap = Heap_Init(MemBase, RendererHeapSize);
     (u08*)MemBase += RendererHeapSize;
     
+    // File_LoadAssetpack("assets\\0.pack");
+    
     Renderer_Init(Renderer, RendererHeap);
 }
 

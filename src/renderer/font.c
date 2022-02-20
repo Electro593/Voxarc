@@ -98,7 +98,6 @@ MakeFont(u08 *TTFData,
         Character->AdvanceX = (s32)((r32)AdvanceX * Scale);
         Character->BearingX = (s32)((r32)BearingX * Scale);
         
-        
         if(stbtt_IsGlyphEmpty(&FontInfo, GlyphIndex)) {
             Character->Pos = (v2s32){0};
             Character->Size = (v2u32){0};

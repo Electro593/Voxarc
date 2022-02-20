@@ -89,13 +89,13 @@ typedef struct opengl_funcs opengl_funcs;
 typedef struct game_exports game_exports;
 
 #define TYPES \
-    ENUM(U32, sizeof(u32)) \
+    ENUM(U32, u32) \
 
 typedef enum type_id {
-    TYPE_NONE,
+    TYPEID_NONE,
     
-    #define ENUM(Name, Size) \
-        TYPE_##Name,
+    #define ENUM(Name, Type) \
+        TYPEID_##Name,
     TYPES
     #undef ENUM
 } type_id;
@@ -104,6 +104,11 @@ typedef struct type {
     type_id ID;
     u32 Size;
 } type;
+
+#define ENUM(Name, Type) \
+    global type TYPE_##Name = {TYPEID_##Name, sizeof(Type)};
+TYPES
+#undef ENUM
 
 #undef TYPES
 
