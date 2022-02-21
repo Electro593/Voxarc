@@ -119,8 +119,14 @@ File_CreateAssetpack(c08 *FileName,
     NullNode->Size = (v2u32){0};
     NullNode->Next = NullNode;
     
+    asset_node *NullAssetNode = Stack_Allocate(sizeof(asset_node));
+    NullAssetNode->GlyphIndex = 0;
+    NullAssetNode->Asset = NULL;
+    NullAssetNode->Next = NullAssetNode;
+    
     assetpack_texture *Asset = (assetpack_texture*)Assets->Data;
     assetpack_tag *Tag = (assetpack_tag*)Tags->Data;
+    // for(c08 Codepoint = ' '; Codepoint <= 38; Codepoint++) {
     for(c08 Codepoint = ' '; Codepoint <= '~'; Codepoint++) {
         u32 GlyphIndex = stbtt_FindGlyphIndex(&FontInfo, Codepoint);
         if(GlyphIndex == 0) continue;
@@ -139,106 +145,102 @@ File_CreateAssetpack(c08 *FileName,
         Tag->AssetCount = 1;
         Tag->Assets[0] = (vptr)((u08*)Asset - (u64)Assets->Data);
         (u08*)Tag += sizeof(assetpack_tag) + sizeof(assetpack_asset*);
-        // (u64*)Tag->ValueI++ = Codepoint;
-        // (u32*)Tag->AssetCount++ = 1;
-        // ((assetpack_asset*)Tag->Assets++)[0] = (u08*)Asset - Assets->Data;
         
-        if(stbtt_IsGlyphEmpty(&FontInfo, GlyphIndex)) {
-            Asset->DataOffset = 0;
-            Asset->AtlasIndex = 0;
-            Asset++;
-            continue;
-        }
+        asset_node *AssetNode = Stack_Allocate(sizeof(asset_node));
+        AssetNode->GlyphIndex = GlyphIndex;
+        AssetNode->Asset = Asset;
+        AssetNode->Next = NullAssetNode->Next;
+        NullAssetNode->Next = AssetNode;
         
-        // MAXRECTS-BSSF-BBF-GLOBAL
-        
+        Asset++;
+    }
+    
+    binpacker_node *BestNode, *PrevBestNode=NULL, *Node, *PrevNode;
+    asset_node *BestAssetNode=NULL, *PrevBestAssetNode=NULL, *AssetNode, *PrevAssetNode=NULL;
+    u32 MinShortSide, MinLongSide;
+    b08 IsRotated;
+    while(NullAssetNode->Next != NullAssetNode) {
         // Find a fitting node
-        binpacker_node *Node = NullNode->Next;
-        binpacker_node *PrevNode = NullNode;
-        binpacker_node *PrevBestNode = NULL;
-        binpacker_node *BestNode = NULL;
-        u32 MinShortSide = U32_MAX;
-        u32 MinLongSide = U32_MAX;
-        b08 IsRotated = FALSE;
-        while(Node != NullNode) {
-            b08 FitsNormal = FALSE;
-            b08 FitsRotated = FALSE;
-            
-            if(Asset->Size.X < Node->Size.X && Asset->Size.Y < Node->Size.Y) {
-                FitsNormal = TRUE;
-            }
-            #if BINPACKER_USE_ROTATION
-            if(Asset->Size.Y < Node->Size.X && Asset->Size.X < Node->Size.Y) {
-                FitsRotated = TRUE;
-            }
-            #endif
-            
-            #if BINPACKER_USE_BSSF
-            u32 ShortSideN = U32_MAX;
-            u32 ShortSideR = U32_MAX;
-            u32 LongSideN = U32_MAX;
-            u32 LongSideR = U32_MAX;
-            if(FitsNormal) {
-                v2u32 SizeDiff = V2u32_Sub(Node->Size, Asset->Size);
-                ShortSideN = MIN(SizeDiff.X, SizeDiff.Y);
-                LongSideN = MAX(SizeDiff.X, SizeDiff.Y);
-            }
-            if(FitsRotated) {
-                v2u32 AssetSize = (v2u32){Asset->Size.Y, Asset->Size.X};
-                v2u32 SizeDiff = V2u32_Sub(Node->Size, AssetSize);
-                ShortSideR = MIN(SizeDiff.X, SizeDiff.Y);
-                LongSideR = MAX(SizeDiff.X, SizeDiff.Y);
-            }
-            u32 ShortSide = MIN(ShortSideN, ShortSideR);
-            u32 LongSide = MIN(LongSideN, LongSideR);
-            if(ShortSide < MinShortSide) {
-                BestNode = Node;
-                PrevBestNode = PrevNode;
-                MinShortSide = ShortSide;
-                IsRotated = ShortSide != ShortSideN;
-            } else if(ShortSide == MinShortSide && LongSide < MinLongSide) {
-                BestNode = Node;
-                PrevBestNode = PrevNode;
-                MinLongSide = LongSide;
-                IsRotated = LongSide != LongSideN;
-            }
-            #else
-            if(FitsNormal || FitsRotated) {
-                BestNode = Node;
-                PrevBestNode = PrevNode;
-                IsRotated = FitsRotated;
-                break;
-            }
-            #endif
+        IsRotated = FALSE;
+        MinShortSide = U32_MAX;
+        MinLongSide = U32_MAX;
+        BestNode = NULL;
+        AssetNode = NullAssetNode;
+        
+        Node = NullNode;
+        do {
             PrevNode = Node;
             Node = Node->Next;
-        }
-        Node = BestNode;
+            
+            AssetNode = NullAssetNode;
+            while(AssetNode->Next != NullAssetNode) {
+                PrevAssetNode = AssetNode;
+                AssetNode = AssetNode->Next;
+                Asset = AssetNode->Asset;
+                
+                u32 ShortSideN = U32_MAX;
+                u32 ShortSideR = U32_MAX;
+                u32 LongSideN = U32_MAX;
+                u32 LongSideR = U32_MAX;
+                if(Asset->Size.X < Node->Size.X && Asset->Size.Y < Node->Size.Y) {
+                    v2u32 SizeDiff = V2u32_Sub(Node->Size, Asset->Size);
+                    ShortSideN = MIN(SizeDiff.X, SizeDiff.Y);
+                    LongSideN = MAX(SizeDiff.X, SizeDiff.Y);
+                }
+                if(Asset->Size.Y < Node->Size.X && Asset->Size.X < Node->Size.Y) {
+                    v2u32 AssetSize = (v2u32){Asset->Size.Y, Asset->Size.X};
+                    v2u32 SizeDiff = V2u32_Sub(Node->Size, AssetSize);
+                    ShortSideR = MIN(SizeDiff.X, SizeDiff.Y);
+                    LongSideR = MAX(SizeDiff.X, SizeDiff.Y);
+                }
+                
+                u32 ShortSide = MIN(ShortSideN, ShortSideR);
+                u32 LongSide = MIN(LongSideN, LongSideR);
+                if(ShortSide < MinShortSide) {
+                    BestNode = Node;
+                    PrevBestNode = PrevNode;
+                    PrevBestAssetNode = PrevAssetNode;
+                    BestAssetNode = AssetNode;
+                    MinShortSide = ShortSide;
+                    IsRotated = ShortSide != ShortSideN;
+                } else if(ShortSide == MinShortSide && LongSide < MinLongSide) {
+                    BestNode = Node;
+                    PrevBestNode = PrevNode;
+                    PrevBestAssetNode = PrevAssetNode;
+                    BestAssetNode = AssetNode;
+                    MinLongSide = LongSide;
+                    IsRotated = LongSide != LongSideN;
+                }
+            }
+            
+            // Make a new atlas if necessary
+            if(BestNode == NULL && Node->Next == NullNode) {
+                binpacker_node *NewNode = Stack_Allocate(sizeof(binpacker_node));
+                NewNode->Pos = (v2u32){0};
+                Assert(Asset->Size.X < AtlasDims.X && Asset->Size.Y < AtlasDims.Y);
+                NewNode->Size = AtlasDims;
+                NewNode->AtlasIndex = AtlasCount;
+                NewNode->Next = Node->Next;
+                Node->Next = NewNode;
+                Heap_Resize(Atlases, Atlases->Size + AtlasSize);
+                Mem_Set(Atlases->Data+AtlasSize*AtlasCount, 0, AtlasSize);
+                AtlasCount++;
+            }
+        } while(Node->Next != NullNode);
         PrevNode = PrevBestNode;
+        Node = BestNode;
+        PrevAssetNode = PrevBestAssetNode;
+        AssetNode = BestAssetNode;
+        PrevAssetNode->Next = AssetNode->Next;
+        Asset = AssetNode->Asset;
         Asset->IsRotated = IsRotated;
         
-        // Make a new atlas if necessary
-        if(Node == NULL) {
-            Node = Stack_Allocate(sizeof(binpacker_node));
-            Node->Pos = (v2u32){0};
-            Assert(Asset->Size.X < AtlasDims.X && Asset->Size.Y < AtlasDims.Y);
-            Node->Size = AtlasDims;
-            Node->AtlasIndex = AtlasCount;
-            Node->Next = NullNode->Next;
-            NullNode->Next = Node;
-            PrevNode = NullNode;
-            Heap_Resize(Atlases, Atlases->Size + AtlasSize);
-            Mem_Set(Atlases->Data+AtlasSize*AtlasCount, 0, AtlasSize);
-            AtlasCount++;
-        }
-        
-        //TODO simpler with x1/y1 instead of width/height?
         //TODO abstract binpacker for... reasons? Maybe?
         //TODO state-wise, like BinPacker_Start, _AddAsset, _Build, etc.?
         
         // Place the texture
         u08 *Bitmap = Heap_AllocateA(Heap, Asset->Size.X*Asset->Size.Y);
-        stbtt_MakeGlyphBitmap(&FontInfo, Bitmap, Asset->Size.X, Asset->Size.Y, Asset->Size.X, Scale, Scale, GlyphIndex);
+        stbtt_MakeGlyphBitmap(&FontInfo, Bitmap, Asset->Size.X, Asset->Size.Y, Asset->Size.X, Scale, Scale, AssetNode->GlyphIndex);
         if(IsRotated) SWAP(Asset->Size.X, Asset->Size.Y, u32);
         for(u32 Y = 0; Y < Asset->Size.Y; Y++) {
             for(u32 X = 0; X < Asset->Size.X; X++) {
@@ -246,7 +248,7 @@ File_CreateAssetpack(c08 *FileName,
                 if(!IsRotated) {
                     Gray = Bitmap[INDEX_2D(X, Asset->Size.Y-Y-1, Asset->Size.X)];
                 } else {
-                    Gray = Bitmap[INDEX_2D(Asset->Size.Y-Y-1, X, Asset->Size.Y)];
+                    Gray = Bitmap[INDEX_2D(Asset->Size.Y-Y-1, Asset->Size.X-X-1, Asset->Size.Y)];
                 }
                 
                 v4u08 *Atlas = (v4u08*)(Atlases->Data + Node->AtlasIndex*AtlasSize);
@@ -346,12 +348,11 @@ File_CreateAssetpack(c08 *FileName,
             }
             Node1 = Node1->Next;
         }
-        
-        Asset++;
     }
     
+    #if 0
     u32 NodeCount = 0;
-    binpacker_node *Node = NullNode;
+    Node = NullNode;
     while(Node->Next != NullNode) {
         Node = Node->Next;
         NodeCount++;
@@ -363,9 +364,9 @@ File_CreateAssetpack(c08 *FileName,
             }
         }
     }
-    
     string NodeCountStr = U32_ToString(NodeCount, 10);
     Error(NodeCountStr.Text);
+    #endif
     
     // assetpack_font *FontDef = (assetpack_font*)Asset;
     // FontDef->AdvanceY = Ascent - Descent + LineGap;

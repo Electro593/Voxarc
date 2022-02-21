@@ -74,11 +74,6 @@ typedef struct assetpack {
 } assetpack;
 #pragma pack(pop)
 
-typedef struct asset_node {
-    v2u32 Size;
-    struct asset_node *Next;
-} asset_node;
-
 typedef struct binpacker_node {
     v2u32 Pos;
     v2u32 Size;
@@ -86,7 +81,8 @@ typedef struct binpacker_node {
     struct binpacker_node *Next;
 } binpacker_node;
 
-#define BINPACKER_USE_BSSF 1
-#define BINPACKER_USE_ROTATION 1
-#define BINPACKER_USE_BBF 1
-#define BINPACKER_USE_GLOBAL 1
+typedef struct asset_node {
+    u32 GlyphIndex;
+    assetpack_texture *Asset;
+    struct asset_node *Next;
+} asset_node;
