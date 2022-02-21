@@ -15,6 +15,7 @@ typedef enum assetpack_tag_id {
     TAG_FONT_DEF,
 } assetpack_tag_id;
 
+#pragma pack(push, 1)
 typedef struct assetpack_header {
     u32 TagRegistryCount;
     u32 TagCount;
@@ -29,6 +30,7 @@ typedef struct assetpack_texture {
     v2u32 Size;
     s32 AdvanceX;
     u32 AtlasIndex;
+    b08 IsRotated;
 } assetpack_texture;
 
 typedef struct assetpack_font {
@@ -68,13 +70,13 @@ typedef struct assetpack {
     assetpack_tag *Tags;
     vptr TagData;
     assetpack_asset *Assets;
-    vptr AssetData;
+    u08 *AssetData;
 } assetpack;
+#pragma pack(pop)
 
 typedef struct asset_node {
     v2u32 Size;
     struct asset_node *Next;
-    struct asset_node *Prev;
 } asset_node;
 
 typedef struct binpacker_node {
@@ -83,3 +85,8 @@ typedef struct binpacker_node {
     u32 AtlasIndex;
     struct binpacker_node *Next;
 } binpacker_node;
+
+#define BINPACKER_USE_BSSF 1
+#define BINPACKER_USE_ROTATION 1
+#define BINPACKER_USE_BBF 1
+#define BINPACKER_USE_GLOBAL 1

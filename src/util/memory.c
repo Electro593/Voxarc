@@ -193,12 +193,14 @@ Heap_Resize(heap_handle *Handle,
             u32 NewSize)
 {
     Assert(Handle);
-    Assert(!Handle->Anchored);
     
     if(NewSize <= Handle->Size + Handle->Offset) {
         Handle->Offset += (s64)Handle->Size - (s64)NewSize;
         Handle->Size = NewSize;
     } else {
+        u08 *PrevData = Handle->Data;
+        u32 PrevSize = Handle->Size;
+        
         heap_handle *Handles = Handle - Handle->Index;
         Handles[Handle->PrevBlock].Offset += Handle->Size + Handle->Offset;
         Handles[Handle->PrevBlock].NextBlock = Handle->NextBlock;
@@ -221,7 +223,18 @@ Heap_Resize(heap_handle *Handle,
         Handles[Handle->PrevBlock].NextBlock = Handle->Index;
         Handle->Offset = 0;
         Handle->Size = NewSize;
+        
+        Mem_Cpy(Handle->Data, PrevData, PrevSize);
     }
+}
+
+internal void
+Heap_ResizeA(vptr *Data,
+             u32 NewSize)
+{
+    heap_handle *Handle = Heap_GetHandle(*Data);
+    Heap_Resize(Handle, NewSize);
+    *Data = Handle->Data;
 }
 
 internal void
@@ -268,6 +281,7 @@ Heap_Free(heap_handle *Handle)
     }
 }
 
+internal void Heap_FreeA(vptr Data) { Heap_Free(Heap_GetHandle(Data)); }
 
 
 

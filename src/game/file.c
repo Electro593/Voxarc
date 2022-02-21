@@ -20,9 +20,10 @@ File_Read(c08 *FileName,
         Length = Platform_GetFileLength(FileHandle);
     }
     
-    vptr Text = Stack_Allocate(Length);
+    c08 *Text = Stack_Allocate(Length+1);
     u64 BytesRead = Platform_ReadFile(FileHandle, Text, Length, Offset);
-    string String = {BytesRead, Length, FALSE, Text};
+    Text[Length] = 0;
+    string String = {BytesRead, Length+1, FALSE, Text};
     
     Platform_CloseFile(FileHandle);
     
@@ -73,6 +74,8 @@ internal void
 File_CreateAssetpack(c08 *FileName,
                      heap *Heap)
 {
+    Stack_Push();
+    
     assetpack_header Header;
     heap_handle *Registries;
     heap_handle *Tags;
@@ -93,7 +96,7 @@ File_CreateAssetpack(c08 *FileName,
     Assets = Heap_Allocate(Heap, (127-32)*sizeof(assetpack_texture) + sizeof(assetpack_font));
     
     Header.TagCount = Header.AssetCount;
-    Tags = Heap_Allocate(Heap, Header.TagCount*sizeof(assetpack_tag) + Header.AssetCount*sizeof(assetpack_asset*);
+    Tags = Heap_Allocate(Heap, Header.TagCount*sizeof(assetpack_tag) + Header.AssetCount*sizeof(assetpack_asset*));
     
     Header.TagDataSize = 0;
     TagData = Heap_Allocate(Heap, Header.TagDataSize);
@@ -105,10 +108,17 @@ File_CreateAssetpack(c08 *FileName,
     ((assetpack_tag_registry*)Registries->Data)[0].TagCount = Header.AssetCount;
     ((assetpack_tag_registry*)Registries->Data)[0].Tags = 0;
     
-    u32 AssetNodeCount = 1;
-    asset_node *AssetNodes = Stack_Allocate((Header.AssetCount+1) * sizeof(asset_node));
-    AssetNodes[0].Next = NULL;
-    AssetNodes[0].Prev = NULL;
+    v2u32 AtlasDims = {256, 256};
+    u32 AtlasSize = AtlasDims.X*AtlasDims.Y*sizeof(v4u08);
+    u32 AtlasCount = 0;
+    heap_handle *Atlases = Heap_Allocate(Heap, 0);
+    
+    binpacker_node *NullNode = Stack_Allocate(sizeof(binpacker_node));
+    NullNode->AtlasIndex = 0;
+    NullNode->Pos = (v2u32){0};
+    NullNode->Size = (v2u32){0};
+    NullNode->Next = NullNode;
+    
     assetpack_texture *Asset = (assetpack_texture*)Assets->Data;
     assetpack_tag *Tag = (assetpack_tag*)Tags->Data;
     for(c08 Codepoint = ' '; Codepoint <= '~'; Codepoint++) {
@@ -125,157 +135,296 @@ File_CreateAssetpack(c08 *FileName,
         Asset->Bearing.Y = -EY;
         Asset->Size = (v2u32){EX - SX, EY - SY};
         
-        // Tag->ValueI = Codepoint;
-        // Tag->AssetCount = 1;
-        // Tag->Assets[0] = (u08*)Asset - (u08*)Assets->Data;
-        // (u08*)Tag += sizeof(assetpack_tag) + sizeof(assetpack_asset*);
-        (u64*)Tag->ValueI++ = Codepoint;
-        (u32*)Tag->AssetCount++ = 1;
-        ((assetpack_asset*)Tag->Assets++)[0] = (u08*)Asset - Assets->Data;
+        Tag->ValueI = Codepoint;
+        Tag->AssetCount = 1;
+        Tag->Assets[0] = (vptr)((u08*)Asset - (u64)Assets->Data);
+        (u08*)Tag += sizeof(assetpack_tag) + sizeof(assetpack_asset*);
+        // (u64*)Tag->ValueI++ = Codepoint;
+        // (u32*)Tag->AssetCount++ = 1;
+        // ((assetpack_asset*)Tag->Assets++)[0] = (u08*)Asset - Assets->Data;
         
-        AssetNodes[AssetNodeCount].Size = Asset->Size;
-        AssetNodes[AssetNodeCount]->Prev = AssetNodes[AssetNodeCount-1];
-        AssetNodes[AssetNodeCount-1]->Next = AssetNodes[AssetNodeCount];
-        AssetNodeCount++;
-        
-        Asset++;
-    }
-    AssetNodes[AssetNodeCount-1].Next = AssetNodes[0];
-    AssetNodes[0].Prev = AssetNodes[AssetNodeCount-1];
-    
-    v2u32 AtlasDims = {1024, 1024};
-    u32 AtlasSize = AtlasDims.X * AtlasDims.Y;
-    u32 AtlasCount = 0;
-    u08 **Atlases;
-    
-    
-    
-    // MAXRECTS-BSSF-BBF-GLOBAL
-    binpacker_node *PrevNode = /*NullNode*/;
-    asset_node *AssetNode = AssetNodes[0].Next;
-    Asset = (assetpack_texture*)Assets->Data;
-    binpacker_node *RootNode = Stack_Allocate(sizeof(binpacker_node));
-    RootNode->AtlasIndex = 0;
-    RootNode->Next = NULL;
-    RootNode->Size = AtlasDims;
-    while(AssetNode != AssetNodes[0]) {
-        AssetNode = AssetNodes[0].Next;
-        binpacker_node *Node = RootNode;
-        
-        while(AssetNode != AssetNodes[0]) {
-            Node = RootNode->Next;
-            
-            while(Node != RootNode) {
-                if(AssetNode->Size.X < Node->Size.X && AssetNode->Size.Y < Node->Size.Y) {
-                    if(Node->Size.X - AssetNode->Size.X < Node->Size.Y - AssetNode->Size.Y) {
-                        
-                    }
-                } else if(AssetNode->Size.X < Node->Size.Y && AssetNode->Size.Y < Node->Size.X) {
-                    
-                } else {
-                    
-                }
-                
-                
-                Node = Node->Next;
-            }
-            
-            AssetNode = AssetNode->Next;
+        if(stbtt_IsGlyphEmpty(&FontInfo, GlyphIndex)) {
+            Asset->DataOffset = 0;
+            Asset->AtlasIndex = 0;
+            Asset++;
+            continue;
         }
         
-        if(Node == RootNode) {
-            binpacker_node *NewNode = Stack_Allocate(sizeof(binpacker_node));
-            NewNode->Pos = (v2u32){0};
-            NewNode->Size = AtlasDims;
-            NewNode->AtlasIndex = AtlasCount;
-            NewNode->Next = RootNode->Next;
-            RootNode->Next = NewNode;
+        // MAXRECTS-BSSF-BBF-GLOBAL
+        
+        // Find a fitting node
+        binpacker_node *Node = NullNode->Next;
+        binpacker_node *PrevNode = NullNode;
+        binpacker_node *PrevBestNode = NULL;
+        binpacker_node *BestNode = NULL;
+        u32 MinShortSide = U32_MAX;
+        u32 MinLongSide = U32_MAX;
+        b08 IsRotated = FALSE;
+        while(Node != NullNode) {
+            b08 FitsNormal = FALSE;
+            b08 FitsRotated = FALSE;
+            
+            if(Asset->Size.X < Node->Size.X && Asset->Size.Y < Node->Size.Y) {
+                FitsNormal = TRUE;
+            }
+            #if BINPACKER_USE_ROTATION
+            if(Asset->Size.Y < Node->Size.X && Asset->Size.X < Node->Size.Y) {
+                FitsRotated = TRUE;
+            }
+            #endif
+            
+            #if BINPACKER_USE_BSSF
+            u32 ShortSideN = U32_MAX;
+            u32 ShortSideR = U32_MAX;
+            u32 LongSideN = U32_MAX;
+            u32 LongSideR = U32_MAX;
+            if(FitsNormal) {
+                v2u32 SizeDiff = V2u32_Sub(Node->Size, Asset->Size);
+                ShortSideN = MIN(SizeDiff.X, SizeDiff.Y);
+                LongSideN = MAX(SizeDiff.X, SizeDiff.Y);
+            }
+            if(FitsRotated) {
+                v2u32 AssetSize = (v2u32){Asset->Size.Y, Asset->Size.X};
+                v2u32 SizeDiff = V2u32_Sub(Node->Size, AssetSize);
+                ShortSideR = MIN(SizeDiff.X, SizeDiff.Y);
+                LongSideR = MAX(SizeDiff.X, SizeDiff.Y);
+            }
+            u32 ShortSide = MIN(ShortSideN, ShortSideR);
+            u32 LongSide = MIN(LongSideN, LongSideR);
+            if(ShortSide < MinShortSide) {
+                BestNode = Node;
+                PrevBestNode = PrevNode;
+                MinShortSide = ShortSide;
+                IsRotated = ShortSide != ShortSideN;
+            } else if(ShortSide == MinShortSide && LongSide < MinLongSide) {
+                BestNode = Node;
+                PrevBestNode = PrevNode;
+                MinLongSide = LongSide;
+                IsRotated = LongSide != LongSideN;
+            }
+            #else
+            if(FitsNormal || FitsRotated) {
+                BestNode = Node;
+                PrevBestNode = PrevNode;
+                IsRotated = FitsRotated;
+                break;
+            }
+            #endif
+            PrevNode = Node;
+            Node = Node->Next;
+        }
+        Node = BestNode;
+        PrevNode = PrevBestNode;
+        Asset->IsRotated = IsRotated;
+        
+        // Make a new atlas if necessary
+        if(Node == NULL) {
+            Node = Stack_Allocate(sizeof(binpacker_node));
+            Node->Pos = (v2u32){0};
+            Assert(Asset->Size.X < AtlasDims.X && Asset->Size.Y < AtlasDims.Y);
+            Node->Size = AtlasDims;
+            Node->AtlasIndex = AtlasCount;
+            Node->Next = NullNode->Next;
+            NullNode->Next = Node;
+            PrevNode = NullNode;
+            Heap_Resize(Atlases, Atlases->Size + AtlasSize);
+            Mem_Set(Atlases->Data+AtlasSize*AtlasCount, 0, AtlasSize);
             AtlasCount++;
         }
         
-        // Split the node into two
-        if(AssetNode->Size.X < Node->Size.X) {
+        //TODO simpler with x1/y1 instead of width/height?
+        //TODO abstract binpacker for... reasons? Maybe?
+        //TODO state-wise, like BinPacker_Start, _AddAsset, _Build, etc.?
+        
+        // Place the texture
+        u08 *Bitmap = Heap_AllocateA(Heap, Asset->Size.X*Asset->Size.Y);
+        stbtt_MakeGlyphBitmap(&FontInfo, Bitmap, Asset->Size.X, Asset->Size.Y, Asset->Size.X, Scale, Scale, GlyphIndex);
+        if(IsRotated) SWAP(Asset->Size.X, Asset->Size.Y, u32);
+        for(u32 Y = 0; Y < Asset->Size.Y; Y++) {
+            for(u32 X = 0; X < Asset->Size.X; X++) {
+                u08 Gray;
+                if(!IsRotated) {
+                    Gray = Bitmap[INDEX_2D(X, Asset->Size.Y-Y-1, Asset->Size.X)];
+                } else {
+                    Gray = Bitmap[INDEX_2D(Asset->Size.Y-Y-1, X, Asset->Size.Y)];
+                }
+                
+                v4u08 *Atlas = (v4u08*)(Atlases->Data + Node->AtlasIndex*AtlasSize);
+                v4u08 *Pixel = Atlas + INDEX_2D(X+Node->Pos.X, Y+Node->Pos.Y, AtlasDims.X);
+                *Pixel = (v4u08){Gray, Gray, Gray, 255};
+            }
+        }
+        Asset->DataOffset = INDEX_2D(Node->Pos.X, Node->Pos.Y, AtlasDims.X) * sizeof(v4u08);
+        Heap_FreeA(Bitmap);
+        
+        // Split the node
+        if(Asset->Size.X < Node->Size.X) {
             binpacker_node *NewNode = Stack_Allocate(sizeof(binpacker_node));
             NewNode->AtlasIndex = Node->AtlasIndex;
-            NewNode->Pos = (v2u32){Node->Pos.X+AssetNode->Size.X, Node->Pos.Y};
-            NewNode->Size = (v2u32){Node->Size.X-AssetNode->Size.X, Node->Size.Y};
+            NewNode->Pos = (v2u32){Node->Pos.X+Asset->Size.X, Node->Pos.Y};
+            NewNode->Size = (v2u32){Node->Size.X-Asset->Size.X, Node->Size.Y};
             NewNode->Next = Node->Next;
             Node->Next = NewNode;
         }
-        if(AssetNode->Size.Y < Node->Size.Y) {
+        if(Asset->Size.Y < Node->Size.Y) {
             binpacker_node *NewNode = Stack_Allocate(sizeof(binpacker_node));
             NewNode->AtlasIndex = Node->AtlasIndex;
-            NewNode->Pos = (v2u32){Node->Pos.X, Node->Pos.Y+AssetNode->Size.Y};
-            NewNode->Size = (v2u32){Node->Size.X, Node->Size.Y-AssetNode->Size.Y};
+            NewNode->Pos = (v2u32){Node->Pos.X, Node->Pos.Y+Asset->Size.Y};
+            NewNode->Size = (v2u32){Node->Size.X, Node->Size.Y-Asset->Size.Y};
             NewNode->Next = Node->Next;
             Node->Next = NewNode;
         }
         PrevNode->Next = Node->Next;
+        Node->Size = Asset->Size;
         
-        // Split nodes that intersect with assetnode
+        //TODO: Individual Atlas1, Atlas2, ... lists so
+        // only search a specific atlas
         
+        // Split nodes that intersect the asset
+        binpacker_node *PrevFreeNode;
+        binpacker_node *FreeNode = NullNode;
+        v2u32 NodePos2 = V2u32_Add(Node->Pos, Node->Size);
+        while(FreeNode->Next != NullNode) {
+            PrevFreeNode = FreeNode;
+            FreeNode = FreeNode->Next;
+            if(FreeNode->AtlasIndex != Node->AtlasIndex) continue;
+            
+            binpacker_node *NewNode = NULL;
+            v2u32 FreeNodePos2 = V2u32_Add(FreeNode->Pos, FreeNode->Size);
+            if(FreeNode->Pos.Y < NodePos2.Y && Node->Pos.Y < FreeNodePos2.Y) {
+                if(FreeNode->Pos.X < Node->Pos.X && Node->Pos.X < FreeNodePos2.X) {
+                    NewNode = Stack_Allocate(sizeof(binpacker_node));
+                    NewNode->AtlasIndex = FreeNode->AtlasIndex;
+                    NewNode->Pos = (v2u32){FreeNode->Pos.X, FreeNode->Pos.Y};
+                    NewNode->Size = (v2u32){Node->Pos.X - FreeNode->Pos.X, FreeNode->Size.Y};
+                    NewNode->Next = FreeNode->Next;
+                    FreeNode->Next = NewNode;
+                } if(FreeNode->Pos.X < NodePos2.X && NodePos2.X < FreeNodePos2.X) {
+                    NewNode = Stack_Allocate(sizeof(binpacker_node));
+                    NewNode->AtlasIndex = FreeNode->AtlasIndex;
+                    NewNode->Pos = (v2u32){NodePos2.X, FreeNode->Pos.Y};
+                    NewNode->Size = (v2u32){FreeNodePos2.X - NodePos2.X, FreeNode->Size.Y};
+                    NewNode->Next = FreeNode->Next;
+                    FreeNode->Next = NewNode;
+                }
+            } if(FreeNode->Pos.X < NodePos2.X && Node->Pos.X < FreeNodePos2.X) {
+                if(FreeNode->Pos.Y < Node->Pos.Y && Node->Pos.Y < FreeNodePos2.Y) {
+                    NewNode = Stack_Allocate(sizeof(binpacker_node));
+                    NewNode->AtlasIndex = FreeNode->AtlasIndex;
+                    NewNode->Pos = (v2u32){FreeNode->Pos.X, FreeNode->Pos.Y};
+                    NewNode->Size = (v2u32){FreeNode->Size.X, Node->Pos.Y - FreeNode->Pos.Y};
+                    NewNode->Next = FreeNode->Next;
+                    FreeNode->Next = NewNode;
+                } if(FreeNode->Pos.Y < NodePos2.Y && NodePos2.Y < FreeNodePos2.Y) {
+                    NewNode = Stack_Allocate(sizeof(binpacker_node));
+                    NewNode->AtlasIndex = FreeNode->AtlasIndex;
+                    NewNode->Pos = (v2u32){FreeNode->Pos.X, NodePos2.Y};
+                    NewNode->Size = (v2u32){FreeNode->Size.X, FreeNodePos2.Y - NodePos2.Y};
+                    NewNode->Next = FreeNode->Next;
+                    FreeNode->Next = NewNode;
+                }
+            }
+            
+            if(NewNode) PrevFreeNode->Next = FreeNode->Next;
+        }
         
         // Remove redudant nodes
+        binpacker_node *Node1 = NullNode->Next;
+        while(Node1 != NullNode) {
+            v2u32 Node1Pos2 = V2u32_Add(Node1->Pos, Node1->Size);
+            binpacker_node *PrevNode2;
+            binpacker_node *Node2 = NullNode;
+            while(Node2->Next != NullNode) {
+                PrevNode2 = Node2;
+                Node2 = Node2->Next;
+                v2u32 Node2Pos2 = V2u32_Add(Node2->Pos, Node2->Size);
+                if(Node1 == Node2) continue;
+                if(Node1->AtlasIndex != Node2->AtlasIndex) continue;
+                if(Node1->Pos.X <= Node2->Pos.X && Node2Pos2.X <= Node1Pos2.X && Node1->Pos.Y <= Node2->Pos.Y && Node2Pos2.Y <= Node1Pos2.Y) {
+                    PrevNode2->Next = Node2->Next;
+                }
+            }
+            Node1 = Node1->Next;
+        }
         
-        
-        
-        
+        Asset++;
     }
     
+    u32 NodeCount = 0;
+    binpacker_node *Node = NullNode;
+    while(Node->Next != NullNode) {
+        Node = Node->Next;
+        NodeCount++;
+        for(u32 Y = 0; Y < Node->Size.Y; Y++) {
+            for(u32 X = 0; X < Node->Size.X; X++) {
+                v4u08 *Atlas = (v4u08*)(Atlases->Data + Node->AtlasIndex*AtlasSize);
+                v4u08 *Pixel = Atlas + INDEX_2D(X+Node->Pos.X, Y+Node->Pos.Y, AtlasDims.X);
+                *Pixel = (v4u08){0, 0, 255, 255};
+            }
+        }
+    }
+    
+    string NodeCountStr = U32_ToString(NodeCount, 10);
+    Error(NodeCountStr.Text);
+    
+    // assetpack_font *FontDef = (assetpack_font*)Asset;
+    // FontDef->AdvanceY = Ascent - Descent + LineGap;
+    // ((assetpack_tag_registry*)Registries->Data)[1].ID = TAG_FONT_DEF;
+    // ((assetpack_tag_registry*)Registries->Data)[1].Type = TYPE_U32;
+    // ((assetpack_tag_registry*)Registries->Data)[1].TagCount = 1;
+    // ((assetpack_tag_registry*)Registries->Data)[1].Tags = (u08*)Tag - Tags->Data;
+    // Tag->ValueI = 1;
+    // Tag->AssetCount = 1;
+    // Tag->Assets[0] = (u08*)FontDef - Assets->Data;
+    // (u08*)Tag += sizeof(assetpack_tag) + sizeof(assetpack_asset*);
     
     
     
     
     
-    
-    
-    
-    assetpack_font *FontDef = (assetpack_font*)Asset;
-    FontDef->AdvanceY = Ascent - Descent + LineGap;
-    ((assetpack_tag_registry*)Registries->Data)[1].ID = TAG_FONT_DEF;
-    ((assetpack_tag_registry*)Registries->Data)[1].Type = TYPE_U32;
-    ((assetpack_tag_registry*)Registries->Data)[1].TagCount = 1;
-    ((assetpack_tag_registry*)Registries->Data)[1].Tags = (u08*)Tag - Tags->Data;
-    Tag->ValueI = 1;
-    Tag->AssetCount = 1;
-    Tag->Assets[0] = (u08*)FontDef - Assets->Data;
-    (u08*)Tag += sizeof(assetpack_tag) + sizeof(assetpack_asset*);
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    bitmap_header BitmapHeader = {0};
+    BitmapHeader.Signature[0] = 'B';
+    BitmapHeader.Signature[1] = 'M';
+    BitmapHeader.FileSize = sizeof(bitmap_header) + Atlases->Size;
+    BitmapHeader.DataOffset = sizeof(bitmap_header);
+    BitmapHeader.Size = 40;
+    BitmapHeader.Width = AtlasDims.X;
+    BitmapHeader.Height = AtlasDims.Y * AtlasCount;
+    BitmapHeader.Planes = 1;
+    BitmapHeader.BitsPerPixel = 32;
+    BitmapHeader.ImageSize = Atlases->Size;
     
     file_handle FileHandle;
     Platform_OpenFile(&FileHandle, FileName, FILE_WRITE);
-    u64 Offset = 0;
-    Platform_WriteFile(FileHandle, &Header, sizeof(assetpack_header), Offset);
-    Offset += sizeof(assetpack_header);
-    Platform_WriteFile(FileHandle, Registries->Data, Registries->Size, Offset);
-    Offset += Registries->Size;
-    Platform_WriteFile(FileHandle, Tags->Data, Tags->Size, Offset);
-    Offset += Tags->Size;
-    Platform_WriteFile(FileHandle, TagData->Data, TagData->Size, Offset);
-    Offset += TagData->Size;
-    Platform_WriteFile(FileHandle, Assets->Data, Assets->Size, Offset);
-    Offset += Assets->Size;
-    for(u32 I = 0; I < AtlasCount; I++) {
-        Platform_WriteFile(FileHandle, Atlases[I]->Data, Atlases[I]->Size, Offset);
-        Offset += Atlases[I]->Size;
-    }
+    Platform_WriteFile(FileHandle, &BitmapHeader, sizeof(bitmap_header), 0);
+    Platform_WriteFile(FileHandle, Atlases->Data, Atlases->Size, sizeof(bitmap_header));
     Platform_CloseFile(FileHandle);
     
-    Heap_Free(Registries);
-    Heap_Free(Tags);
-    Heap_Free(TagData);
+    
+    // file_handle FileHandle;
+    // Platform_OpenFile(&FileHandle, FileName, FILE_WRITE);
+    // u64 Offset = 0;
+    // Platform_WriteFile(FileHandle, &Header, sizeof(assetpack_header), Offset);
+    // Offset += sizeof(assetpack_header);
+    // Platform_WriteFile(FileHandle, Registries->Data, Registries->Size, Offset);
+    // Offset += Registries->Size;
+    // Platform_WriteFile(FileHandle, Tags->Data, Tags->Size, Offset);
+    // Offset += Tags->Size;
+    // Platform_WriteFile(FileHandle, TagData->Data, TagData->Size, Offset);
+    // Offset += TagData->Size;
+    // Platform_WriteFile(FileHandle, Assets->Data, Assets->Size, Offset);
+    // Offset += Assets->Size;
+    // for(u32 I = 0; I < AtlasCount; I++) {
+    //     Platform_WriteFile(FileHandle, Atlases[I]->Data, Atlases[I]->Size, Offset);
+    //     Offset += Atlases[I]->Size;
+    // }
+    // Platform_CloseFile(FileHandle);
+    
+    Heap_Free(Atlases);
     Heap_Free(Assets);
-    for(u32 I = 0; I < AtlasCount; I++)
-        Heap_Free(Heap_GetHandle(Atlases[I]));
+    Heap_Free(TagData);
+    Heap_Free(Tags);
+    Heap_Free(Registries);
+    
+    Stack_Pop();
 }

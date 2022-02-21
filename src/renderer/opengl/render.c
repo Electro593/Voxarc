@@ -22,8 +22,8 @@ OpenGL_DebugCallback(u32 Source,
 }
 
 internal u32
-OpenGL_LoadShaders(c08 *VertFileName,
-                   c08 *FragFileName)
+Renderer_LoadShaders(c08 *VertFileName,
+                     c08 *FragFileName)
 {
     s32 Result=FALSE, InfoLogLength;
     u32 Vert=0, Frag=0;
@@ -124,8 +124,8 @@ Renderer_Init(renderer_state *Renderer,
     OpenGL_Enable(GL_CULL_FACE);
     OpenGL_CullFace(GL_FRONT);
     
-    Renderer->PCProgram = OpenGL_LoadShaders(SHADERS_DIR "pc.vert", SHADERS_DIR "pc.frag");
-    // Renderer->PTProgram = OpenGL_LoadShaders(SHADERS_DIR "pt.vert", SHADERS_DIR "pt.frag");
+    Renderer->PCProgram = Renderer_LoadShaders(SHADERS_DIR "pc.vert", SHADERS_DIR "pc.frag");
+    // Renderer->PTProgram = Renderer_LoadShaders(SHADERS_DIR "pt.vert", SHADERS_DIR "pt.frag");
     
     Mesh_Init(&Renderer->Mesh, Renderer->Heap, Renderer->PCProgram, MESH_HAS_COLORS);
     struct {

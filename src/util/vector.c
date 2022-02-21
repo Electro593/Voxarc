@@ -98,6 +98,9 @@
         return Result; \
     }
 
+DEFINE_VECTOR_ADD(2, u32);
+DEFINE_VECTOR_SUB(2, u32);
+
 #undef DEFINE_VECTOR_INIT
 #undef DEFINE_VECTOR_ADD
 #undef DEFINE_VECTOR_SUB
