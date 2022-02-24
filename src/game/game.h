@@ -7,8 +7,6 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include <game/file.h>
-
 typedef struct global_state {
     stack *Stack;
 } global_state;

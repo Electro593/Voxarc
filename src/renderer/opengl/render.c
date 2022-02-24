@@ -18,6 +18,7 @@ OpenGL_DebugCallback(u32 Source,
                      c08 *Message,
                      vptr UserParam)
 {
+    Error(Message);
     Assert(FALSE);
 }
 
@@ -27,7 +28,7 @@ Renderer_LoadShaders(c08 *VertFileName,
 {
     s32 Result=FALSE, InfoLogLength;
     u32 Vert=0, Frag=0;
-    c08 *VertErrorMessage, *FragErrorMessage, *ProgramErrorMessage;
+    c08 *ProgramErrorMessage;
     string VertCode, FragCode;
     
     u32 Program = OpenGL_CreateProgram();
@@ -38,13 +39,6 @@ Renderer_LoadShaders(c08 *VertFileName,
         OpenGL_ShaderSource(Vert, 1, &VertCode.Text, NULL);
         OpenGL_CompileShader(Vert);
         String_Free(VertCode);
-        
-        OpenGL_GetShaderiv(Vert, GL_COMPILE_STATUS, &Result);
-        OpenGL_GetShaderiv(Vert, GL_INFO_LOG_LENGTH, &InfoLogLength);
-        VertErrorMessage = Stack_Allocate(InfoLogLength);
-        OpenGL_GetShaderInfoLog(Vert, InfoLogLength, NULL, VertErrorMessage);
-        if(!Result) Error(VertErrorMessage);
-        
         OpenGL_AttachShader(Program, Vert);
     }
     
@@ -54,13 +48,6 @@ Renderer_LoadShaders(c08 *VertFileName,
         OpenGL_ShaderSource(Frag, 1, &FragCode.Text, NULL);
         OpenGL_CompileShader(Frag);
         String_Free(FragCode);
-        
-        OpenGL_GetShaderiv(Frag, GL_COMPILE_STATUS, &Result);
-        OpenGL_GetShaderiv(Frag, GL_INFO_LOG_LENGTH, &InfoLogLength);
-        FragErrorMessage = Stack_Allocate(InfoLogLength);
-        OpenGL_GetShaderInfoLog(Frag, InfoLogLength, NULL, FragErrorMessage);
-        if(!Result) Error(FragErrorMessage);
-        
         OpenGL_AttachShader(Program, Frag);
     }
     
@@ -117,30 +104,52 @@ Renderer_Init(renderer_state *Renderer,
         OpenGL_DebugMessageCallback(OpenGL_DebugCallback, NULL);
         u32 ID = 131185;
         OpenGL_DebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DONT_CARE, 1, &ID, FALSE);
+        ID = 131218;
+        OpenGL_DebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_PERFORMANCE, GL_DONT_CARE, 1, &ID, FALSE);
     #endif
     
     OpenGL_Enable(GL_DEPTH_TEST);
     // OpenGL_Enable(GL_SCISSOR_TEST);
     OpenGL_Enable(GL_CULL_FACE);
+    OpenGL_Enable(GL_BLEND);
     OpenGL_CullFace(GL_FRONT);
+    OpenGL_BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     Renderer->PCProgram = Renderer_LoadShaders(SHADERS_DIR "pc.vert", SHADERS_DIR "pc.frag");
-    // Renderer->PTProgram = Renderer_LoadShaders(SHADERS_DIR "pt.vert", SHADERS_DIR "pt.frag");
+    Renderer->PTProgram = Renderer_LoadShaders(SHADERS_DIR "pt.vert", SHADERS_DIR "pt.frag");
+    Mesh_Init(&Renderer->Mesh, Renderer->Heap, Renderer->PTProgram, MESH_HAS_TEXTURES);
     
-    Mesh_Init(&Renderer->Mesh, Renderer->Heap, Renderer->PCProgram, MESH_HAS_COLORS);
+    assetpack_tag *Tag = Assetpack_FindFirstTag(Renderer->Assetpack, TAG_ATLAS_DESCRIPTOR);
+    Assert(Tag);
+    assetpack_atlas *Atlas = (assetpack_atlas*)Tag->ValueP;
+    
+    OpenGL_UseProgram(Renderer->PTProgram);
+    OpenGL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    OpenGL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    OpenGL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    OpenGL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    OpenGL_TexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, Atlas->Size.X, Atlas->Size.Y, Atlas->Count, 0, GL_RGBA, GL_UNSIGNED_BYTE, Renderer->Assetpack.AssetData+Atlas->DataOffset);
+    // OpenGL_BufferData(GL_TEXTURE_BUFFER, (127-32)*sizeof(assetpack_texture), Renderer->Assetpack.Assets, GL_STATIC_DRAW);
+    // OpenGL_TexBuffer(GL_TEXTURE_BUFFER, GL_R32UI, Renderer->Mesh.TextureDataBuffer);
+    OpenGL_Uniform1i(Renderer->Mesh.AtlasesSampler, 0);
+    // OpenGL_Uniform1i(Renderer->Mesh.TextureDataSampler, 0);
+    Heap_Resize(Renderer->Mesh.Storage, (127-32)*sizeof(assetpack_texture));
+    Mem_Cpy(Renderer->Mesh.Storage->Data, Renderer->Assetpack.Assets, Renderer->Mesh.Storage->Size);
+    Renderer->Mesh.Flags |= MESH_GROW_STORAGE_BUFFER;
+    
     struct {
         u32 Position;
-        v4u08 Color;
+        u32 Texture;
     } Vertices1[] = {
-        {0b01000000000011111000001000100000, {255,0,0,255}},
-        {0b01000000000001111000001000100000, {0,255,0,255}},
-        {0b01000000000001111000000000100000, {0,0,255,255}},
-        {0b01000000000011111000000000100000, {0,0,0,255}},
+        {0b01000000000011111000001000100000, (('A'-32)<<2) | 0b00},
+        {0b01000000000001111000001000100000, (('A'-32)<<2) | 0b10},
+        {0b01000000000001111000000000100000, (('A'-32)<<2) | 0b11},
+        {0b01000000000011111000000000100000, (('A'-32)<<2) | 0b01},
     }, Vertices2[] = {
-        {0b01000000000010001000001111100000, {0,255,255,255}},
-        {0b01000000000000001000001111100000, {255,0,255,255}},
-        {0b01000000000000001000000111100000, {255,255,0,255}},
-        {0b01000000000010001000000111100000, {255,255,255,255}},
+        {0b01000000000010001000001111100000, ((34-32)<<2) | 0b00},
+        {0b01000000000000001000001111100000, ((34-32)<<2) | 0b10},
+        {0b01000000000000001000000111100000, ((34-32)<<2) | 0b11},
+        {0b01000000000010001000000111100000, ((34-32)<<2) | 0b01},
     };
     
     u32 Indices1[] = {0,1,2,0,2,3};
@@ -154,7 +163,7 @@ Renderer_Init(renderer_state *Renderer,
     Mem_Cpy(Objects[1].Vertices->Data, Vertices2, sizeof(Vertices2));
     Mem_Cpy(Objects[1].Indices->Data, Indices1, sizeof(Indices1));
     
-    Mesh_AddObjects(&Renderer->Mesh, 2, Objects);
+    Mesh_AddObjects(&Renderer->Mesh, 1, Objects);
     Mesh_Update(&Renderer->Mesh);
 }
 

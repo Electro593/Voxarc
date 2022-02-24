@@ -14,6 +14,7 @@ typedef enum mesh_flags {
     MESH_HAS_COLORS         = 0x08,
     MESH_GROW_VERTEX_BUFFER = 0x10,
     MESH_GROW_INDEX_BUFFER  = 0x20,
+    MESH_GROW_STORAGE_BUFFER  = 0x40,
 } mesh_flags;
 
 typedef struct mesh_object {
@@ -23,9 +24,10 @@ typedef struct mesh_object {
 
 typedef struct mesh {
     u32 Program;
-    u32 VAO, VBO, EBO;
-    u32 TextureData;
-    u32 Sampler;
+    u32 VAO;
+    u32 VBO, EBO, SSBO/*, TextureDataBuffer*/;
+    u32 /*TextureData, */Atlases;
+    u32 /*TextureDataSampler, */AtlasesSampler;
     
     mesh_flags Flags;
     u32 VertexSize;
@@ -36,4 +38,5 @@ typedef struct mesh {
     
     heap_handle *Vertices;
     heap_handle *Indices;
+    heap_handle *Storage;
 } mesh;

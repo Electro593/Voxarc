@@ -437,7 +437,7 @@ Platform_Entry(void)
     win32_device_context DeviceContext = Win32_GetDC(Window);
     opengl_funcs OpenGLFuncs = Platform_LoadOpenGL(DeviceContext);
     
-    module GameModule;
+    module GameModule = {0};
     Platform_LoadGame(&GameModule, &GameState, &PlatformExports, &OpenGLFuncs);
     Game_Init(Platform, &GameState, &Renderer);
     

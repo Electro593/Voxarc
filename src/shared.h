@@ -58,6 +58,7 @@
 #define EQUAL   0
 #define GREATER 1
 
+#define U16_MAX 0xFFFF
 #define U32_MAX 0xFFFFFFFF
 
 typedef signed   __int8  s08;
@@ -93,6 +94,7 @@ typedef struct game_exports game_exports;
 
 #define TYPES \
     ENUM(U32, u32) \
+    ENUM(VPTR, vptr) \
 
 typedef enum type_id {
     TYPEID_NONE,
@@ -108,6 +110,7 @@ typedef struct type {
     u32 Size;
 } type;
 
+global type TYPE_NONE = {TYPEID_NONE, 0};
 #define ENUM(Name, Type) \
     global type TYPE_##Name = {TYPEID_##Name, sizeof(Type)};
 TYPES
@@ -121,6 +124,10 @@ TYPES
 #include <util/bit.h>
 #include <util/memory.h>
 #include <util/string.h>
+#include <renderer/opengl/opengl.h>
+#include <renderer/opengl/mesh.h>
+#include <game/file.h>
+#include <game/msdf.h>
 #include <renderer/renderer.h>
 #include <platform/platform.h>
 #include <game/game.h>

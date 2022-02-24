@@ -47,6 +47,17 @@ Mem_Cpy(vptr Dest,
     return Dest;
 }
 
+internal s32
+Mem_Cmp(vptr A,
+        vptr B,
+        u32 Size)
+{
+    while(Size && *(((u08*)A)++) == *(((u08*)B)++)) Size--;
+    if(!Size) return EQUAL;
+    if((u64)A > (u64)B) return GREATER;
+    return LESS;
+}
+
 internal u64
 Mem_BytesUntil(u08 *Data,
                u08 Byte)

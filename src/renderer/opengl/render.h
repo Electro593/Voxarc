@@ -7,9 +7,6 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include <renderer/opengl/opengl.h>
-#include <renderer/opengl/mesh.h>
-
 typedef struct renderer_state {
     u32 VAO;
     u32 VBO;
@@ -20,4 +17,5 @@ typedef struct renderer_state {
     
     heap *Heap;
     mesh Mesh;
+    assetpack Assetpack;
 } renderer_state;

@@ -7,21 +7,31 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-typedef union __declspec(intrin_type) __declspec(align(16)) __m128 {
-    r32 R32[4];
-    r64 R64[2];
-} r128;
+typedef struct msdf_segment {
+    v2s16 P1;
+    v2s16 P2;
+    v2s16 C1;
+    v2s16 C2;
+    u08 CPCount;
+} msdf_segment;
 
-void __debugbreak(void);
-void __nop(void);
-u64  __readgsqword(u32 Offset);
-r128 _mm_sqrt_ps(r128);
-r128 _mm_set_ps(r32, r32, r32, r32);
+typedef struct msdf_edge {
+    msdf_segment *Segments;
+    u32 SegmentCount;
+    u08 Color;
+} msdf_edge;
 
-#define Asm_ReadGSQWord(u32__Offset) RETURNS(u64)  __readgsqword(u32__Offset)
-#define Intrin_DebugBreak()          RETURNS(void) __debugbreak();
-#define Intrin_Nop()                 RETURNS(void) __nop();
+typedef struct msdf_contour {
+    msdf_edge *Edges;
+    u32 EdgeCount;
+    s08 Winding;
+} msdf_contour;
 
-#define R128_Set_4x32(_0,_1,_2,_3) _mm_set_ps(_0,_1,_2,_3)
-#define R128_Sqrt32(R128) (_mm_sqrt_ps(R128))
-#define R128_Get32(R128, Index) (R128.R32[Index])
+typedef struct msdf_shape {
+    msdf_contour *Contours;
+    msdf_edge *Edges;
+    msdf_segment *Segments;
+    u32 ContourCount;
+    u32 EdgeCount;
+    u32 SegmentCount;
+} msdf_shape;

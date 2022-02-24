@@ -1,12 +1,15 @@
-#version 450
+#version 460
 
-in vec2 TexCoords
+in vec2 TexCoords;
+in flat uint AtlasIndex;
 
-uniform sampler2D Sampler;
+uniform sampler2DArray Atlases;
 
-out vec4 FragColor
+out vec4 FragColor;
 
 void main()
 {
-    FragColor = texture(Sampler, TexCoords);
+    float U = TexCoords.x;
+    float V = TexCoords.y;
+    FragColor = texture(Atlases, vec3(U,V,AtlasIndex));
 }

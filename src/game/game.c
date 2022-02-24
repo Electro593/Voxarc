@@ -18,6 +18,7 @@ global_state __Global;
 #include <renderer/font.c>
 #include <renderer/opengl/render.c>
 #include <game/file.c>
+#include <game/msdf.c>
 
 internal void
 Game_Init(platform_state *Platform,
@@ -34,8 +35,9 @@ Game_Init(platform_state *Platform,
     heap *RendererHeap = Heap_Init(MemBase, RendererHeapSize);
     (u08*)MemBase += RendererHeapSize;
     
-    // File_LoadAssetpack("assets\\0.pack");
-    File_CreateAssetpack("assets\\0.bmp", RendererHeap);
+    File_CreateAssetpack("assets\\0.pack", RendererHeap);
+    assetpack Assetpack = File_LoadAssetpack("assets\\0.pack", RendererHeap);
+    Renderer->Assetpack = Assetpack;
     
     Renderer_Init(Renderer, RendererHeap);
 }
@@ -50,7 +52,7 @@ Game_Update(platform_state *Platform,
         Platform->Updates &= ~WINDOW_RESIZED;
     }
     
-    u32 Scale = 2048;
+    u32 Scale = 400;
     s32 Value = Game->DebugCounter%Scale - (Scale/2);
     
     r32 R = 0;

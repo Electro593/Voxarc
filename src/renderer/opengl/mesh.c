@@ -13,19 +13,29 @@ Mesh_Bind(mesh *Mesh)
     OpenGL_BindVertexArray(Mesh->VAO);
     OpenGL_BindBuffer(GL_ARRAY_BUFFER, Mesh->VBO);
     OpenGL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, Mesh->EBO);
-    OpenGL_BindTexture(GL_TEXTURE_BUFFER, Mesh->TextureData);
+    // OpenGL_BindBuffer(GL_TEXTURE_BUFFER, Mesh->TextureDataBuffer);
+    OpenGL_BindBuffer(GL_SHADER_STORAGE_BUFFER, Mesh->SSBO);
+    OpenGL_BindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, Mesh->SSBO);
     
-    // OpenGL_BindBuffer(GL_SHADER_STORAGE_BUFFER, Mesh->MPMatricesID);
-    // OpenGL_BindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, Mesh->MPMatricesID);
+    if(Mesh->Flags & MESH_HAS_TEXTURES) {
+        // OpenGL_BindTexture(GL_TEXTURE_BUFFER, Mesh->TextureData);
+        OpenGL_BindTexture(GL_TEXTURE_2D_ARRAY, Mesh->Atlases);
+    }
 }
 
 internal void
-Mesh_Unbind(void)
+Mesh_Unbind(mesh *Mesh)
 {
     OpenGL_BindVertexArray(0);
     OpenGL_BindBuffer(GL_ARRAY_BUFFER, 0);
     OpenGL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    OpenGL_BindTexture(GL_TEXTURE_BUFFER, 0);
+    // OpenGL_BindBuffer(GL_TEXTURE_BUFFER, 0);
+    OpenGL_BindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    
+    if(Mesh->Flags & MESH_HAS_TEXTURES) {
+        // OpenGL_BindTexture(GL_TEXTURE_BUFFER, 0);
+        OpenGL_BindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    }
 }
 
 internal void
@@ -38,11 +48,9 @@ Mesh_Init(mesh *Mesh,
     
     Mesh->Program = Program;
     Mesh->Flags = Flags;
-    
     Mesh->Vertices = Heap_Allocate(Heap, 0);
     Mesh->Indices = Heap_Allocate(Heap, 0);
-    // Mesh->MMatrices = Heap_Allocate(Heap, 0);
-    
+    Mesh->Storage = Heap_Allocate(Heap, 0);
     Mesh->ObjectCount = 0;
     Mesh->VertexOffsets = Heap_Allocate(Heap, sizeof(u32));
     Mesh->IndexOffsets = Heap_Allocate(Heap, sizeof(u32));
@@ -50,54 +58,42 @@ Mesh_Init(mesh *Mesh,
     ((u32*)Mesh->IndexOffsets->Data)[0] = 0;
     
     OpenGL_GenVertexArrays(1, &Mesh->VAO);
-    OpenGL_GenBuffers(2, &Mesh->VBO);
-    // GL_GenBuffers(1, &Mesh->MPMatricesID);
-    OpenGL_GenTextures(1, &Mesh->TextureData);
-    
-    // Vert
-    // Mesh->AtlasCountID = GL_GetUniformLocation(Mesh->Program, "AtlasCount");
-    
-    // Frag
-    Mesh->Sampler = OpenGL_GetUniformLocation(Mesh->Program, "Sampler");
+    OpenGL_GenBuffers(3, &Mesh->VBO);
+    if(Mesh->Flags & MESH_HAS_TEXTURES) {
+        OpenGL_GenTextures(1, &Mesh->Atlases);
+        // Mesh->TextureDataSampler = OpenGL_GetUniformLocation(Mesh->Program, "TextureData");
+        Mesh->AtlasesSampler = OpenGL_GetUniformLocation(Mesh->Program, "Atlases");
+    }
     
     Mesh_Bind(Mesh);
     
     u32 Stride = sizeof(bfs32);
     u64 Offset = 0;
-    
     if(Mesh->Flags & MESH_HAS_NORMALS)
         Stride += sizeof(bfs32);
-    
     if(Mesh->Flags & MESH_HAS_TEXTURES)
         Stride += sizeof(u32);
-    
     if(Mesh->Flags & MESH_HAS_COLORS)
         Stride += sizeof(v4u08);
-    
     Mesh->VertexSize = Stride;
-    
     OpenGL_EnableVertexAttribArray(0);
     OpenGL_VertexAttribPointer(0, 4, GL_INT_2_10_10_10_REV, TRUE, Stride, (vptr)Offset);
     Offset += sizeof(bfs32);
-    
     if(Mesh->Flags & MESH_HAS_NORMALS) {
         OpenGL_EnableVertexAttribArray(1);
         OpenGL_VertexAttribPointer(1, 4, GL_INT_2_10_10_10_REV, TRUE, Stride, (vptr)Offset);
         Offset += sizeof(bfs32);
     }
-    
     if(Mesh->Flags & MESH_HAS_TEXTURES) {
         OpenGL_EnableVertexAttribArray(2);
-        OpenGL_VertexAttribPointer(2, 1, GL_UNSIGNED_INT, FALSE, Stride, (vptr)Offset);
+        OpenGL_VertexAttribIPointer(2, 1, GL_UNSIGNED_INT, Stride, (vptr)Offset);
         Offset += sizeof(u32);
     }
-    
     if(Mesh->Flags & MESH_HAS_COLORS) {
         OpenGL_EnableVertexAttribArray(3);
         OpenGL_VertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, TRUE, Stride, (vptr)Offset);
         Offset += sizeof(v4u08);
     }
-    
     Assert(Offset == Stride);
 }
 
@@ -150,26 +146,16 @@ Mesh_Update(mesh *Mesh)
     else
         OpenGL_BufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, Mesh->Indices->Size, Mesh->Indices->Data);
     
-    // if(StorageBufferSize > Mesh->StorageBufferSize)
-    //     GL_BufferData(GL_SHADER_STORAGE_BUFFER, StorageBufferSize, Mesh->MMatrices, DrawType);
-    // else
-    //     GL_BufferSubData(GL_SHADER_STORAGE_BUFFER, 0, StorageBufferSize, Mesh->MMatrices);
+    if(Mesh->Flags & MESH_GROW_STORAGE_BUFFER)
+        OpenGL_BufferData(GL_SHADER_STORAGE_BUFFER, Mesh->Storage->Size, Mesh->Storage->Data, DrawType);
+    else
+        OpenGL_BufferSubData(GL_SHADER_STORAGE_BUFFER, 0, Mesh->Storage->Size, Mesh->Storage->Data);
 }
 
 internal void
-Mesh_Draw(mesh *Mesh/*,
-          m4x4r32 PMatrix,
-          b08 UpdateMatrices*/)
+Mesh_Draw(mesh *Mesh)
 {
     Stack_Push();
-    
-    // if(UpdateMatrices) {
-    //     m4x4r32 *MPMatrices = Stack_Allocate(Mesh->ObjectCount * sizeof(m4x4r32));
-    //     for(s32 ObjectIndex = 0; ObjectIndex < Mesh->ObjectCount; ++ObjectIndex)
-    //         MPMatrices[ObjectIndex] = M4x4r32_Mul(PMatrix, Mesh->MMatrices[ObjectIndex]);
-        
-    //     GL_BufferSubData(GL_SHADER_STORAGE_BUFFER, 0, Mesh->ObjectCount * sizeof(m4x4r32), MPMatrices);
-    // }
     
     OpenGL_UseProgram(Mesh->Program);
     
@@ -188,7 +174,7 @@ Mesh_Free(mesh *Mesh)
 {
     Heap_Free(Mesh->VertexOffsets);
     Heap_Free(Mesh->IndexOffsets);
+    Heap_Free(Mesh->Storage);
     Heap_Free(Mesh->Indices);
     Heap_Free(Mesh->Vertices);
-    // Heap_Free(Mesh->MMatrices);
 }
