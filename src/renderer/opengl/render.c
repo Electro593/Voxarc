@@ -126,13 +126,11 @@ Renderer_Init(renderer_state *Renderer,
     OpenGL_UseProgram(Renderer->PTProgram);
     OpenGL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     OpenGL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    OpenGL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    OpenGL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    OpenGL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    OpenGL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     OpenGL_TexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, Atlas->Size.X, Atlas->Size.Y, Atlas->Count, 0, GL_RGBA, GL_UNSIGNED_BYTE, Renderer->Assetpack.AssetData+Atlas->DataOffset);
-    // OpenGL_BufferData(GL_TEXTURE_BUFFER, (127-32)*sizeof(assetpack_texture), Renderer->Assetpack.Assets, GL_STATIC_DRAW);
-    // OpenGL_TexBuffer(GL_TEXTURE_BUFFER, GL_R32UI, Renderer->Mesh.TextureDataBuffer);
     OpenGL_Uniform1i(Renderer->Mesh.AtlasesSampler, 0);
-    // OpenGL_Uniform1i(Renderer->Mesh.TextureDataSampler, 0);
+    OpenGL_Uniform2ui(Renderer->Mesh.AtlasSize, Atlas->Size.X, Atlas->Size.Y);
     Heap_Resize(Renderer->Mesh.Storage, (127-32)*sizeof(assetpack_texture));
     Mem_Cpy(Renderer->Mesh.Storage->Data, Renderer->Assetpack.Assets, Renderer->Mesh.Storage->Size);
     Renderer->Mesh.Flags |= MESH_GROW_STORAGE_BUFFER;

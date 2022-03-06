@@ -23,6 +23,7 @@
 #define GL_FLOAT                  0x1406
 #define GL_RGBA                   0x1908
 #define GL_NEAREST                0x2600
+#define GL_LINEAR                 0x2601
 #define GL_TEXTURE_MAG_FILTER     0x2800
 #define GL_TEXTURE_MIN_FILTER     0x2801
 #define GL_TEXTURE_WRAP_S         0x2802
@@ -110,6 +111,7 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
     IMPORT(void, TexImage3D,                  u32 Target, s32 Level, s32 InternalFormat, s32 Width, s32 Height, s32 Depth, s32 Border, u32 Format, u32 Type, vptr Pixels) \
     IMPORT(void, ShaderSource,                u32 Shader, s32 Count, c08 **String, s32 *Length) \
     IMPORT(void, Uniform1i,                   s32 Location, s32 V0) \
+    IMPORT(void, Uniform2ui,                  s32 Location, u32 V0, u32 V1) \
     IMPORT(void, UseProgram,                  u32 Program) \
     IMPORT(void, VertexAttribPointer,         u32 Index, s32 Size, u32 Type, b08 Normalized, s32 Stride, vptr Offset) \
     IMPORT(void, VertexAttribIPointer,        u32 Index, s32 Size, u32 Type, s32 Stride, vptr Offset) \

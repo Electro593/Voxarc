@@ -7,11 +7,16 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+typedef struct msdf_dist {
+    r32 Distance;
+    r32 Orthogonality;
+} msdf_dist;
+
 typedef struct msdf_segment {
-    v2s16 P1;
-    v2s16 P2;
-    v2s16 C1;
-    v2s16 C2;
+    v2r32 P1;
+    v2r32 P2;
+    v2r32 C1;
+    // v2r32 C2;
     u08 CPCount;
 } msdf_segment;
 
@@ -24,7 +29,6 @@ typedef struct msdf_edge {
 typedef struct msdf_contour {
     msdf_edge *Edges;
     u32 EdgeCount;
-    s08 Winding;
 } msdf_contour;
 
 typedef struct msdf_shape {

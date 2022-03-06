@@ -49,7 +49,7 @@ U64_ToString(u64 N,
 {
     Assert(2 <= Radix && Radix <= 64);
     
-    persistent c08 Chars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-";
+    persist c08 Chars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-";
     
     u32 StrSize = 64+10+1;
     u32 Index = StrSize;

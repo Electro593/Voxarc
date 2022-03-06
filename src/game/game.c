@@ -17,8 +17,11 @@ global_state __Global;
 #include <util/string.c>
 #include <renderer/font.c>
 #include <renderer/opengl/render.c>
-#include <game/file.c>
 #include <game/msdf.c>
+#include <game/file.c>
+
+// TODO handle errors, e.g. make a memory representation of a default
+//      file if loading it fails
 
 internal void
 Game_Init(platform_state *Platform,
@@ -59,7 +62,7 @@ Game_Update(platform_state *Platform,
     r32 G = 0;
     r32 B = R32_Abs((r32)Value/(Scale/2));
     
-    OpenGL_ClearColor(R, G, B, 1);
+    // OpenGL_ClearColor(R, G, B, 1);
     Game->DebugCounter++;
     
     Renderer_Draw(Renderer);

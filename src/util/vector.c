@@ -27,6 +27,16 @@
         return Result; \
     }
 
+#define DEFINE_VECTOR_ADDS(Count, Type) \
+    internal v##Count##Type \
+    V##Count##Type##_AddS(v##Count##Type V, \
+                          Type S) \
+    { \
+        v##Count##Type Result; \
+        MAC_FOR(+, Count, MAC_FOR_OP_SEP_REV, MAC_FOR_FUNC_VS_OP, MAC_FOR_ARGS_VEC); \
+        return Result; \
+    }
+
 #define DEFINE_VECTOR_SUB(Count, Type) \
     internal v##Count##Type \
     V##Count##Type##_Sub(v##Count##Type A, \
@@ -37,20 +47,20 @@
         return Result; \
     }
 
-#define DEFINE_VECTOR_MUL_VV(Count, Type) \
+#define DEFINE_VECTOR_MUL(Count, Type) \
     internal v##Count##Type \
-    V##Count##Type##_Mul_VV(v##Count##Type A, \
-                            v##Count##Type B) \
+    V##Count##Type##_Mul(v##Count##Type A, \
+                         v##Count##Type B) \
     { \
         v##Count##Type Result; \
         MAC_FOR(*, Count, MAC_FOR_OP_SEP_REV, MAC_FOR_FUNC_VV_OP, MAC_FOR_ARGS_VEC); \
         return Result; \
     }
 
-#define DEFINE_VECTOR_MUL_VS(Count, Type) \
+#define DEFINE_VECTOR_MULS(Count, Type) \
     internal v##Count##Type \
-    V##Count##Type##_Mul_VS(v##Count##Type V, \
-                            Type S) \
+    V##Count##Type##_MulS(v##Count##Type V, \
+                          Type S) \
     { \
         v##Count##Type Result; \
         MAC_FOR(*, Count, MAC_FOR_OP_SEP_REV, MAC_FOR_FUNC_VS_OP, MAC_FOR_ARGS_VEC); \
@@ -59,8 +69,18 @@
 
 #define DEFINE_VECTOR_DIV(Count, Type) \
     internal v##Count##Type \
-    V##Count##Type##_Div(v##Count##Type V, \
-                         Type S) \
+    V##Count##Type##_Div(v##Count##Type A, \
+                         v##Count##Type B) \
+    { \
+        v##Count##Type Result; \
+        MAC_FOR(/, Count, MAC_FOR_OP_SEP_REV, MAC_FOR_FUNC_VV_OP, MAC_FOR_ARGS_VEC); \
+        return Result; \
+    }
+
+#define DEFINE_VECTOR_DIVS(Count, Type) \
+    internal v##Count##Type \
+    V##Count##Type##_DivS(v##Count##Type V, \
+                          Type S) \
     { \
         v##Count##Type Result; \
         MAC_FOR(/, Count, MAC_FOR_OP_SEP_REV, MAC_FOR_FUNC_VS_OP, MAC_FOR_ARGS_VEC); \
@@ -111,42 +131,95 @@
         return Result; \
     }
 
-#define DEFINE_VECTOR_LEN(Count, Type) \
-    internal r32 \
-    V##Count##Type##_Len(v##Count##Type V) \
+#define DEFINE_VECTOR_NOCAST(Count, Type) \
+    internal v##Count##Type \
+    V##Count##Type##_ToV##Count##Type(v##Count##Type V) \
     { \
+        return V; \
+    }
+
+#define DEFINE_VECTOR_CLAMP(Count, Type, TypeName) \
+    internal v##Count##Type \
+    V##Count##Type##_Clamp(v##Count##Type V, Type S, Type E) \
+    { \
+        v##Count##Type Result = V; \
+        MAC_FOR(TypeName, Count, MAC_FOR_OP_SEP_REV, MAC_FOR_FUNC_CLAMP, MAC_FOR_ARGS_VEC); \
+        return Result; \
+    }
+
+#define DEFINE_VECTOR_LERP(Count, Type, TypeName)                                             \
+    internal v##Count##Type                                                                   \
+    V##Count##Type##_Lerp(v##Count##Type A,                                                   \
+                          v##Count##Type B,                                                   \
+                          r32 T)                                                              \
+    {                                                                                         \
+        return (v##Count##Type){                                                              \
+            MAC_FOR(TypeName, Count, MAC_FOR_OP_SEQ_REV, MAC_FOR_FUNC_LERP, MAC_FOR_ARGS_VEC) \
+        };                                                                                    \
+    }
+
+#define DEFINE_VECTOR_LEN(Count, Type)                            \
+    internal r32                                                  \
+    V##Count##Type##_Len(v##Count##Type V)                        \
+    {                                                             \
         v##Count##r32 Vr32 = V##Count##Type##_ToV##Count##r32(V); \
-        r32 Result = V##Count##r32_Dot(Vr32, Vr32); \
-        Result = R32_Sqrt(Result); \
-        return Result; \
+        return R32_sqrt(V##Count##r32_Dot(Vr32, Vr32));           \
     }
 
-#define DEFINE_VECTOR_NORM(Count, Type) \
-    internal v##Count##r32 \
-    V##Count##Type##_Norm(v##Count##Type V) \
-    { \
-        r32 Len = V##Count##Type##_Len(V); \
-        v##Count##r32 Result = V##Count##Type##_ToV##Count##r32(V); \
-        Result = V##Count##r32_Div(Result, Len); \
-        return Result; \
+#define DEFINE_VECTOR_NORM(Count, Type)                         \
+    internal v##Count##r32                                      \
+    V##Count##Type##_Norm(v##Count##Type V)                     \
+    {                                                           \
+        r32 L = V##Count##Type##_Len(V);                        \
+        v##Count##r32 CV = V##Count##Type##_ToV##Count##r32(V); \
+        return V##Count##r32_DivS(CV, L);                       \
     }
 
+DEFINE_VECTOR_ADD(2, r32)
 DEFINE_VECTOR_ADD(2, u32)
+DEFINE_VECTOR_ADD(2, s16)
+DEFINE_VECTOR_ADD(3, r32)
 
+DEFINE_VECTOR_ADDS(3, r32)
+DEFINE_VECTOR_ADDS(4, r32)
+
+DEFINE_VECTOR_SUB(2, r32)
 DEFINE_VECTOR_SUB(2, s16)
 DEFINE_VECTOR_SUB(2, u32)
+DEFINE_VECTOR_SUB(3, r32)
+
+DEFINE_VECTOR_MULS(2, r32)
+DEFINE_VECTOR_MULS(3, r32)
+DEFINE_VECTOR_MULS(4, r32)
+DEFINE_VECTOR_MULS(2, s16)
 
 DEFINE_VECTOR_DIV(2, r32)
+DEFINE_VECTOR_DIV(3, r32)
+
+DEFINE_VECTOR_DIVS(2, r32)
+DEFINE_VECTOR_DIVS(3, r32)
+DEFINE_VECTOR_DIVS(4, r32)
 
 DEFINE_VECTOR_DOT(2, r32)
+DEFINE_VECTOR_DOT(2, s16)
 
 DEFINE_VECTOR_CROSS(2, r32)
+DEFINE_VECTOR_CROSS(2, s16)
 
 DEFINE_VECTOR_CAST(2, s16, r32)
 
+DEFINE_VECTOR_NOCAST(2, r32)
+
+DEFINE_VECTOR_CLAMP(3, r32, R32)
+DEFINE_VECTOR_CLAMP(4, r32, R32)
+
+DEFINE_VECTOR_LERP(4, u08, U08)
+
+DEFINE_VECTOR_LEN(2, r32)
 DEFINE_VECTOR_LEN(2, s16)
 
 DEFINE_VECTOR_NORM(2, s16)
+DEFINE_VECTOR_NORM(2, r32)
 
 #undef DEFINE_VECTOR_INIT
 #undef DEFINE_VECTOR_ADD

@@ -19,9 +19,9 @@
     #define API_EXPORT
 #endif
 
-#define global     static
-#define persistent static
-#define internal   static inline
+#define global   static
+#define persist  static
+#define internal static inline
 #define external
 
 #define RETURNS(...)
@@ -57,9 +57,6 @@
 #define LESS  (-1)
 #define EQUAL   0
 #define GREATER 1
-
-#define U16_MAX 0xFFFF
-#define U32_MAX 0xFFFFFFFF
 
 typedef signed   __int8  s08;
 typedef signed   __int16 s16;

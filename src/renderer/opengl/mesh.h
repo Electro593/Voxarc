@@ -25,9 +25,9 @@ typedef struct mesh_object {
 typedef struct mesh {
     u32 Program;
     u32 VAO;
-    u32 VBO, EBO, SSBO/*, TextureDataBuffer*/;
-    u32 /*TextureData, */Atlases;
-    u32 /*TextureDataSampler, */AtlasesSampler;
+    u32 VBO, EBO, SSBO;
+    u32 Atlases;
+    u32 AtlasesSampler, AtlasSize;
     
     mesh_flags Flags;
     u32 VertexSize;

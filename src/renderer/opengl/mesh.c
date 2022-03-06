@@ -13,12 +13,10 @@ Mesh_Bind(mesh *Mesh)
     OpenGL_BindVertexArray(Mesh->VAO);
     OpenGL_BindBuffer(GL_ARRAY_BUFFER, Mesh->VBO);
     OpenGL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, Mesh->EBO);
-    // OpenGL_BindBuffer(GL_TEXTURE_BUFFER, Mesh->TextureDataBuffer);
     OpenGL_BindBuffer(GL_SHADER_STORAGE_BUFFER, Mesh->SSBO);
     OpenGL_BindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, Mesh->SSBO);
     
     if(Mesh->Flags & MESH_HAS_TEXTURES) {
-        // OpenGL_BindTexture(GL_TEXTURE_BUFFER, Mesh->TextureData);
         OpenGL_BindTexture(GL_TEXTURE_2D_ARRAY, Mesh->Atlases);
     }
 }
@@ -29,11 +27,9 @@ Mesh_Unbind(mesh *Mesh)
     OpenGL_BindVertexArray(0);
     OpenGL_BindBuffer(GL_ARRAY_BUFFER, 0);
     OpenGL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    // OpenGL_BindBuffer(GL_TEXTURE_BUFFER, 0);
     OpenGL_BindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     
     if(Mesh->Flags & MESH_HAS_TEXTURES) {
-        // OpenGL_BindTexture(GL_TEXTURE_BUFFER, 0);
         OpenGL_BindTexture(GL_TEXTURE_2D_ARRAY, 0);
     }
 }
@@ -61,8 +57,8 @@ Mesh_Init(mesh *Mesh,
     OpenGL_GenBuffers(3, &Mesh->VBO);
     if(Mesh->Flags & MESH_HAS_TEXTURES) {
         OpenGL_GenTextures(1, &Mesh->Atlases);
-        // Mesh->TextureDataSampler = OpenGL_GetUniformLocation(Mesh->Program, "TextureData");
         Mesh->AtlasesSampler = OpenGL_GetUniformLocation(Mesh->Program, "Atlases");
+        Mesh->AtlasSize = OpenGL_GetUniformLocation(Mesh->Program, "AtlasSize");
     }
     
     Mesh_Bind(Mesh);

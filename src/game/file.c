@@ -102,16 +102,6 @@ File_LoadAssetpack(c08 *FileName,
 }
 
 internal void
-File_MakeGlyphBitmap(stbtt_fontinfo *FontInfo,
-                     u08 *Bitmap,
-                     v2u32 Size,
-                     r32 Scale,
-                     u32 GlyphIndex)
-{
-    stbtt_MakeGlyphBitmap(FontInfo, Bitmap, Size.X, Size.Y, Size.X, Scale, Scale, Glyph);
-}
-
-internal void
 File_CreateAssetpack(c08 *FileName,
                      heap *Heap)
 {
@@ -126,10 +116,11 @@ File_CreateAssetpack(c08 *FileName,
     u32 Padding = 1;
     
     stbtt_fontinfo FontInfo;
-    u08 *FontData = File_Read("assets\\fonts\\cour.ttf", 0, 0).Text;
+    // u08 *FontData = File_Read("assets\\fonts\\cour.ttf", 0, 0).Text;
+    u08 *FontData = File_Read("assets\\fonts\\arial.ttf", 0, 0).Text;
     stbtt_InitFont(&FontInfo, FontData, stbtt_GetFontOffsetForIndex(FontData, 0));
     
-    r32 Scale = stbtt_ScaleForPixelHeight(&FontInfo, 36.0f);
+    r32 Scale = stbtt_ScaleForPixelHeight(&FontInfo, 24.0f);
     s32 Ascent, Descent, LineGap;
     stbtt_GetFontVMetrics(&FontInfo, &Ascent, &Descent, &LineGap);
     Ascent  = (s32)((r32)Ascent  * Scale);
@@ -171,7 +162,6 @@ File_CreateAssetpack(c08 *FileName,
     
     assetpack_texture *Asset = (assetpack_texture*)Assets->Data;
     assetpack_tag *Tag = (assetpack_tag*)Tags->Data;
-    // for(c08 Codepoint = ' '; Codepoint <= 38; Codepoint++) {
     for(c08 Codepoint = ' '; Codepoint <= '~'; Codepoint++) {
         u32 GlyphIndex = stbtt_FindGlyphIndex(&FontInfo, Codepoint);
         if(GlyphIndex == 0) continue;
@@ -186,6 +176,9 @@ File_CreateAssetpack(c08 *FileName,
         Asset->Bearing.Y = -EY;
         Asset->Size = (v2u32){EX - SX, EY - SY};
         
+        // Assert(Codepoint != 'A');
+        // if(Codepoint == 'A') Asset->Size = (v2u32){16, 16};
+        
         Tag->ValueI = Codepoint;
         Tag->AssetCount = 1;
         Tag->Assets[0] = (vptr)((u08*)Asset - (u64)Assets->Data);
@@ -198,7 +191,6 @@ File_CreateAssetpack(c08 *FileName,
         } else {
             asset_node *AssetNode = Stack_Allocate(sizeof(asset_node));
             AssetNode->GlyphIndex = GlyphIndex;
-            // AssetNode->Size = (v2u32){Asset->Size.X, Asset->Size.Y};
             AssetNode->Size = (v2u32){Asset->Size.X+Padding, Asset->Size.Y+Padding};
             AssetNode->Asset = Asset;
             AssetNode->Prev = NullAssetNode;
@@ -243,8 +235,8 @@ File_CreateAssetpack(c08 *FileName,
                 if(AssetNode->Size.Y < Node->Size.X && AssetNode->Size.X < Node->Size.Y) {
                     v2u32 AssetSize = (v2u32){AssetNode->Size.Y, AssetNode->Size.X};
                     v2u32 SizeDiff = V2u32_Sub(Node->Size, AssetSize);
-                    ShortSideR = MIN(SizeDiff.X, SizeDiff.Y);
-                    LongSideR = MAX(SizeDiff.X, SizeDiff.Y);
+                    // ShortSideR = MIN(SizeDiff.X, SizeDiff.Y);
+                    // LongSideR = MAX(SizeDiff.X, SizeDiff.Y);
                 }
                 
                 u32 ShortSide = MIN(ShortSideN, ShortSideR);
@@ -284,35 +276,64 @@ File_CreateAssetpack(c08 *FileName,
         AssetNode->Next->Prev = AssetNode->Prev;
         Asset = AssetNode->Asset;
         Asset->IsRotated = IsRotated;
+        Asset->AtlasIndex = Node->AtlasIndex;
         
         // Place the texture
-        u08 *Bitmap = Heap_AllocateA(Heap, Asset->Size.X*Asset->Size.Y);
-        File_MakeGlyphBitmap(&FontInfo, Bitmap, Asset->Size, Scale, AssetNode->GlyphIndex);
-        if(IsRotated) {
-            SWAP(Asset->Size.X, Asset->Size.Y, u32);
-            SWAP(AssetNode->Size.X, AssetNode->Size.Y, u32);
-        }
-        for(u32 Y = 0; Y < AssetNode->Size.Y; Y++) {
-            for(u32 X = 0; X < AssetNode->Size.X; X++) {
-                v4u08 *Atlas = (v4u08*)(Atlases->Data + Node->AtlasIndex*AtlasSize);
-                v4u08 *Pixel = Atlas + INDEX_2D(X+Node->Pos.X, Y+Node->Pos.Y, AtlasDims.X);
-                if(X < Asset->Size.X && Y < Asset->Size.Y) {
-                    u08 Gray;
-                    if(!IsRotated)
-                        Gray = Bitmap[INDEX_2D(X, Asset->Size.Y-Y-1, Asset->Size.X)];
-                    else
-                        Gray = Bitmap[INDEX_2D(Y, X, Asset->Size.Y)];
-                    // *Pixel = (v4u08){Gray, Gray, Gray, 255};
-                    *Pixel = (v4u08){Gray, Gray, Gray, Gray};
-                    // *Pixel = (v4u08){255, 255, 255, Gray};
-                } else {
-                    // *Pixel = (v4u08){0, 0, 255, 255};
-                    *Pixel = (v4u08){0, 0, 0, 0};
+        // if(TRUE) {
+        if(AssetNode->GlyphIndex != 'A' - 29) {
+            u08 *Bitmap = Heap_AllocateA(Heap, Asset->Size.X*Asset->Size.Y);
+            stbtt_MakeGlyphBitmap(&FontInfo, Bitmap, Asset->Size.X, Asset->Size.Y, Asset->Size.X, Scale, Scale, AssetNode->GlyphIndex);
+            if(IsRotated) {
+                SWAP(Asset->Size.X, Asset->Size.Y, u32);
+                SWAP(AssetNode->Size.X, AssetNode->Size.Y, u32);
+            }
+            for(u32 Y = 0; Y < AssetNode->Size.Y; Y++) {
+                for(u32 X = 0; X < AssetNode->Size.X; X++) {
+                    v4u08 *Atlas = (v4u08*)(Atlases->Data + Node->AtlasIndex*AtlasSize);
+                    v4u08 *Pixel = Atlas + INDEX_2D(X+Node->Pos.X, Y+Node->Pos.Y, AtlasDims.X);
+                    if(X < Asset->Size.X && Y < Asset->Size.Y) {
+                        u08 Gray;
+                        if(!IsRotated)
+                            Gray = Bitmap[INDEX_2D(X, Asset->Size.Y-Y-1, Asset->Size.X)];
+                        else
+                            Gray = Bitmap[INDEX_2D(Y, X, Asset->Size.Y)];
+                        *Pixel = (v4u08){Gray, Gray, Gray, Gray};
+                    } else {
+                        *Pixel = (v4u08){0, 0, 0, 0};
+                    }
                 }
             }
+            Heap_FreeA(Bitmap);
+        } else {
+            if(IsRotated) {
+                SWAP(Asset->Size.X, Asset->Size.Y, u32);
+                SWAP(AssetNode->Size.X, AssetNode->Size.Y, u32);
+            }
+            
+            #if 0
+            string TestData = File_Read("assets\\test.bmp", 0, 0);
+            v4u08 *TestBMP = (v4u08*)(TestData.Text + 70);
+            for(u32 Y = 0; Y < AssetNode->Size.Y; Y++) {
+                for(u32 X = 0; X < AssetNode->Size.X; X++) {
+                    v4u08 *Atlas = (v4u08*)(Atlases->Data + Node->AtlasIndex*AtlasSize);
+                    v4u08 *Pixel = Atlas + INDEX_2D(X+Node->Pos.X, Y+Node->Pos.Y, AtlasDims.X);
+                    if(X < Asset->Size.X && Y < Asset->Size.Y) {
+                        v4u08 Color = TestBMP[INDEX_2D(X, Y, Asset->Size.X)];
+                        *Pixel = Color;
+                    } else {
+                        *Pixel = (v4u08){0, 0, 0, 0};
+                    }
+                }
+            }
+            #else
+            stbtt_vertex *Vertices;
+            u32 VertexCount = stbtt_GetGlyphShape(&FontInfo, AssetNode->GlyphIndex, &Vertices);
+            v4u08 *Bitmap = (v4u08*)(Atlases->Data + Node->AtlasIndex*AtlasSize);
+            Bitmap += INDEX_2D(Node->Pos.X, Node->Pos.Y, AtlasDims.X);
+            MSDF_MakeShape(Vertices, Scale, Asset->Size, VertexCount, Bitmap, Node->Pos, Node->AtlasIndex, AtlasDims);
+            #endif
         }
         Asset->Pos = Node->Pos;
-        Heap_FreeA(Bitmap);
         
         v2u32 Pos = Node->Pos;
         v2u32 Pos2 = V2u32_Add(Node->Pos, AssetNode->Size);
@@ -370,7 +391,6 @@ File_CreateAssetpack(c08 *FileName,
                 Node->Next->Prev = Node->Prev;
             }
         }
-        
         //TODO: Individual Atlas1, Atlas2, ... lists so only search a specific atlas
         
         binpacker_node *Node1 = NullNode->Next;

@@ -15,7 +15,7 @@
 #define STBTT_strlen(x) Mem_BytesUntil(x, 0)
 #define STBTT_ifloor(x) (s32)R32_Floor(x)
 #define STBTT_iceil(x) (s32)R32_Ceil(x)
-#define STBTT_sqrt(x) R32_Sqrt(x)
+#define STBTT_sqrt(x) R32_sqrt(x)
 #define STBTT_fabs(x) R32_Abs(x)
 #define STBTT_malloc(x,u) Stack_Allocate(x)
 #define STBTT_free(x,u)

@@ -15,6 +15,8 @@ layout(std430, binding = 0) readonly buffer Storage {
     texture_data TextureData[];
 };
 
+uniform uvec2 AtlasSize;
+
 out vec2 TexCoords;
 out flat uint AtlasIndex;
 
@@ -24,14 +26,11 @@ void main()
     
     uint Right = TextureIndex & 1;
     uint Up = (TextureIndex & 2) >> 1;
-    int ActualTextureIndex = int(TextureIndex >> 2);
+    texture_data Data = TextureData[TextureIndex>>2];
     
-    texture_data Data = TextureData[ActualTextureIndex];
-    vec2 Pos = vec2(Data.Pos);
-    vec2 Size = vec2(Data.Size);
-    AtlasIndex = (Data.TheRest >> 16) & 0xFFFF;
-    
-    float XCoord = (Pos.x + Size.x*Right)/256;
-    float YCoord = (Pos.y + Size.y*Up)/256;
+    float XCoord = float(Data.Pos.x + Data.Size.x*Right) / float(AtlasSize.x);
+    float YCoord = float(Data.Pos.y + Data.Size.y*Up) / float(AtlasSize.y);
     TexCoords = vec2(XCoord, YCoord);
+    
+    AtlasIndex = (Data.TheRest >> 0) & 0xFFFF;
 }
