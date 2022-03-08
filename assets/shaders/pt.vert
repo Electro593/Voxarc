@@ -26,7 +26,8 @@ void main()
     
     uint Right = TextureIndex & 1;
     uint Up = (TextureIndex & 2) >> 1;
-    texture_data Data = TextureData[TextureIndex>>2];
+    // texture_data Data = TextureData[TextureIndex>>2];
+    texture_data Data = TextureData['$'-32];
     
     float XCoord = float(Data.Pos.x + Data.Size.x*Right) / float(AtlasSize.x);
     float YCoord = float(Data.Pos.y + Data.Size.y*Up) / float(AtlasSize.y);

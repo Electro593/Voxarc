@@ -94,6 +94,7 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
     IMPORT(u32,  CreateShader,                u32 Type) \
     IMPORT(void, DebugMessageCallback,        func_OpenGL_DebugProc Callback, vptr UserParam) \
     IMPORT(void, DebugMessageControl,         u32 Source, u32 Type, u32 Severity, s32 Count, u32 *IDs, u08 Enabled) \
+    IMPORT(void, DeleteProgram,               u32 Program) \
     IMPORT(void, DeleteShader,                u32 Shader) \
     IMPORT(void, DetachShader,                u32 Program, u32 Shader) \
     IMPORT(void, DrawElementsBaseVertex,      u32 Mode, s32 Count, u32 Type, vptr *Indices, s32 BaseVertex) \

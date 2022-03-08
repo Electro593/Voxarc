@@ -7,6 +7,8 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#define MSDF_PIXEL_HAS_ERROR 1
+
 typedef struct msdf_dist {
     r32 Distance;
     r32 Orthogonality;
@@ -16,7 +18,6 @@ typedef struct msdf_segment {
     v2r32 P1;
     v2r32 P2;
     v2r32 C1;
-    // v2r32 C2;
     u08 CPCount;
 } msdf_segment;
 

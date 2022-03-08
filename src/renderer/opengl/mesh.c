@@ -37,28 +37,31 @@ Mesh_Unbind(mesh *Mesh)
 internal void
 Mesh_Init(mesh *Mesh,
           heap *Heap,
-          u32 Program,
+          u32 *Program,
           mesh_flags Flags)
 {
     Assert(Mesh);
     
+    Assert(Program);
     Mesh->Program = Program;
+    
     Mesh->Flags = Flags;
+    Mesh->ObjectCount = 0;
     Mesh->Vertices = Heap_Allocate(Heap, 0);
     Mesh->Indices = Heap_Allocate(Heap, 0);
     Mesh->Storage = Heap_Allocate(Heap, 0);
-    Mesh->ObjectCount = 0;
     Mesh->VertexOffsets = Heap_Allocate(Heap, sizeof(u32));
-    Mesh->IndexOffsets = Heap_Allocate(Heap, sizeof(u32));
     ((u32*)Mesh->VertexOffsets->Data)[0] = 0;
+    Mesh->IndexOffsets = Heap_Allocate(Heap, sizeof(u32));
     ((u32*)Mesh->IndexOffsets->Data)[0] = 0;
     
     OpenGL_GenVertexArrays(1, &Mesh->VAO);
     OpenGL_GenBuffers(3, &Mesh->VBO);
+    
     if(Mesh->Flags & MESH_HAS_TEXTURES) {
         OpenGL_GenTextures(1, &Mesh->Atlases);
-        Mesh->AtlasesSampler = OpenGL_GetUniformLocation(Mesh->Program, "Atlases");
-        Mesh->AtlasSize = OpenGL_GetUniformLocation(Mesh->Program, "AtlasSize");
+        Mesh->AtlasesSampler = OpenGL_GetUniformLocation(*Mesh->Program, "Atlases");
+        Mesh->AtlasSize = OpenGL_GetUniformLocation(*Mesh->Program, "AtlasSize");
     }
     
     Mesh_Bind(Mesh);
@@ -151,9 +154,11 @@ Mesh_Update(mesh *Mesh)
 internal void
 Mesh_Draw(mesh *Mesh)
 {
+    if(!Mesh->Program) return;
+    
     Stack_Push();
     
-    OpenGL_UseProgram(Mesh->Program);
+    OpenGL_UseProgram(*Mesh->Program);
     
     vptr *IndexOffsets = Stack_Allocate(Mesh->ObjectCount * sizeof(vptr));
     for(u32 I = 0; I < Mesh->ObjectCount; ++I)

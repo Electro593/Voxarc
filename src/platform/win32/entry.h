@@ -12,6 +12,6 @@
 #define TEXTURES_DIR "assets\\textures\\"
 
 typedef struct module {
-    win32_file_time LastWriteTime;
+    datetime LastWriteTime;
     win32_module DLL;
 } module;

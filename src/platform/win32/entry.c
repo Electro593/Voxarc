@@ -340,19 +340,57 @@ Platform_CloseFile(file_handle FileHandle)
 }
 
 internal void
+Platform_GetFileTime(c08 *FileName,
+                     datetime *CreationTime,
+                     datetime *LastAccessTime,
+                     datetime *LastWriteTime)
+{
+    file_handle FileHandle;
+    win32_file_time _Times[3];
+    datetime *Times[3] = {CreationTime, LastAccessTime, LastWriteTime};
+    Platform_OpenFile(&FileHandle, FileName, FILE_READ);
+    Win32_GetFileTime(FileHandle, _Times+0, _Times+1, _Times+2);
+    Platform_CloseFile(FileHandle);
+    
+    win32_system_time SystemTime;
+    for(u32 I = 0; I < 3; I++) {
+        if(!Times[I]) continue;
+        Win32_FileTimeToSystemTime(_Times+I, &SystemTime);
+        Times[I]->Year        = SystemTime.Year;
+        Times[I]->Month       = SystemTime.Month;
+        Times[I]->Day         = SystemTime.Day;
+        Times[I]->DayOfWeek   = SystemTime.DayOfWeek;
+        Times[I]->Hour        = SystemTime.Hour;
+        Times[I]->Minute      = SystemTime.Minute;
+        Times[I]->Second      = SystemTime.Second;
+        Times[I]->Millisecond = SystemTime.Milliseconds;
+    }
+}
+
+internal s08
+Platform_CmpFileTime(datetime A,
+                     datetime B)
+{
+    u16 AVals[] = {A.Year, A.Month, A.Day, A.Hour, A.Minute, A.Second, A.Millisecond};
+    u16 BVals[] = {B.Year, B.Month, B.Day, B.Hour, B.Minute, B.Second, B.Millisecond};
+    u32 Count = sizeof(AVals)/sizeof(AVals[0]);
+    for(u32 I = 0; I < Count; I++) {
+        if(AVals[I] < BVals[I]) return LESS;
+        if(AVals[I] > BVals[I]) return GREATER;
+    }
+    return EQUAL;
+}
+
+internal void
 Platform_LoadGame(module *Module,
                   game_state *GameState,
                   platform_exports *PlatformExports,
                   opengl_funcs *OpenGLFuncs)
 {
-    file_handle FileHandle;
-    win32_file_time LastWriteTime;
-    Platform_OpenFile(&FileHandle, "build\\Voxarc_Game.dll", FILE_READ);
-    Win32_GetFileTime(FileHandle, NULL, NULL, &LastWriteTime);
-    Platform_CloseFile(FileHandle);
+    datetime LastWriteTime;
+    Platform_GetFileTime("build\\Voxarc_Game.dll", 0, 0, &LastWriteTime);
     if(Module->DLL) {
-        Win32_GetFileTime(FileHandle, NULL, NULL, &Module->LastWriteTime);
-        if(Win32_CompareFileTime(&Module->LastWriteTime, &LastWriteTime) >= 0)
+        if(Platform_CmpFileTime(Module->LastWriteTime, LastWriteTime) != LESS)
             return;
         
         Game_Unload(GameState);

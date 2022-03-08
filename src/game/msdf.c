@@ -13,19 +13,15 @@ MSDF_SegmentDir(msdf_segment Segment, r32 t)
     v2r32 P1 = Segment.P1;
     v2r32 P2 = Segment.P2;
     v2r32 C1 = Segment.C1;
-    // v2r32 C2 = Segment.C2;
     switch(Segment.CPCount) {
         case 0: {
-            return V2r32_Sub(P2, P1);
+            return V2r32_Norm(V2r32_Sub(P2, P1));
         }
         case 1: {
             v2r32 C1mP1t2 = V2r32_MulS(V2r32_Sub(C1, P1), 2);
             v2r32 P2m2C1pP1 = V2r32_Add(V2r32_Add(P2, V2r32_MulS(C1, -2)), P1);
-            return V2r32_Add(V2r32_MulS(P2m2C1pP1, 2*t), C1mP1t2);
+            return V2r32_Norm(V2r32_Add(V2r32_MulS(P2m2C1pP1, 2*t), C1mP1t2));
         }
-        // case 2: {
-            
-        // }
     }
     return (v2r32){0};
 }
@@ -36,7 +32,6 @@ MSDF_SegmentPoint(msdf_segment Segment, r32 t)
     v2r32 P1 = Segment.P1;
     v2r32 P2 = Segment.P2;
     v2r32 C1 = Segment.C1;
-    // v2r32 C2 = Segment.C2;
     switch(Segment.CPCount) {
         case 0: {
             return V2r32_Add(P1, V2r32_MulS(V2r32_Sub(P2, P1), t));
@@ -47,9 +42,6 @@ MSDF_SegmentPoint(msdf_segment Segment, r32 t)
             v2r32 Part3 = V2r32_MulS(V2r32_Add(V2r32_Sub(P2, V2r32_MulS(C1, 2)), P1), t*t);
             return V2r32_Add(V2r32_Add(Part1, Part2), Part3);
         }
-        // case 2: {
-            
-        // }
     }
     return (v2r32){0};
 }
@@ -71,13 +63,13 @@ MSDF_FindEdges(msdf_shape *Shape,
         if(V > 0) P1 = Segment->P1 = V2s16_ToV2r32(*(v2s16*)&Vertices[V-1].x);
         P2 = Segment->P2 = V2s16_ToV2r32(*(v2s16*)&Vertex.x);
         C1 = Segment->C1 = V2s16_ToV2r32(*(v2s16*)&Vertex.cx);
-        // C2 = Segment->C2 = V2s16_ToV2r32(*(v2s16*)&Vertex.cx1);
         
         switch(Vertex.type) {
             case STBTT_vmove: {
                 Shape->EdgeCount++;
                 Edge++;
                 Edge->Segments = Segment;
+                Edge->SegmentCount = 0;
                 Contour++;
                 Contour->EdgeCount = 1;
                 Contour->Edges = Edge;
@@ -92,11 +84,6 @@ MSDF_FindEdges(msdf_shape *Shape,
                 Dir = V2r32_Sub(C1, P1);
                 NextDir = V2r32_Sub(P2, C1);
             } break;
-            // case STBTT_vcubic: {
-            //     Segment->CPCount = 2;
-            //     Dir = V2s16_Sub(C1, P1);
-            //     NextDir = V2s16_Sub(P2, C2);
-            // } break;
         }
         
         if(Vertex.type == STBTT_vmove) continue;
@@ -114,6 +101,12 @@ MSDF_FindEdges(msdf_shape *Shape,
             if(P2.Y < Bounds.Y) Bounds.Y = P2.Y;
             if(P2.X > Bounds.Z) Bounds.Z = P2.X;
             if(P2.Y > Bounds.W) Bounds.W = P2.Y;
+            if(Segment->CPCount >= 1) {
+                if(C1.X < Bounds.X) Bounds.X = C1.X;
+                if(C1.Y < Bounds.Y) Bounds.Y = C1.Y;
+                if(C1.X > Bounds.Z) Bounds.Z = C1.X;
+                if(C1.Y > Bounds.W) Bounds.W = C1.Y;
+            }
         }
         
         if(Vertices[V-1].type != STBTT_vmove) {
@@ -129,6 +122,7 @@ MSDF_FindEdges(msdf_shape *Shape,
                 Shape->EdgeCount++;
                 Edge++;
                 Edge->Segments = Segment;
+                Edge->SegmentCount = 0;
                 Contour->EdgeCount++;
             }
         }
@@ -136,6 +130,30 @@ MSDF_FindEdges(msdf_shape *Shape,
         PrevDir = NextDir;
         Edge->SegmentCount++;
         Segment++;
+    }
+    
+    u32 Offset = 0;
+    u32 MoveSize = Shape->EdgeCount * sizeof(msdf_edge);
+    Contour = Shape->Contours;
+    for(u32 C = 0; C < Shape->ContourCount; C++) {
+        MoveSize -= Contour->EdgeCount * sizeof(msdf_edge);
+        Contour->Edges += Offset;
+        if(Contour->EdgeCount == 1) {
+            Edge = Contour->Edges;
+            Mem_Cpy(Edge+2, Edge+1, MoveSize);
+            msdf_edge *NewEdge = Edge+1;
+            
+            Assert(Edge->SegmentCount > 1);
+            NewEdge->SegmentCount = Edge->SegmentCount/2;
+            Edge->SegmentCount -= NewEdge->SegmentCount;
+            NewEdge->Segments = Edge->Segments+Edge->SegmentCount;
+            
+            Contour->EdgeCount++;
+            Shape->EdgeCount++;
+            Offset++;
+        }
+        
+        Contour++;
     }
     
     return Bounds;
@@ -169,9 +187,22 @@ MSDF_Cmp(msdf_dist A,
     r32 BDist = R32_Abs(B.Distance);
     if(ADist < BDist) return LESS;
     if(ADist > BDist) return GREATER;
-    if(A.Orthogonality < B.Orthogonality) return LESS;
-    if(A.Orthogonality > B.Orthogonality) return GREATER;
+    if(A.Orthogonality > B.Orthogonality) return LESS;
+    if(A.Orthogonality < B.Orthogonality) return GREATER;
     return EQUAL;
+}
+
+internal u32
+MSDF_LinearSegmentDistance(v2r32 P,
+                           msdf_segment Segment,
+                           r32 *ts)
+{
+    v2r32 PmP1 = V2r32_Sub(P, Segment.P1);
+    v2r32 P2mP1 = V2r32_Sub(Segment.P2, Segment.P1);
+    r32 Numer = V2r32_Dot(PmP1, P2mP1);
+    r32 Denom = V2r32_Dot(P2mP1, P2mP1);
+    ts[0] = Numer / Denom;
+    return 1;
 }
 
 internal u32
@@ -182,15 +213,9 @@ MSDF_SegmentDistances(v2r32 P,
     v2r32 P1 = Segment.P1;
     v2r32 P2 = Segment.P2;
     v2r32 C1 = Segment.C1;
-    // v2r32 C2 = Segment.C2;
     switch(Segment.CPCount) {
         case 0: {
-            v2r32 PmP1 = V2r32_Sub(P, P1);
-            v2r32 P2mP1 = V2r32_Sub(P2, P1);
-            r32 Numer = V2r32_Dot(PmP1, P2mP1);
-            r32 Denom = V2r32_Dot(P2mP1, P2mP1);
-            ts[0] = Numer / Denom;
-            return 1;
+            return MSDF_LinearSegmentDistance(P, Segment, ts);
         }
         case 1: {
             v2r32 p = V2r32_Sub(P, P1);
@@ -200,21 +225,9 @@ MSDF_SegmentDistances(v2r32 P,
             r32 B = 3*V2r32_Dot(p1, p2);
             r32 C = 2*V2r32_Dot(p1, p1) - V2r32_Dot(p2, p);
             r32 D = -V2r32_Dot(p1, p);
+            
             return R32_SolveCubic(A, B, C, D, ts);
         }
-        // case 2: {
-        //     v2r32 p = V2s16_Sub(P, P1);
-        //     v2r32 p1 = V2s16_Sub(C1, P1);
-        //     v2r32 p2 = V2s16_Add(V2s16_Sub(C2, V2s16_MulS(C1, 2)), P1);
-        //     v2r32 p3 = V2s16_Add(V2s16_Sub(P2, V2s16_MulS(C2, 3)), V2s16_Sub(V2s16_MulS(C1, 3), P1));
-        //     r32 A = V2r32_Dot(p3, p3);
-        //     r32 B = 5*V2r32_Dot(p3, p2);
-        //     r32 C = 4*V2r32_Dot(p3, p1) + 6*V2r32_Dot(p2, p2);
-        //     r32 D = 9*V2r32_Dot(p2, p1) - V2r32_Dot(p2, p);
-        //     r32 E = 3*V2r32_Dot(p1, p1) - 2*V2r32_Dot(p2, p);
-        //     r32 F = -V2r32_Dot(p1, p);
-        //     return R32_SolveQuintic(A, B, C, D, E, F, ts);
-        // } // if re-enabled, remember to change ts[n] declaration
     }
     Assert(FALSE, "CPCount greater than 1");
     return 0;
@@ -222,7 +235,8 @@ MSDF_SegmentDistances(v2r32 P,
 
 internal msdf_dist
 MSDF_EdgeSignedDistance(v2r32 P,
-                        msdf_edge Edge)
+                        msdf_edge Edge,
+                        msdf_segment *SegmentOut)
 {
     msdf_dist MinDist = {R32_MAX, 0};
     for(u32 S = 0; S < Edge.SegmentCount; S++) {
@@ -231,41 +245,93 @@ MSDF_EdgeSignedDistance(v2r32 P,
         u32 Count = MSDF_SegmentDistances(P, Segment, ts+2);
         for(u32 D = 0; D < Count+2; D++) {
             r32 t = ts[D];
-            if(D >= 2 && (t < 0 || t > 1)) continue;
-            v2r32 Deriv = MSDF_SegmentDir(Segment, t);
+            if(t < 0 || t > 1) continue;
+            v2r32 Dir = MSDF_SegmentDir(Segment, t);
             v2r32 Point = MSDF_SegmentPoint(Segment, t);
             v2r32 DistVec = V2r32_Sub(P, Point);
             r32 Dist = V2r32_Len(DistVec);
-            v2r32 Dir = V2r32_Norm(Deriv);
             r32 Ortho = R32_Abs(V2r32_Cross(Dir, V2r32_DivS(DistVec, Dist)));
-            r32 Sign = V2r32_Cross(Deriv, V2r32_Sub(Point, P));
+            r32 Sign = V2r32_Cross(Dir, V2r32_Sub(Point, P));
             Dist *= R32_Sign(Sign);
             msdf_dist NewDist = {Dist, Ortho};
-            if(MSDF_Cmp(NewDist, MinDist) == LESS) MinDist = NewDist;
+            if(MSDF_Cmp(NewDist, MinDist) == LESS) {
+                MinDist = NewDist;
+                *SegmentOut = Segment;
+            }
         }
     }
     return MinDist;
 }
 
 internal r32
-MSDF_EdgeSignedPseudoDistance(v2r32 P,
-                              msdf_edge Edge)
+_MSDF_SignedPseudoDistance(v2r32 P,
+                           msdf_segment Segment,
+                           r32 t)
+{
+    v2r32 Dir = MSDF_SegmentDir(Segment, t);
+    v2r32 Point = MSDF_SegmentPoint(Segment, t);
+    v2r32 EdgeToP = V2r32_Sub(P, Point);
+    r32 Dist = V2r32_Cross(EdgeToP, Dir);
+    return Dist;
+}
+
+internal r32
+MSDF_SignedPseudoCubicDistances(v2r32 P,
+                                msdf_segment Segment,
+                                r32 *Dists)
+{
+    persist r32 LowEpsilon  = -0.00002;
+    persist r32 HighEpsilon =  1.00002;
+    
+    u32 Count = 0;
+    r32 Roots[3];
+    
+    u32 CubicCount = MSDF_SegmentDistances(P, Segment, Roots);
+    for(u32 R = 0; R < CubicCount; R++) {
+        if(LowEpsilon <= Roots[R] && Roots[R] <= HighEpsilon)
+            Dists[Count++] = _MSDF_SignedPseudoDistance(P, Segment, Roots[R]);
+    }
+    
+    msdf_segment LinearSegment = {0};
+    LinearSegment.P1 = Segment.P1;
+    LinearSegment.P2 = Segment.C1;
+    MSDF_LinearSegmentDistance(P, LinearSegment, Roots);
+    if(Roots[0] < LowEpsilon)
+        Dists[Count++] = _MSDF_SignedPseudoDistance(P, LinearSegment, Roots[0]);
+    
+    LinearSegment.P1 = Segment.C1;
+    LinearSegment.P2 = Segment.P2;
+    MSDF_LinearSegmentDistance(P, LinearSegment, Roots);
+    if(Roots[0] > HighEpsilon)
+        Dists[Count++] = _MSDF_SignedPseudoDistance(P, LinearSegment, Roots[0]);
+    
+    if(Count == 0) {
+        for(u32 R = 0; R < CubicCount; R++)
+            Dists[Count++] = _MSDF_SignedPseudoDistance(P, Segment, Roots[R]);
+    }
+    
+    return Count;
+}
+
+internal r32
+MSDF_SignedPseudoDistance(v2r32 P,
+                          msdf_segment Segment)
 {
     r32 MinDist = R32_MAX;
-    for(u32 S = 0; S < Edge.SegmentCount; S++) {
-        msdf_segment Segment = Edge.Segments[S];
-        r32 ts[5] = {0, 1};
-        u32 Count = MSDF_SegmentDistances(P, Segment, ts+2);
-        for(u32 D = 0; D < Count+2; D++) {
-            r32 t = ts[D];
-            v2r32 Deriv = MSDF_SegmentDir(Segment, t);
-            v2r32 Point = MSDF_SegmentPoint(Segment, t);
-            r32 Dist = V2r32_Len(V2r32_Sub(P, Point));
-            r32 Sign = V2r32_Cross(Deriv, V2r32_Sub(Point, P));
-            Dist *= R32_Sign(Sign);
-            if(R32_Abs(Dist) < R32_Abs(MinDist)) MinDist = Dist;
-        }
+    r32 Dists[5];
+    u32 Count;
+    
+    if(Segment.CPCount == 0) {
+        r32 t;
+        Count = MSDF_LinearSegmentDistance(P, Segment, &t);
+        Dists[0] = _MSDF_SignedPseudoDistance(P, Segment, t);
+    } else {
+        Count = MSDF_SignedPseudoCubicDistances(P, Segment, Dists);
     }
+    
+    for(u32 D = 0; D < Count; D++)
+        if(R32_Abs(Dists[D]) < R32_Abs(MinDist)) MinDist = Dists[D];
+    
     return MinDist;
 }
 
@@ -280,224 +346,85 @@ MSDF_DistanceColor(v4r32 Dists,
     return (v4u08){(u08)Dists.X, (u08)Dists.Y, (u08)Dists.Z, (u08)Dists.W};
 }
 
-#define ARTIFACT_EPSILON 0.01
-#define IS_BENIGN 0
-#define IS_CANDIDATE 1
-#define IS_ARTIFACT 2
-#define IS_ERROR 1
-#define IS_PROTECTED 2
-
 internal b08
-MSDF_Evaluate()
+MSDF_HasSideError(v4r32 A,
+                  v4r32 B,
+                  r32 Threshold)
 {
-    
-}
-
-internal u08
-MSDF_RangeTest(r32 T1, r32 T2, r32 T,
-               u08 M1, u08 M2, u08 M,
-               r32 Delta, u08 Protected)
-{
-    r32 D1, D2;
-    
-    if((M1 > 128 && M2 > 128 && M <= 128) || (M1 < 128 && M2 < 128 && M >= 128) || (!Protected && U08_Median(M1, M2, M) != M)) {
-        D1 = (T-T1)*Delta;
-        D2 = (T2-T)*Delta;
+    u32 Count = 0;
+    for(u32 C = 0; C < 4; C++) {
+        r32 CA = A.E[C];
+        r32 CB = B.E[C];
         
-        if(!(M1-D1 <= M && M <= M1+D1 && M2-D2 <= M && M <= M2+D2))
-            return IS_CANDIDATE | IS_ARTIFACT;
-        return IS_CANDIDATE;
+        if(R32_Abs(CA) < Threshold && R32_Abs(CB) < Threshold) continue;
+        if(R32_Sign(CA) != R32_Sign(CB)) Count++;
     }
-    return IS_BENIGN;
-}
-
-internal b08
-_MSDF_HasLinearArtifact(r32 Delta,
-                        b08 Protected,
-                        s08 M1, s08 M2,
-                        v4u08 A, v4u08 B,
-                        s08 dA, s08 dB)
-{
-    v4u08 I;
-    r32 T;
-    u08 M;
     
-    T = (r32)dA/(dA-dB);
-    if (T > 0 && T < 1) {
-        I = V4u08_Lerp(A, B, T);
-        M = U08_Median(I.X, I.Y, I.Z);
-        return MSDF_RangeTest(0, 1, T, M1, M2, M, Delta, Protected) & IS_ARTIFACT;
-    }
-    return IS_BENIGN;
-}
-
-internal b08
-MSDF_HasLinearArtifact(r32 Delta,
-                       b08 Protected,
-                       u08 Median,
-                       v4u08 A,
-                       v4u08 B)
-{
-    s08 M1, M2;
-    
-    M1 = (s08)Median - 128;
-    M2 = (s08)U08_Median(B.X, B.Y, B.Z) - 128;
-    
-    if(R32_Abs(M1) < R32_Abs(M2)) return FALSE;
-    return _MSDF_HasLinearArtifact(Delta, Protected, M1, M2, A, B, (s08)A.Y-A.X, (s08)B.Y-B.X) ||
-           _MSDF_HasLinearArtifact(Delta, Protected, M1, M2, A, B, (s08)A.Z-A.Y, (s08)B.Z-B.Y) ||
-           _MSDF_HasLinearArtifact(Delta, Protected, M1, M2, A, B, (s08)A.X-A.Z, (s08)B.X-B.Z);
-}
-
-internal b08
-_MSDF_HasDiagonalArtifact(r32 Delta,
-                         b08 Protected,
-                         r32 M1,
-                         r32 M4,
-                         v3r32 A,
-                         v3r32 L,
-                         v3r32 Q,
-                         r32 dA,
-                         r32 dBC,
-                         r32 dD,
-                         r32 TX0,
-                         r32 TX1)
-{
-    r32 T[2];
-    u32 Count = R32_SolveQuadratic(T, dD-dBC+dA, dBC-dA-dA, dA);
-    for(u32 S = 0; S < Count; S++) {
-        if(T[S] > ARTIFACT_EPSILON && t[i] < 1-ARTIFACT_T_EPSILON) {
-            // Interpolate median xm at t.
-            float xm = interpolatedMedian(a, l, q, t[i]);
-            // Determine if xm deviates too much from medians of a, d.
-            int rangeFlags = artifactClassifier.rangeTest(0, 1, t[i], am, dm, xm);
-            // Additionally, check xm against the interpolated medians at the local extremes tEx0, tEx1.
-            double tEnd[2];
-            float em[2];
-            // tEx0
-            if (tEx0 > 0 && tEx0 < 1) {
-                tEnd[0] = 0, tEnd[1] = 1;
-                em[0] = am, em[1] = dm;
-                tEnd[tEx0 > t[i]] = tEx0;
-                em[tEx0 > t[i]] = interpolatedMedian(a, l, q, tEx0);
-                rangeFlags |= artifactClassifier.rangeTest(tEnd[0], tEnd[1], t[i], am, dm, xm);
-            }
-            if(TX1 > 0 && TX1 < 1) {
-                tEnd[0] = 0, tEnd[1] = 1;
-                em[0] = am, em[1] = dm;
-                tEnd[tEx1 > t[i]] = tEx1;
-                em[tEx1 > t[i]] = interpolatedMedian(a, l, q, tEx1);
-                rangeFlags |= artifactClassifier.rangeTest(tEnd[0], tEnd[1], t[i], am, dm, xm);
-            }
-            if(MSDF_Evaluate(T[i], M, RangeFlags))
-                return TRUE;
-        }
-    }
-    return FALSE;
-}
-
-internal b08
-MSDF_HasDiagonalArtifact(r32 Delta,
-                         b08 Protected,
-                         r32 M1,
-                         v3r32 A,
-                         v3r32 B,
-                         v3r32 C,
-                         v3r32 D)
-{
-    v3r32 ABC, L, Q, TX;
-    r32 M4;
-    
-    M4 = R32_Median(D.X, D.Y, D.Z);
-    
-    if(R32_Abs(M1-0.5f) >= R32_Abs(M4-0.5f)) {
-        ABC = V3r32_Sub(V3r32_Sub(A, B), C);
-        L = V3r32_Sub(V3r32_MulS(A, -1), ABC);
-        Q = V3r32_Add(D, ABC);
-        TX = V3r32_Div(V3r32_MulS(L, -0.5f), Q);
-        
-        return _MSDF_HasDiagonalArtifact(Delta, Protected, M1, M4, A, L, Q, A.Y-A.X, B.Y-B.X+C.Y-C.X, D.Y-D.X, TX.X, TX.Y) ||
-               _MSDF_HasDiagonalArtifact(Delta, Protected, M1, M4, A, L, Q, A.Z-A.Y, B.Z-B.Y+C.Z-C.Y, D.Z-D.Y, TX.Y, TX.Z) ||
-               _MSDF_HasDiagonalArtifact(Delta, Protected, M1, M4, A, L, Q, A.X-A.Z, B.X-B.Z+C.X-C.Z, D.X-D.Z, TX.Z, TX.X);
-    }
-    return FALSE;
+    return (Count >= 2) ? TRUE : FALSE;
 }
 
 internal void
-MSDF_FindErrors(v4u08 *Bitmap,
-                v2u32 BitmapSize,
-                u08 *Buffer,
-                v2u32 BufferSize,
-                r32 Range,
-                v2r32 Scale,
-                v4s16 Bounds,
-                r32 MinDeviationRatio)
+MSDF_FindErrors(u08 *ErrorMap,
+               v4r32 *FloatMap,
+               v2u32 Size,
+               r32 Threshold)
 {
-    b08 PF, LE, RE, BE, TE, BLE, BRE, TLE, TRE, SE, DE;
-    v4u08 C, L, R, B, T, BL, BR, TL, TR;
-    r32 dh, dv, dd;
-    u08 M, *F;
-    u32 X, Y;
-    
-    dh = MinDeviationRatio * V2r32_Len((v2r32){1/Range/Scale.X-Bounds.X, -Bounds.Y});
-    dv = MinDeviationRatio * V2r32_Len((v2r32){-Bounds.X, 1/Range/Scale.Y-Bounds.Y});
-    dd = MinDeviationRatio * V2r32_Len((v2r32){1/Range/Scale.X-Bounds.X, 1/Range/Scale.Y-Bounds.Y});
-    
-    for(Y = 0; Y < BufferSize.Y; Y++) {
-        for(X = 0; X < BufferSize.X; X++) {
-            C = Bitmap[INDEX_2D(X, Y, BitmapSize.X)];
-            M = U08_Median(C.X, C.Y, C.Z);
-            F = Buffer+INDEX_2D(X, Y, BufferSize.X);
-            PF = (*F & 0b10) != 0;
+    for(u32 Y = 0; Y < Size.Y; Y++) {
+        for(u32 X = 0; X < Size.X; X++) {
+            v4r32 P, L,B,R,T, LB,LT,RB,RT;
+            b08 HasL,HasB,HasR,HasT, HasLB,HasLT,HasRB,HasRT;
+            b08 LE,BE,RE,TE, LBE,LTE,RBE,RTE, E;
             
-            L  = Bitmap[INDEX_2D(X-1, Y,   BitmapSize.X)];
-            R  = Bitmap[INDEX_2D(X+1, Y,   BitmapSize.X)];
-            B  = Bitmap[INDEX_2D(X,   Y-1, BitmapSize.X)];
-            T  = Bitmap[INDEX_2D(X,   Y+1, BitmapSize.X)];
-            BL = Bitmap[INDEX_2D(X-1, Y-1, BitmapSize.X)];
-            BR = Bitmap[INDEX_2D(X+1, Y-1, BitmapSize.X)];
-            TL = Bitmap[INDEX_2D(X-1, Y+1, BitmapSize.X)];
-            TR = Bitmap[INDEX_2D(X+1, Y+1, BitmapSize.X)];
+            // Assert(X != Size.X-1 || Y != 24);
             
-            LE = X > 0              && MSDF_HasLinearArtifact(dh, PF, M, C, L);
-            RE = X < BufferSize.X-1 && MSDF_HasLinearArtifact(dh, PF, M, C, R);
-            BE = Y > 0              && MSDF_HasLinearArtifact(dv, PF, M, C, B);
-            TE = Y < BufferSize.Y-1 && MSDF_HasLinearArtifact(dv, PF, M, C, T);
+            HasL = X > 0;
+            HasB = Y > 0;
+            HasR = X < Size.X-1;
+            HasT = Y < Size.Y-1;
+            HasLB = HasL && HasB;
+            HasLT = HasL && HasT;
+            HasRB = HasR && HasB;
+            HasRT = HasR && HasT;
             
-            BLE = X > 0              && Y > 0              && MSDF_HasDiagonalArtifact(dd, PF, M, C, L, B, BL);
-            BRE = X < BufferSize.X-1 && Y > 0              && MSDF_HasDiagonalArtifact(dd, PF, M, C, R, B, BR);
-            TLE = X > 0              && Y < BufferSize.Y-1 && MSDF_HasDiagonalArtifact(dd, PF, M, C, L, T, TL);
-            TRE = X < BufferSize.X-1 && Y < BufferSize.Y-1 && MSDF_HasDiagonalArtifact(dd, PF, M, C, R, T, TR);
+            P = FloatMap[INDEX_2D(X, Y, Size.X)];
             
-            *F |= 0b01 * (LE||RE||BE||TE||BLE||BRE||TLE||TRE);
+            L  = HasL  ? FloatMap[INDEX_2D(X-1, Y,   Size.X)] : (v4r32){0};
+            B  = HasB  ? FloatMap[INDEX_2D(X,   Y-1, Size.X)] : (v4r32){0};
+            R  = HasR  ? FloatMap[INDEX_2D(X+1, Y,   Size.X)] : (v4r32){0};
+            T  = HasT  ? FloatMap[INDEX_2D(X,   Y+1, Size.X)] : (v4r32){0};
+            LB = HasLB ? FloatMap[INDEX_2D(X-1, Y-1, Size.X)] : (v4r32){0};
+            LT = HasLT ? FloatMap[INDEX_2D(X-1, Y+1, Size.X)] : (v4r32){0};
+            RB = HasRB ? FloatMap[INDEX_2D(X+1, Y-1, Size.X)] : (v4r32){0};
+            RT = HasRT ? FloatMap[INDEX_2D(X+1, Y+1, Size.X)] : (v4r32){0};
+            
+            LE = HasL && MSDF_HasSideError(P, L, Threshold);
+            BE = HasB && MSDF_HasSideError(P, B, Threshold);
+            RE = HasR && MSDF_HasSideError(P, R, Threshold);
+            TE = HasT && MSDF_HasSideError(P, T, Threshold);
+            
+            LBE = HasLB && MSDF_HasSideError(P, LB, Threshold);
+            LTE = HasLT && MSDF_HasSideError(P, LT, Threshold);
+            RBE = HasRB && MSDF_HasSideError(P, RB, Threshold);
+            RTE = HasRT && MSDF_HasSideError(P, RT, Threshold);
+            
+            E = LE|BE|RE|TE | LBE|LTE|RBE|RTE;
+            ErrorMap[INDEX_2D(X, Y, Size.X)] |= MSDF_PIXEL_HAS_ERROR*E;
         }
     }
 }
 
 internal void
-MSDF_ProtectAll(u08 *Buffer,
-                v2u32 BufferSize)
+MSDF_FixErrors(u08 *ErrorMap,
+              v4r32 *FloatMap,
+              v2u32 Size)
 {
-    u32 B;
-    
-    for(B = 0; B < BufferSize.X*BufferSize.Y; B++)
-        Buffer[B] |= 0b10;
-}
-
-internal void
-MSDF_FixErrors(v4u08 *Bitmap,
-               v2u32 BitmapSize,
-               u08 *Buffer,
-               v2u32 BufferSize)
-{
-    u32 X, Y;
-    v4u08 *C;
-    
-    for(Y = 0; Y < BufferSize.Y; Y++) {
-        for(X = 0; X < BufferSize.X; X++) {
-            if(Buffer[INDEX_2D(X, Y, BufferSize.X)] & 0b01) {
-                C = Bitmap+INDEX_2D(X, Y, BitmapSize.X);
-                C->X = C->Y = C->Z = U08_Median(C->X, C->Y, C->Z);
+    for(u32 Y = 0; Y < Size.Y; Y++) {
+        for(u32 X = 0; X < Size.X; X++) {
+            u32 I = INDEX_2D(X, Y, Size.X);
+            v4r32 F = FloatMap[I];
+            if(ErrorMap[I] & MSDF_PIXEL_HAS_ERROR) {
+                r32 M = R32_Median(F.X, F.Y, F.Z);
+                FloatMap[I] = (v4r32){M, M, M, F.W};
             }
         }
     }
@@ -513,6 +440,7 @@ MSDF_MakeShape(stbtt_vertex *Vertices,
                u32 BitmapIndex,
                v2u32 BitmapSize)
 {
+    Stack_Push();
     msdf_shape Shape = {0};
     
     for(u32 V = 0; V < VertexCount; ++V) {
@@ -527,7 +455,7 @@ MSDF_MakeShape(stbtt_vertex *Vertices,
     }
     Shape.Contours = Stack_Allocate(Shape.ContourCount * sizeof(msdf_contour));
     Shape.Segments = Stack_Allocate(Shape.SegmentCount * sizeof(msdf_segment));
-    Shape.Edges = Stack_Allocate(Shape.SegmentCount * sizeof(msdf_edge));
+    Shape.Edges = Stack_Allocate((Shape.SegmentCount+Shape.ContourCount) * sizeof(msdf_edge));
     
     v4s16 Bounds = MSDF_FindEdges(&Shape, Vertices, VertexCount);
     v2r32 MaxBounds = {Bounds.Z - Bounds.X, Bounds.W - Bounds.Y};
@@ -536,6 +464,7 @@ MSDF_MakeShape(stbtt_vertex *Vertices,
     
     /* TODO Possible things to add
        - Short edge merging
+       - Error correction
     */
     
     v2r32 Offset = {1, 1};
@@ -544,8 +473,10 @@ MSDF_MakeShape(stbtt_vertex *Vertices,
     v2r32 Scale = V2r32_Div(Size, MaxBounds);
     r32 Range = 4 / (Scale.X + Scale.Y);
     
-    for(s16 Y = 0; Y < (s16)SlotSize.Y; Y++) {
-        for(s16 X = 0; X < (s16)SlotSize.X; X++) {
+    v4r32 *FloatMap = Stack_Allocate(SlotSize.X*SlotSize.Y*sizeof(v4r32));
+    
+    for(u32 Y = 0; Y < SlotSize.Y; Y++) {
+        for(u32 X = 0; X < SlotSize.X; X++) {
             v2r32 P = {
                 (X-Offset.X+0.5)/Scale.X+Bounds.X,
                 (Y-Offset.Y+0.5)/Scale.Y+Bounds.Y
@@ -553,50 +484,60 @@ MSDF_MakeShape(stbtt_vertex *Vertices,
             
             msdf_dist Dists[3] = {{R32_MAX,1}, {R32_MAX,1}, {R32_MAX,1}};
             msdf_edge Edges[3] = {Shape.Contours[0].Edges[0], Shape.Contours[0].Edges[0], Shape.Contours[0].Edges[0]};
+            msdf_segment Segments[3] = {Edges[0].Segments[0], Edges[0].Segments[0], Edges[0].Segments[0]};
             
             for(u32 C = 0; C < Shape.ContourCount; C++) {
                 msdf_contour Contour = Shape.Contours[C];
                 for(u32 E = 0; E < Contour.EdgeCount; E++) {
                     msdf_edge Edge = Contour.Edges[E];
-                    msdf_dist Dist = MSDF_EdgeSignedDistance(P, Edge);
+                    msdf_segment Segment;
+                    msdf_dist Dist = MSDF_EdgeSignedDistance(P, Edge, &Segment);
                     if((Edge.Color&0b100) && MSDF_Cmp(Dist, Dists[0]) == LESS) {
                         Dists[0] = Dist;
                         Edges[0] = Edge;
+                        Segments[0] = Segment;
                     } if((Edge.Color&0b010) && MSDF_Cmp(Dist, Dists[1]) == LESS) {
                         Dists[1] = Dist;
                         Edges[1] = Edge;
+                        Segments[1] = Segment;
                     } if((Edge.Color&0b001) && MSDF_Cmp(Dist, Dists[2]) == LESS) {
                         Dists[2] = Dist;
                         Edges[2] = Edge;
+                        Segments[2] = Segment;
                     }
                 }
             }
             
             v4r32 FinalDists;
-            FinalDists.X = MSDF_EdgeSignedPseudoDistance(P, Edges[0]);
-            FinalDists.Y = MSDF_EdgeSignedPseudoDistance(P, Edges[1]);
-            FinalDists.Z = MSDF_EdgeSignedPseudoDistance(P, Edges[2]);
+            // Assert(X != SlotSize.X-16 || Y != SlotSize.Y-12);
+            FinalDists.X = MSDF_SignedPseudoDistance(P, Segments[0]);
+            FinalDists.Y = MSDF_SignedPseudoDistance(P, Segments[1]);
+            FinalDists.Z = MSDF_SignedPseudoDistance(P, Segments[2]);
             
             msdf_dist TrueDist = Dists[0];
             if(MSDF_Cmp(Dists[1], TrueDist) == LESS) TrueDist = Dists[1];
             if(MSDF_Cmp(Dists[2], TrueDist) == LESS) TrueDist = Dists[2];
             FinalDists.W = TrueDist.Distance;
             
-            v4u08 Color = MSDF_DistanceColor(FinalDists, Range);
+            FloatMap[INDEX_2D(X, Y, (u32)SlotSize.X)] = FinalDists;
+        }
+    }
+    
+    u08 *ErrorMap = Stack_Allocate(SlotSize.X*SlotSize.Y);
+    Mem_Set(ErrorMap, 0, SlotSize.X*SlotSize.Y);
+    
+    r32 ThresholdModifier = 0.72;
+    r32 Threshold = Range * ThresholdModifier;
+    MSDF_FindErrors(ErrorMap, FloatMap, SlotSize, Threshold);
+    MSDF_FixErrors(ErrorMap, FloatMap, SlotSize);
+    
+    for(u32 Y = 0; Y < SlotSize.Y; Y++) {
+        for(u32 X = 0; X < SlotSize.X; X++) {
+            v4r32 Floats = FloatMap[INDEX_2D(X, Y, SlotSize.X)];
+            v4u08 Color = MSDF_DistanceColor(Floats, Range);
             Bitmap[INDEX_2D(X, Y, BitmapSize.X)] = Color;
         }
     }
     
-    u08 *Buffer = Stack_Allocate(SlotSize.X*SlotSize.Y);
-    Mem_Set(Buffer, 0, SlotSize.X*SlotSize.Y);
-    
-    r32 MinDeviationRatio = 1.11111111111111111;
-    r32 MinImproveRatio = 1.11111111111111111;
-    
-    MSDF_ProtectCorners();
-    MSDF_ProtectEdges();
-    MSDF_FindErrors(Bitmap, BitmapSize, Buffer, SlotSize, Range, Scale, Bounds, MinDeviationRatio);
-    MSDF_ProtectAll(Buffer, SlotSize);
-    MSDF_FindErrorsOverlappedOrSomething();
-    MSDF_FixErrors(Bitmap, BitmapSize, Buffer, SlotSize);
+    Stack_Pop();
 }

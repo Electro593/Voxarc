@@ -7,6 +7,19 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+// typedef struct datetime {
+struct datetime {
+    u16 Year;
+    u08 Month;
+    u08 Day;
+    u08 DayOfWeek;
+    u08 Hour;
+    u08 Minute;
+    u08 Second;
+    u16 Millisecond;
+};
+// } datetime;
+
 #if defined(_WIN32)
     #include <platform/win32/win32.h>
     #include <platform/win32/entry.h>
@@ -43,6 +56,8 @@ typedef enum file_mode {
     EXTERN(void,         Platform, Entry,          void) \
     EXPORT(void,         Platform, FreeMemory,     vptr Base) \
     EXPORT(u64,          Platform, GetFileLength,  file_handle FileHandle) \
+    EXPORT(void,         Platform, GetFileTime,    c08 *FileName, datetime *CreationTime, datetime *LastAccessTime, datetime *LastWriteTime) \
+    EXPORT(s08,          Platform, CmpFileTime,    datetime A, datetime B) \
     INTERN(void,         Platform, LoadGame,       module *Module, game_state *GameState, platform_exports *PlatformExports, opengl_funcs *OpenGLFuncs) \
     INTERN(opengl_funcs, Platform, LoadOpenGL,     win32_device_context DeviceContext) \
     INTERN(void,         Platform, LoadWGL,        void) \

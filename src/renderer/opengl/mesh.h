@@ -23,7 +23,7 @@ typedef struct mesh_object {
 } mesh_object;
 
 typedef struct mesh {
-    u32 Program;
+    u32 *Program;
     u32 VAO;
     u32 VBO, EBO, SSBO;
     u32 Atlases;

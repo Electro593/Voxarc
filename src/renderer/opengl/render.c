@@ -117,32 +117,37 @@ Renderer_Init(renderer_state *Renderer,
     
     Renderer->PCProgram = Renderer_LoadShaders(SHADERS_DIR "pc.vert", SHADERS_DIR "pc.frag");
     Renderer->PTProgram = Renderer_LoadShaders(SHADERS_DIR "pt.vert", SHADERS_DIR "pt.frag");
-    Mesh_Init(&Renderer->Mesh, Renderer->Heap, Renderer->PTProgram, MESH_HAS_TEXTURES);
+    Platform_GetFileTime(SHADERS_DIR "pt.vert", 0, 0, Renderer->PTLastModified+0);
+    Platform_GetFileTime(SHADERS_DIR "pt.frag", 0, 0, Renderer->PTLastModified+1);
+    Mesh_Init(&Renderer->Mesh, Renderer->Heap, &Renderer->PTProgram, MESH_HAS_TEXTURES);
     
     assetpack_tag *Tag = Assetpack_FindFirstTag(Renderer->Assetpack, TAG_ATLAS_DESCRIPTOR);
     Assert(Tag);
     assetpack_atlas *Atlas = (assetpack_atlas*)Tag->ValueP;
     
-    OpenGL_UseProgram(Renderer->PTProgram);
     OpenGL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     OpenGL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     OpenGL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     OpenGL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     OpenGL_TexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, Atlas->Size.X, Atlas->Size.Y, Atlas->Count, 0, GL_RGBA, GL_UNSIGNED_BYTE, Renderer->Assetpack.AssetData+Atlas->DataOffset);
+    
+    OpenGL_UseProgram(Renderer->PTProgram);
     OpenGL_Uniform1i(Renderer->Mesh.AtlasesSampler, 0);
     OpenGL_Uniform2ui(Renderer->Mesh.AtlasSize, Atlas->Size.X, Atlas->Size.Y);
+    
     Heap_Resize(Renderer->Mesh.Storage, (127-32)*sizeof(assetpack_texture));
     Mem_Cpy(Renderer->Mesh.Storage->Data, Renderer->Assetpack.Assets, Renderer->Mesh.Storage->Size);
     Renderer->Mesh.Flags |= MESH_GROW_STORAGE_BUFFER;
     
+    c08 Char = '&';
     struct {
         u32 Position;
         u32 Texture;
     } Vertices1[] = {
-        {0b01000000000011111000001000100000, (('A'-32)<<2) | 0b00},
-        {0b01000000000001111000001000100000, (('A'-32)<<2) | 0b10},
-        {0b01000000000001111000000000100000, (('A'-32)<<2) | 0b11},
-        {0b01000000000011111000000000100000, (('A'-32)<<2) | 0b01},
+        {0b01000000000011111000001000100000, ((Char-32)<<2) | 0b00},
+        {0b01000000000001111000001000100000, ((Char-32)<<2) | 0b10},
+        {0b01000000000001111000000000100000, ((Char-32)<<2) | 0b11},
+        {0b01000000000011111000000000100000, ((Char-32)<<2) | 0b01},
     }, Vertices2[] = {
         {0b01000000000010001000001111100000, ((34-32)<<2) | 0b00},
         {0b01000000000000001000001111100000, ((34-32)<<2) | 0b10},
@@ -168,6 +173,31 @@ Renderer_Init(renderer_state *Renderer,
 internal void
 Renderer_Draw(renderer_state *Renderer)
 {
+    {
+        datetime VertTime, FragTime;
+        Platform_GetFileTime(SHADERS_DIR "pt.vert", 0, 0, &VertTime);
+        Platform_GetFileTime(SHADERS_DIR "pt.frag", 0, 0, &FragTime);
+        if(Platform_CmpFileTime(Renderer->PTLastModified[0], VertTime) == LESS ||
+           Platform_CmpFileTime(Renderer->PTLastModified[1], FragTime) == LESS)
+        {
+            OpenGL_DeleteProgram(Renderer->PTProgram);
+            Renderer->PTProgram = Renderer_LoadShaders(SHADERS_DIR "pt.vert", SHADERS_DIR "pt.frag");
+            
+            assetpack_tag *Tag = Assetpack_FindFirstTag(Renderer->Assetpack, TAG_ATLAS_DESCRIPTOR);
+            assetpack_atlas *Atlas = (assetpack_atlas*)Tag->ValueP;
+            
+            Renderer->Mesh.AtlasesSampler = OpenGL_GetUniformLocation(Renderer->PTProgram, "Atlases");
+            Renderer->Mesh.AtlasSize = OpenGL_GetUniformLocation(Renderer->PTProgram, "AtlasSize");
+            
+            OpenGL_UseProgram(Renderer->PTProgram);
+            OpenGL_Uniform1i(Renderer->Mesh.AtlasesSampler, 0);
+            OpenGL_Uniform2ui(Renderer->Mesh.AtlasSize, Atlas->Size.X, Atlas->Size.Y);
+            
+            Renderer->PTLastModified[0] = VertTime;
+            Renderer->PTLastModified[1] = FragTime;
+        }
+    }
+    
     OpenGL_Clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     
     Mesh_Draw(&Renderer->Mesh);

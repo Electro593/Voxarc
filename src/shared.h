@@ -115,6 +115,8 @@ TYPES
 
 #undef TYPES
 
+typedef struct datetime datetime;
+
 #include <util/intrin.h>
 #include <util/scalar.h>
 #include <util/vector.h>
@@ -125,8 +127,8 @@ TYPES
 #include <renderer/opengl/mesh.h>
 #include <game/file.h>
 #include <game/msdf.h>
-#include <renderer/renderer.h>
 #include <platform/platform.h>
+#include <renderer/renderer.h>
 #include <game/game.h>
 
 s32 _fltused;

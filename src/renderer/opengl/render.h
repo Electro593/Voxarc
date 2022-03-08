@@ -14,6 +14,7 @@ typedef struct renderer_state {
     
     u32 PCProgram;
     u32 PTProgram;
+    datetime PTLastModified[2];
     
     heap *Heap;
     mesh Mesh;
