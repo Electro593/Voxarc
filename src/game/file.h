@@ -99,7 +99,7 @@ typedef struct assetpack {
 #pragma pack(pop)
 
 typedef struct asset_node {
-    u32 GlyphIndex;
+    font_glyph Glyph;
     v2u32 Size;
     assetpack_texture *Asset;
     struct asset_node *Prev;

@@ -125,8 +125,9 @@ typedef struct datetime datetime;
 #include <util/string.h>
 #include <renderer/opengl/opengl.h>
 #include <renderer/opengl/mesh.h>
-#include <game/file.h>
 #include <game/msdf.h>
+#include <renderer/font.h>
+#include <game/file.h>
 #include <platform/platform.h>
 #include <renderer/renderer.h>
 #include <game/game.h>

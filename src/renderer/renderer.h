@@ -7,8 +7,6 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include <renderer/font.h>
-
 #if defined(_OPENGL)
     #include <renderer/opengl/render.h>
 #endif

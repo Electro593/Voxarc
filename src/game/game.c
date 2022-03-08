@@ -15,9 +15,9 @@ global_state __Global;
 #include <util/vector.c>
 #include <util/memory.c>
 #include <util/string.c>
+#include <game/msdf.c>
 #include <renderer/font.c>
 #include <renderer/opengl/render.c>
-#include <game/msdf.c>
 #include <game/file.c>
 
 // TODO handle errors, e.g. make a memory representation of a default

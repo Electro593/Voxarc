@@ -87,14 +87,14 @@ typedef enum ttf_glyf_flags {
     TTF_GLYF_FLAG_POS_Y    = 0x20,
 } ttf_glyf_flags;
 #define TTF_TAG_glyf TTF_MAKE_TAG('g','l','y','f')
-typedef struct ttf_glyf_entry {
+typedef struct ttf_glyph {
     s16 ContourCount;
     s16 XMin;
     s16 YMin;
     s16 XMax;
     s16 YMax;
     u08 Data[];
-} ttf_glyf_entry;
+} ttf_glyph;
 
 typedef enum ttf_loca_format {
     TTF_LOCA_SHORT_OFFSETS = 0,
@@ -174,6 +174,8 @@ typedef struct ttf_maxp {
 } ttf_maxp;
 #pragma pack(pop)
 
+#include <libraries/stb_truetype.h>
+
 typedef struct font {
     ttf_font_dir *FontDir;
     ttf_cmap *cmap;
@@ -184,27 +186,20 @@ typedef struct font {
     ttf_loca *loca;
     ttf_maxp *maxp;
     
+    b08 LoadedSTBTT;
+    stbtt_fontinfo FontInfo;
     ttf_cmap_subtable Encoding;
     
     u08 *FileBase;
 } font;
 
-// typedef struct font_segment {
-//     v2s16 P1;
-//     v2s16 P2;
-//     v2s16 C;
-//     b08 HasControl;
-// } font_segment;
-
-// typedef struct font_edge {
-//     u32 SegmentCount;
-//     u08 Color;
-//     font_segment *Segments;
-// } font_edge;
-
-// typedef struct font_glyph {
-//     u32 ContourCount;
-//     u32 EdgeCount;
-//     font_edge **Contours;
-//     font_edge *Edges;
-// } font_glyph;
+typedef struct font_glyph {
+    s32 Advance;
+    v2s32 Bearing;
+    v2u32 Size;
+    
+    msdf_shape Shape;
+    
+    u32 VertexCount;
+    stbtt_vertex *Vertices;
+} font_glyph;

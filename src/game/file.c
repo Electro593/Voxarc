@@ -115,18 +115,16 @@ File_CreateAssetpack(c08 *FileName,
     
     u32 Padding = 1;
     
+    u08 *FontData = File_Read("assets\\fonts\\arial.ttf", 0, 0).Text;
+    font Font = Font_Init(FontData);
     stbtt_fontinfo FontInfo;
-    // u08 *FontData = File_Read("assets\\fonts\\arial.ttf", 0, 0).Text;
     u08 *STBTTFontData = File_Read("assets\\fonts\\arial.ttf", 0, 0).Text;
-    stbtt_InitFont(&FontInfo, STBTTFontData, stbtt_GetFontOffsetForIndex(STBTTFontData, 0));
-    // Font_Init(FontData);
+    stbtt_InitFont(&FontInfo, STBTTFontData, 0);
     
-    r32 Scale = stbtt_ScaleForPixelHeight(&FontInfo, 60.0f);
-    s32 Ascent, Descent, LineGap;
-    stbtt_GetFontVMetrics(&FontInfo, &Ascent, &Descent, &LineGap);
-    Ascent  = (s32)((r32)Ascent  * Scale);
-    Descent = (s32)((r32)Descent * Scale);
-    LineGap = (s32)((r32)LineGap * Scale);
+    r32 Scale = 60.0f / (Font.hhea->Ascent - Font.hhea->Descent);
+    s32 Ascent  = (s32)((r32)Font.hhea->Ascent  * Scale);
+    s32 Descent = (s32)((r32)Font.hhea->Descent * Scale);
+    s32 LineGap = (s32)((r32)Font.hhea->LineGap * Scale);
     
     Header.AssetCount = 127-32;
     Assets = Heap_Allocate(Heap, (127-32)*sizeof(assetpack_texture));
@@ -156,7 +154,6 @@ File_CreateAssetpack(c08 *FileName,
     NullNode->Next = NullNode;
     
     asset_node *NullAssetNode = Stack_Allocate(sizeof(asset_node));
-    NullAssetNode->GlyphIndex = 0;
     NullAssetNode->Asset = NULL;
     NullAssetNode->Next = NullAssetNode;
     NullAssetNode->Prev = NullAssetNode;
@@ -164,31 +161,27 @@ File_CreateAssetpack(c08 *FileName,
     assetpack_texture *Asset = (assetpack_texture*)Assets->Data;
     assetpack_tag *Tag = (assetpack_tag*)Tags->Data;
     for(c08 Codepoint = ' '; Codepoint <= '~'; Codepoint++) {
-        u32 GlyphIndex = stbtt_FindGlyphIndex(&FontInfo, Codepoint);
+        u32 GlyphIndex = Font_GetGlyphIndex(Font, Codepoint);
         if(GlyphIndex == 0) continue;
         
-        s32 AdvanceX, BearingX;
-        stbtt_GetGlyphHMetrics(&FontInfo, GlyphIndex, &AdvanceX, &BearingX);
-        Asset->AdvanceX = (s32)((r32)AdvanceX * Scale);
-        Asset->Bearing.X = (s32)((r32)BearingX * Scale);
+        font_glyph Glyph = Font_GetGlyph(Font, Codepoint, Scale, FontInfo);
         
-        s32 SX, SY, EX, EY;
-        stbtt_GetGlyphBitmapBox(&FontInfo, GlyphIndex, Scale, Scale, &SX, &SY, &EX, &EY);
-        Asset->Bearing.Y = -EY;
-        Asset->Size = (v2u32){EX - SX, EY - SY};
+        Asset->AdvanceX = Glyph.Advance;
+        Asset->Bearing = Glyph.Bearing;
+        Asset->Size = Glyph.Size;
         
         Tag->ValueI = Codepoint;
         Tag->AssetCount = 1;
         Tag->Assets[0] = (vptr)((u08*)Asset - (u64)Assets->Data);
         (u08*)Tag += sizeof(assetpack_tag) + sizeof(assetpack_asset*);
         
-        if(stbtt_IsGlyphEmpty(&FontInfo, GlyphIndex)) {
+        if(Glyph.Shape.ContourCount == 0) {
             Asset->Pos = (v2u32){0};
             Asset->AtlasIndex = 0;
             Asset->IsRotated = FALSE;
         } else {
             asset_node *AssetNode = Stack_Allocate(sizeof(asset_node));
-            AssetNode->GlyphIndex = GlyphIndex;
+            AssetNode->Glyph = Glyph;
             AssetNode->Size = (v2u32){Asset->Size.X+Padding, Asset->Size.Y+Padding};
             AssetNode->Asset = Asset;
             AssetNode->Prev = NullAssetNode;
@@ -281,11 +274,9 @@ File_CreateAssetpack(c08 *FileName,
             SWAP(Asset->Size.X, Asset->Size.Y, u32);
             SWAP(AssetNode->Size.X, AssetNode->Size.Y, u32);
         }
-        stbtt_vertex *Vertices;
-        u32 VertexCount = stbtt_GetGlyphShape(&FontInfo, AssetNode->GlyphIndex, &Vertices);
         v4u08 *Bitmap = (v4u08*)(Atlases->Data + Node->AtlasIndex*AtlasSize);
         Bitmap += INDEX_2D(Node->Pos.X, Node->Pos.Y, AtlasDims.X);
-        MSDF_MakeShape(Vertices, Scale, Asset->Size, VertexCount, Bitmap, Node->Pos, Node->AtlasIndex, AtlasDims);
+        MSDF_DrawShape(AssetNode->Glyph.Shape, Scale, Asset->Size, Bitmap, Node->Pos, Node->AtlasIndex, AtlasDims);
         Asset->Pos = Node->Pos;
         
         v2u32 Pos = Node->Pos;

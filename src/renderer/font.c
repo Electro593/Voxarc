@@ -24,8 +24,6 @@
 #define size_t u64
 #define STB_TRUETYPE_IMPLEMENTATION
 #include <libraries/stb_truetype.h>
-#undef STBTT_ifloor
-#undef STBTT_iceilSTBTT_sqrt
 #undef STBTT_pow
 #undef STBTT_fmod
 #undef STBTT_cos
@@ -50,6 +48,16 @@ Font_CalculateChecksum(u32 *Table,
         Sum += SWAPENDIAN32(Value);
     }
     return Sum;
+}
+
+internal u32
+Font_GetGlyphOffset(font Font,
+                    u32 GlyphIndex)
+{
+    if(Font.head->IndexToLocFormat == TTF_LOCA_SHORT_OFFSETS)
+        return Font.loca->Shorts[GlyphIndex] * 2;
+    else
+        return Font.loca->Longs[GlyphIndex];
 }
 
 internal vptr
@@ -155,77 +163,75 @@ Font_LoadglyfTable(font *Font)
 {
     Font->glyfs = Font_FindTable(Font, TTF_TAG_glyf);
     Assert(Font->glyfs);
-    // for(u32 I = 0; I < Font->maxp->GlyphCount; I++) {
-    //     u32 GlyphOffset;
-    //     if(Font->head->IndexToLocFormat == TTF_LOCA_SHORT_OFFSETS)
-    //         GlyphOffset = Font->loca->Shorts[I] * 2;
-    //     else
-    //         GlyphOffset = Font->loca->Longs[I];
-    //     ttf_glyf_entry *Glyph = (ttf_glyf_entry*)(Font->glyfs + GlyphOffset);
+    for(u32 I = 0; I < Font->maxp->GlyphCount; I++) {
+        u32 GlyphOffset = Font_GetGlyphOffset(*Font, I);
+        u32 NextOffset = Font_GetGlyphOffset(*Font, I+1);
+        if(NextOffset == GlyphOffset) continue;
         
-    //     SWAPENDIAN16(Glyph->ContourCount);
-    //     SWAPENDIAN16(Glyph->XMin);
-    //     SWAPENDIAN16(Glyph->YMin);
-    //     SWAPENDIAN16(Glyph->XMax);
-    //     SWAPENDIAN16(Glyph->YMax);
+        ttf_glyph *Glyph = (ttf_glyph*)(Font->glyfs + GlyphOffset);
+        SWAPENDIAN16(Glyph->ContourCount);
+        SWAPENDIAN16(Glyph->XMin);
+        SWAPENDIAN16(Glyph->YMin);
+        SWAPENDIAN16(Glyph->XMax);
+        SWAPENDIAN16(Glyph->YMax);
         
-    //     if(Glyph->ContourCount >= 0) {
-    //         u16 *EndPtsOfContours = (u16*)Glyph->Data;
-    //         for(u32 J = 0; J < (u32)Glyph->ContourCount; J++) {
-    //             SWAPENDIAN16(*EndPtsOfContours);
-    //             EndPtsOfContours++;
-    //         }
-    //         s32 MaxFlags = *(EndPtsOfContours-1);
-    //         u16 *InstructionLength = EndPtsOfContours;
-    //         SWAPENDIAN16(*InstructionLength);
-    //         u08 *Flags = (u08*)(InstructionLength+1) + *InstructionLength;
-    //         s32 FlagCount=0;
-    //         u32 XCoordsSize=0, YCoordsSize=0;
-    //         for(; FlagCount < MaxFlags; FlagCount++) {
-    //             u32 RepeatModifier = 1;
-    //             if(Flags[FlagCount] & TTF_GLYF_FLAG_REPEATED) {
-    //                 RepeatModifier += Flags[FlagCount+1];
-    //                 MaxFlags -= Flags[FlagCount+1] - 1;
-    //             }
-    //             if(Flags[FlagCount] & TTF_GLYF_FLAG_SHORT_X)
-    //                 XCoordsSize += sizeof(u08)*RepeatModifier;
-    //             else if(!(Flags[FlagCount] & TTF_GLYF_FLAG_SAME_X))
-    //                 XCoordsSize += sizeof(s16)*RepeatModifier;
-    //             if(Flags[FlagCount] & TTF_GLYF_FLAG_SHORT_Y)
-    //                 YCoordsSize += sizeof(u08)*RepeatModifier;
-    //             else if(!(Flags[FlagCount] & TTF_GLYF_FLAG_SAME_Y))
-    //                 YCoordsSize += sizeof(s16)*RepeatModifier;
-    //             if(Flags[FlagCount] & TTF_GLYF_FLAG_REPEATED)
-    //                 FlagCount++;
-    //         }
-    //         u08 *XCoords = Flags + FlagCount;
-    //         u08 *YCoords = XCoords + XCoordsSize;
-    //         for(u32 J = 0; J < (u32)FlagCount; J++) {
-    //             u32 RepeatModifier = 1;
-    //             if(Flags[J] & TTF_GLYF_FLAG_REPEATED)
-    //                 RepeatModifier += Flags[J+1];
-    //             if(Flags[J] & TTF_GLYF_FLAG_SHORT_X)
-    //                 XCoords += sizeof(u08)*RepeatModifier;
-    //             else if(!(Flags[J] & TTF_GLYF_FLAG_SAME_X)) {
-    //                 for(u32 K = 0; K < RepeatModifier; K++) {
-    //                     SWAPENDIAN16(*(u16*)XCoords);
-    //                     XCoords += 2;
-    //                 }
-    //             }
-    //             // if(Flags[J] & TTF_GLYF_FLAG_SHORT_Y)
-    //             //     YCoords += sizeof(u08)*RepeatModifier;
-    //             // else if(!(Flags[J] & TTF_GLYF_FLAG_SAME_Y)) {
-    //             //     for(u32 K = 0; K < RepeatModifier; K++) {
-    //             // //         SWAPENDIAN16(*(u16*)YCoords);
-    //             //         (u16*)YCoords++;
-    //             //     }
-    //             // }
-    //             if(Flags[J] & TTF_GLYF_FLAG_REPEATED) J++;
-    //         }
-    //     } else {
+        // if(Glyph->ContourCount >= 0) {
+        //     u16 *EndPtsOfContours = (u16*)Glyph->Data;
+        //     for(u32 J = 0; J < (u32)Glyph->ContourCount; J++) {
+        //         SWAPENDIAN16(*EndPtsOfContours);
+        //         EndPtsOfContours++;
+        //     }
+        //     s32 MaxFlags = *(EndPtsOfContours-1);
+        //     u16 *InstructionLength = EndPtsOfContours;
+        //     SWAPENDIAN16(*InstructionLength);
+        //     u08 *Flags = (u08*)(InstructionLength+1) + *InstructionLength;
+        //     s32 FlagCount=0;
+        //     u32 XCoordsSize=0, YCoordsSize=0;
+        //     for(; FlagCount < MaxFlags; FlagCount++) {
+        //         u32 RepeatModifier = 1;
+        //         if(Flags[FlagCount] & TTF_GLYF_FLAG_REPEATED) {
+        //             RepeatModifier += Flags[FlagCount+1];
+        //             MaxFlags -= Flags[FlagCount+1] - 1;
+        //         }
+        //         if(Flags[FlagCount] & TTF_GLYF_FLAG_SHORT_X)
+        //             XCoordsSize += sizeof(u08)*RepeatModifier;
+        //         else if(!(Flags[FlagCount] & TTF_GLYF_FLAG_SAME_X))
+        //             XCoordsSize += sizeof(s16)*RepeatModifier;
+        //         if(Flags[FlagCount] & TTF_GLYF_FLAG_SHORT_Y)
+        //             YCoordsSize += sizeof(u08)*RepeatModifier;
+        //         else if(!(Flags[FlagCount] & TTF_GLYF_FLAG_SAME_Y))
+        //             YCoordsSize += sizeof(s16)*RepeatModifier;
+        //         if(Flags[FlagCount] & TTF_GLYF_FLAG_REPEATED)
+        //             FlagCount++;
+        //     }
+        //     u08 *XCoords = Flags + FlagCount;
+        //     u08 *YCoords = XCoords + XCoordsSize;
+        //     for(u32 J = 0; J < (u32)FlagCount; J++) {
+        //         u32 RepeatModifier = 1;
+        //         if(Flags[J] & TTF_GLYF_FLAG_REPEATED)
+        //             RepeatModifier += Flags[J+1];
+        //         if(Flags[J] & TTF_GLYF_FLAG_SHORT_X)
+        //             XCoords += sizeof(u08)*RepeatModifier;
+        //         else if(!(Flags[J] & TTF_GLYF_FLAG_SAME_X)) {
+        //             for(u32 K = 0; K < RepeatModifier; K++) {
+        //                 SWAPENDIAN16(*(u16*)XCoords);
+        //                 XCoords += 2;
+        //             }
+        //         }
+        //         // if(Flags[J] & TTF_GLYF_FLAG_SHORT_Y)
+        //         //     YCoords += sizeof(u08)*RepeatModifier;
+        //         // else if(!(Flags[J] & TTF_GLYF_FLAG_SAME_Y)) {
+        //         //     for(u32 K = 0; K < RepeatModifier; K++) {
+        //         // //         SWAPENDIAN16(*(u16*)YCoords);
+        //         //         (u16*)YCoords++;
+        //         //     }
+        //         // }
+        //         if(Flags[J] & TTF_GLYF_FLAG_REPEATED) J++;
+        //     }
+        // } else {
             
-    //     }
-    // }
+        // }
+    }
 }
 
 internal void
@@ -374,154 +380,44 @@ Font_GetGlyphIndex(font Font,
     return GlyphIndex;
 }
 
-// internal font_glyph
-// Font_CreateGlyph(ttf_glyf_entry *GlyphEntry)
-// {
-//     font_glyph Glyph = {0};
-    
-//     if(GlyphEntry->ContourCount > 0) {
-//         Glyph.ContourCount = GlyphEntry->ContourCount;
-//         SWAPENDIAN16(Glyph.ContourCount);
-//         u08 *Data = GlyphEntry->Data;
-//         u16 *EndPointsOfContours = (u16*)Data;
-//         u32 TotalSegmentCount = EndPointsOfContours[Glyph.ContourCount-1];
-//         SWAPENDIAN16(TotalSegmentCount);
-//         Data += Glyph.ContourCount*sizeof(u16);
-//         u16 InstructionLength = *(u16*)Data;
-//         SWAPENDIAN16(InstructionLength);
-//         Data += sizeof(u16) + InstructionLength;
-        
-//         u32 FlagCount = TotalSegmentCount;
-//         u08 *Flags = Stack_Allocate(FlagCount);
-//         u32 RepeatCount = 0;
-//         u08 CurrFlags = 0;
-//         for(u32 I = 0; I < FlagCount; I++) {
-//             if(!RepeatCount) {
-//                 CurrFlags = *Data++;
-//                 if(CurrFlags & TTF_GLYF_FLAG_REPEATED)
-//                     RepeatCount = *Data++;
-//             } else
-//                 RepeatCount--;
-//             if(!(Flags[I] & TTF_GLYF_FLAG_ON_CURVE))
-//                 TotalSegmentCount--;
-//             Flags[I] = CurrFlags;
-//         }
-        
-//         s16 CurrX = 0;
-//         u32 SI = 0;
-//         TotalSegmentCount++;
-//         Glyph.Contours = Stack_Allocate((Glyph.ContourCount+1)*sizeof(font_edge*));
-//         font_segment *Segments = Stack_Allocate(TotalSegmentCount*sizeof(font_segment));
-//         Mem_Set(Segments, 0, TotalSegmentCount*sizeof(font_segment));
-//         for(u32 I = 0; I < FlagCount; I++) {
-//             if(Flags[I] & TTF_GLYF_FLAG_SHORT_X) {
-//                 s16 DX = *Data++;
-//                 CurrX += (Flags[I] & TTF_GLYF_FLAG_POS_X) ? DX : -DX;
-//             }
-//             else if(!(Flags[I] & TTF_GLYF_FLAG_SAME_X)) {
-//                 CurrX += Data[1]*256 + Data[0];
-//                 Data += 2;
-//             }
-//             if(Flags[I] & TTF_GLYF_FLAG_ON_CURVE) {
-//                 Segments[SI].P2.X = CurrX;
-//                 Segments[SI+1].P1.X = CurrX;
-//                 SI++;
-//             } else {
-//                 Segments[SI].C.X = CurrX;
-//                 Segments[SI].HasControl = TRUE;
-//             }
-//         }
-        
-//         SI = 0;
-//         u32 C = 0;
-//         u16 LastPointInContour = EndPointsOfContours[C];
-//         SWAPENDIAN16(LastPointInContour);
-//         s16 CurrY = 0;
-//         for(u32 I = 0; I < FlagCount; I++) {
-//             if(Flags[I] & TTF_GLYF_FLAG_SHORT_Y) {
-//                 s16 DY = *Data++;
-//                 CurrY += (Flags[I] & TTF_GLYF_FLAG_POS_Y) ? DY : -DY;
-//             }
-//             else if(!(Flags[I] & TTF_GLYF_FLAG_SAME_Y)) {
-//                 CurrY += Data[1]*256 + Data[0];
-//                 Data += 2;
-//             }
-//             if(I == LastPointInContour) {
-//                 LastPointInContour = EndPointsOfContours[C+1];
-//                 SWAPENDIAN16(LastPointInContour);
-//                 Glyph.Contours[C] = (vptr)(Segments+SI);
-//                 C++;
-//             }
-//             if(Segments[SI].HasControl)
-//                 Segments[SI].C.Y = CurrY;
-//             else {
-//                 Segments[SI].P2.Y = CurrY;
-//                 Segments[SI+1].P1.Y = CurrY;
-//                 SI++;
-//             }
-//         }
-        
-//         C = 0;
-//         u32 S = 0;
-//         Glyph.Edges = Stack_Allocate(TotalSegmentCount*sizeof(font_edge));
-//         Glyph.Edges[0].SegmentCount = 1;
-//         Glyph.Edges[0].Segments = Segments;
-//         Glyph.EdgeCount = 1;
-//         TotalSegmentCount = S;
-//         for(S = 0; S < TotalSegmentCount-1; S++) {
-//             v2r32 D1, D2;
-//             v2s16 Diff;
-//             if(Segments[S].HasControl)
-//                 Diff = V2s16_Sub(Segments[S].P2, Segments[S].C);
-//             else
-//                 Diff = V2s16_Sub(Segments[S].P2, Segments[S].P1);
-//             D1 = V2s16_Norm(Diff);
-//             if(Segments[S+1].HasControl)
-//                 Diff = V2s16_Sub(Segments[S+1].C, Segments[S+1].P1);
-//             else
-//                 Diff = V2s16_Sub(Segments[S+1].P2, Segments[S+1].P1);
-//             D2 = V2s16_Norm(Diff);
-            
-//             #define SIN_ALPHA 0.08715574274765817355806427083747
-//             r32 Cross = R32_Abs(V2r32_Cross(D1, D2));
-//             r32 Dot = V2r32_Dot(D1, D2);
-//             if(Dot < 0 || Cross >= SIN_ALPHA) {
-//                 Glyph.Edges[Glyph.EdgeCount].SegmentCount = 0;
-//                 Glyph.Edges[Glyph.EdgeCount].Segments = Segments+S+1;
-//                 Glyph.EdgeCount++;
-//             }
-//             Glyph.Edges[Glyph.EdgeCount-1].SegmentCount++;
-            
-//             if(Segments+S == (font_segment*)Glyph.Contours+C) {
-//                 Glyph.Contours[C] = Glyph.Edges+Glyph.EdgeCount-1;
-//                 C++;
-//             }
-//         }
-//     } else {
-//         Assert(FALSE, "Unsupported");
-//     }
-    
-//     return Glyph;
-// }
-
-internal void
-Font_CreateMTSDF(u08 *FileData)
+internal font_glyph
+Font_GetGlyph(font Font,
+              u32 Codepoint,
+              r32 Scale,
+              stbtt_fontinfo FontInfo)
 {
-    Stack_Push();
-    font Font = Font_Init(FileData);
+    font_glyph Glyph = {0};
+    u32 GlyphIndex = Font_GetGlyphIndex(Font, Codepoint);
     
-    u32 GlyphIndex = Font_GetGlyphIndex(Font, 'R');
+    if(GlyphIndex < Font.hhea->HMetricCount) {
+        Glyph.Advance = Font.hmtx.HMetrics[GlyphIndex].AdvanceX;
+        Glyph.Bearing.X = Font.hmtx.HMetrics[GlyphIndex].LeftBearing;
+    } else {
+        Glyph.Advance = Font.hmtx.HMetrics[Font.hhea->HMetricCount-1].AdvanceX;
+        Glyph.Bearing.X = Font.hmtx.ExtraBearings[GlyphIndex - Font.hhea->HMetricCount];
+    }
+    Glyph.Advance = (s32)((r32)Glyph.Advance * Scale);
+    Glyph.Bearing.X = (s32)((r32)Glyph.Bearing.X * Scale);
     
-    u32 GlyphOffset;
-    if(Font.head->IndexToLocFormat == TTF_LOCA_SHORT_OFFSETS)
-        GlyphOffset = Font.loca->Shorts[GlyphIndex] * 2;
-    else
-        GlyphOffset = Font.loca->Longs[GlyphIndex];
-    ttf_glyf_entry *GlyfEntry = (ttf_glyf_entry*)(Font.glyfs + GlyphOffset);
+    u32 Offset = Font_GetGlyphOffset(Font, GlyphIndex);
+    u32 NextOffset = Font_GetGlyphOffset(Font, GlyphIndex+1);
+    ttf_glyph *GlyphData = (ttf_glyph*)(Font.glyfs+Offset);
     
-    // font_glyph Glyph = Font_CreateGlyph(GlyfEntry);
+    Glyph.VertexCount = stbtt_GetGlyphShape(&FontInfo, GlyphIndex, &Glyph.Vertices);
     
+    Glyph.Shape = MSDF_MakeShape(Glyph.Vertices, Glyph.VertexCount);
     
+    if(NextOffset == Offset) {
+        Glyph.Bearing.Y = 0;
+        Glyph.Size = (v2u32){0};
+    } else {
+        s32 SX = (s32)R32_Floor( GlyphData->XMin * Scale);
+        s32 SY = (s32)R32_Floor(-GlyphData->YMax * Scale);
+        s32 EX = (s32)R32_Ceil ( GlyphData->XMax * Scale);
+        s32 EY = (s32)R32_Ceil (-GlyphData->YMin * Scale);
+        Glyph.Bearing.Y = -EY;
+        Glyph.Size = (v2u32){EX - SX, EY - SY};
+    }
     
-    Stack_Pop();
+    return Glyph;
 }

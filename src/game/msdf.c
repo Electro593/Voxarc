@@ -375,8 +375,6 @@ MSDF_FindErrors(u08 *ErrorMap,
             b08 HasL,HasB,HasR,HasT, HasLB,HasLT,HasRB,HasRT;
             b08 LE,BE,RE,TE, LBE,LTE,RBE,RTE, E;
             
-            // Assert(X != Size.X-1 || Y != 24);
-            
             HasL = X > 0;
             HasB = Y > 0;
             HasR = X < Size.X-1;
@@ -430,17 +428,10 @@ MSDF_FixErrors(u08 *ErrorMap,
     }
 }
 
-internal void
+internal msdf_shape
 MSDF_MakeShape(stbtt_vertex *Vertices,
-               r32 _Scale,
-               v2u32 SlotSize,
-               u32 VertexCount,
-               v4u08 *Bitmap,
-               v2u32 BitmapOffset,
-               u32 BitmapIndex,
-               v2u32 BitmapSize)
+               u32 VertexCount)
 {
-    Stack_Push();
     msdf_shape Shape = {0};
     
     for(u32 V = 0; V < VertexCount; ++V) {
@@ -456,20 +447,31 @@ MSDF_MakeShape(stbtt_vertex *Vertices,
     Shape.Contours = Stack_Allocate(Shape.ContourCount * sizeof(msdf_contour));
     Shape.Segments = Stack_Allocate(Shape.SegmentCount * sizeof(msdf_segment));
     Shape.Edges = Stack_Allocate((Shape.SegmentCount+Shape.ContourCount) * sizeof(msdf_edge));
-    
-    v4s16 Bounds = MSDF_FindEdges(&Shape, Vertices, VertexCount);
-    v2r32 MaxBounds = {Bounds.Z - Bounds.X, Bounds.W - Bounds.Y};
+    Shape.Bounds = MSDF_FindEdges(&Shape, Vertices, VertexCount);
     
     MSDF_AssignColors(Shape);
     
+    return Shape;
+}
+
+internal void
+MSDF_DrawShape(msdf_shape Shape,
+               r32 _Scale,
+               v2u32 SlotSize,
+               v4u08 *Bitmap,
+               v2u32 BitmapOffset,
+               u32 BitmapIndex,
+               v2u32 BitmapSize)
+{
     /* TODO Possible things to add
        - Short edge merging
-       - Error correction
     */
     
+    v4s16 Bounds = Shape.Bounds;
     v2r32 Offset = {1, 1};
     v2r32 SlotSizeR = {SlotSize.X, SlotSize.Y};
     v2r32 Size = V2r32_Sub(SlotSizeR, V2r32_MulS(Offset, 2));
+    v2r32 MaxBounds = {Bounds.Z - Bounds.X, Bounds.W - Bounds.Y};
     v2r32 Scale = V2r32_Div(Size, MaxBounds);
     r32 Range = 4 / (Scale.X + Scale.Y);
     
@@ -509,7 +511,6 @@ MSDF_MakeShape(stbtt_vertex *Vertices,
             }
             
             v4r32 FinalDists;
-            // Assert(X != SlotSize.X-16 || Y != SlotSize.Y-12);
             FinalDists.X = MSDF_SignedPseudoDistance(P, Segments[0]);
             FinalDists.Y = MSDF_SignedPseudoDistance(P, Segments[1]);
             FinalDists.Z = MSDF_SignedPseudoDistance(P, Segments[2]);
@@ -538,6 +539,4 @@ MSDF_MakeShape(stbtt_vertex *Vertices,
             Bitmap[INDEX_2D(X, Y, BitmapSize.X)] = Color;
         }
     }
-    
-    Stack_Pop();
 }

@@ -39,4 +39,6 @@ typedef struct msdf_shape {
     u32 ContourCount;
     u32 EdgeCount;
     u32 SegmentCount;
+    
+    v4s16 Bounds;
 } msdf_shape;
