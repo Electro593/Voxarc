@@ -10,7 +10,9 @@
 #define TTF_MAKE_TAG(_0,_1,_2,_3) (((_0)<<24) | ((_1)<<16) | ((_2)<<8) | (_3))
 // #define TTF_MAKE_TAG(_0,_1,_2,_3) (((_3)<<24) | ((_2)<<16) | ((_1)<<8) | (_0))
 
-#define SWAPENDIAN16(Data) (Data = (((Data)&0xFF)<<8) | (((Data)>>8)&0xFF))
+#define _SWAPENDIAN16(Data) ((((Data)&0xFF)<<8) | (((Data)>>8)&0xFF))
+
+#define SWAPENDIAN16(Data) (Data = _SWAPENDIAN16(Data))
 #define SWAPENDIAN32(Data) (Data = ((Data&0xFF)<<24) | ((Data&0xFF00)<<8) | ((Data>>8)&0xFF00) | ((Data>>24)&0xFF))
 #define SWAPENDIAN64(Data) (Data = ((Data&0xFF)<<56) | ((Data&0xFF00)<<40)| ((Data&0xFF0000)<<24) | ((Data&0xFF000000)<<8) | ((Data>>8)&0xFF000000) | ((Data>>24)&0xFF0000) | ((Data>>40)&0xFF00) | ((Data>>56)&0xFF))
 
@@ -77,14 +79,14 @@ typedef struct ttf_cmap_subtable {
 } ttf_cmap_subtable;
 
 typedef enum ttf_glyf_flags {
-    TTF_GLYF_FLAG_ON_CURVE = 0x01,
-    TTF_GLYF_FLAG_SHORT_X  = 0x02,
-    TTF_GLYF_FLAG_SHORT_Y  = 0x04,
-    TTF_GLYF_FLAG_REPEATED = 0x08,
-    TTF_GLYF_FLAG_SAME_X   = 0x10,
-    TTF_GLYF_FLAG_POS_X    = 0x10,
-    TTF_GLYF_FLAG_SAME_Y   = 0x20,
-    TTF_GLYF_FLAG_POS_Y    = 0x20,
+    TTF_VERTEX_ON_CURVE = 0x01,
+    TTF_VERTEX_SHORT_X  = 0x02,
+    TTF_VERTEX_SHORT_Y  = 0x04,
+    TTF_FLAG_REPEATED   = 0x08,
+    TTF_VERTEX_SAME_X   = 0x10,
+    TTF_VERTEX_POS_X    = 0x10,
+    TTF_VERTEX_SAME_Y   = 0x20,
+    TTF_VERTEX_POS_Y    = 0x20,
 } ttf_glyf_flags;
 #define TTF_TAG_glyf TTF_MAKE_TAG('g','l','y','f')
 typedef struct ttf_glyph {
@@ -200,6 +202,6 @@ typedef struct font_glyph {
     
     msdf_shape Shape;
     
-    u32 VertexCount;
-    stbtt_vertex *Vertices;
+    // u32 VertexCount;
+    // stbtt_vertex *Vertices;
 } font_glyph;

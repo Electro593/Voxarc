@@ -322,6 +322,7 @@ Stack_Allocate(u64 Size)
 {
     vptr Result = __Global.Stack->Cursor;
     __Global.Stack->Cursor += Size;
+    Assert(__Global.Stack->Cursor <= (u08*)(__Global.Stack+1)+__Global.Stack->Size);
     return Result;
 }
 

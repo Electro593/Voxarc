@@ -117,9 +117,9 @@ File_CreateAssetpack(c08 *FileName,
     
     u08 *FontData = File_Read("assets\\fonts\\arial.ttf", 0, 0).Text;
     font Font = Font_Init(FontData);
-    stbtt_fontinfo FontInfo;
-    u08 *STBTTFontData = File_Read("assets\\fonts\\arial.ttf", 0, 0).Text;
-    stbtt_InitFont(&FontInfo, STBTTFontData, 0);
+    // stbtt_fontinfo FontInfo;
+    // u08 *STBTTFontData = File_Read("assets\\fonts\\arial.ttf", 0, 0).Text;
+    // stbtt_InitFont(&FontInfo, STBTTFontData, 0);
     
     r32 Scale = 60.0f / (Font.hhea->Ascent - Font.hhea->Descent);
     s32 Ascent  = (s32)((r32)Font.hhea->Ascent  * Scale);
@@ -164,7 +164,7 @@ File_CreateAssetpack(c08 *FileName,
         u32 GlyphIndex = Font_GetGlyphIndex(Font, Codepoint);
         if(GlyphIndex == 0) continue;
         
-        font_glyph Glyph = Font_GetGlyph(Font, Codepoint, Scale, FontInfo);
+        font_glyph Glyph = Font_GetGlyph(Font, Codepoint, Scale/*, FontInfo*/);
         
         Asset->AdvanceX = Glyph.Advance;
         Asset->Bearing = Glyph.Bearing;
