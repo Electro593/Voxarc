@@ -7,36 +7,6 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-// #define STBTT_pow(x,y) x
-// #define STBTT_fmod(x,y) x
-// #define STBTT_cos(x) x
-// #define STBTT_acos(x) x
-// #define STBTT_assert(x) Assert(x)
-// #define STBTT_strlen(x) Mem_BytesUntil(x, 0)
-// #define STBTT_ifloor(x) (s32)R32_Floor(x)
-// #define STBTT_iceil(x) (s32)R32_Ceil(x)
-// #define STBTT_sqrt(x) R32_sqrt(x)
-// #define STBTT_fabs(x) R32_Abs(x)
-// #define STBTT_malloc(x,u) Stack_Allocate(x)
-// #define STBTT_free(x,u)
-// #define STBTT_memcpy Mem_Cpy
-// #define STBTT_memset Mem_Set
-// #define size_t u64
-// #define STB_TRUETYPE_IMPLEMENTATION
-// #include <libraries/stb_truetype.h>
-// #undef STBTT_pow
-// #undef STBTT_fmod
-// #undef STBTT_cos
-// #undef STBTT_acos
-// #undef STBTT_fabs
-// #undef STBTT_malloc
-// #undef STBTT_free
-// #undef STBTT_assert
-// #undef STBTT_strlen
-// #undef STBTT_memcpy
-// #undef STBTT_memset
-// #undef STB_TRUETYPE_IMPLEMENTATION
-
 internal u32
 Font_CalculateChecksum(u32 *Table,
                        u32 Size)
@@ -350,52 +320,80 @@ Font_FindSegments(msdf_shape *Shape,
     u32 VertexCount = EndPointsOfContours[Shape->ContourCount-1]+1;
     Shape->SegmentCount = VertexCount;
     u08 *Flags = Stack_Allocate(Shape->SegmentCount);
+    u32 *SegmentCounts = Stack_Allocate(Shape->ContourCount * sizeof(u32));
     
     u08 Flag;
     u32 RepeatCount = 0;
-    for(u32 F = 0; F < Shape->SegmentCount; F++) {
+    b08 WasControl = FALSE;
+    SegmentCounts[0] = EndPointsOfContours[0]+1;
+    for(u32 F=0, V=0, C=0; V < VertexCount; F++, V++) {
         if(RepeatCount == 0) {
             Flag = *Data++;
             if(Flag & TTF_FLAG_REPEATED) RepeatCount = *Data++;
         } else RepeatCount--;
         Flags[F] = Flag;
-        if(!(Flag & TTF_VERTEX_ON_CURVE)) Shape->SegmentCount--;
+        
+        if(Flag & TTF_VERTEX_ON_CURVE)
+            WasControl = FALSE;
+        else if(!WasControl) {
+            Shape->SegmentCount--;
+            SegmentCounts[C]--;
+            WasControl = TRUE;
+        }
+        if(V == EndPointsOfContours[C]) {
+            C++;
+            SegmentCounts[C] = SegmentCounts[C-1]+(EndPointsOfContours[C]-EndPointsOfContours[C-1]);
+        }
     }
     
     Shape->Segments = Stack_Allocate(Shape->SegmentCount * sizeof(msdf_segment));
     Mem_Set(Shape->Segments, 0, Shape->SegmentCount*sizeof(msdf_segment));
     
     v2s32 Pos = {0};
-    for(u32 V = 0; V < Shape->SegmentCount; V++) {
-        if(Flags[V] & TTF_VERTEX_SHORT_X) {
+    WasControl = FALSE;
+    for(u32 V=0, F=0; F < VertexCount; V++, F++) {
+        if(Flags[F] & TTF_VERTEX_SHORT_X) {
             s16 Delta = *Data++;
-            Pos.X += (Flags[V] & TTF_VERTEX_POS_X) ? Delta : -Delta;
-        } else if(!(Flags[V] & TTF_VERTEX_SAME_X)) {
+            Pos.X += (Flags[F] & TTF_VERTEX_POS_X) ? Delta : -Delta;
+        } else if(!(Flags[F] & TTF_VERTEX_SAME_X)) {
             Pos.X += (s16)_SWAPENDIAN16(*(u16*)Data);
             Data += 2;
         }
-        if(Flags[V] & TTF_VERTEX_ON_CURVE)
+        if(Flags[F] & TTF_VERTEX_ON_CURVE) {
             Shape->Segments[V].P1.X = Pos.X;
-        else {
+            WasControl = FALSE;
+        } else if(!WasControl) {
             V--;
             Shape->Segments[V].C1.X = Pos.X;
-            Shape->Segments[V].CPCount++;
+            Shape->Segments[V].CPCount = 1;
+            WasControl = TRUE;
+        } else {
+            r32 PrevX = Shape->Segments[V-1].C1.X;
+            Shape->Segments[V].P1.X = PrevX + (Pos.X-PrevX)/2;
+            Shape->Segments[V].C1.X = Pos.X;
+            Shape->Segments[V].CPCount = 1;
         }
     }
-    for(u32 V = 0; V < Shape->SegmentCount; V++) {
-        if(Flags[V] & TTF_VERTEX_SHORT_Y) {
+    WasControl = FALSE;
+    for(u32 V=0, F=0; F < VertexCount; V++, F++) {
+        if(Flags[F] & TTF_VERTEX_SHORT_Y) {
             s16 Delta = *Data++;
-            Pos.Y += (Flags[V] & TTF_VERTEX_POS_Y) ? Delta : -Delta;
-        } else if(!(Flags[V] & TTF_VERTEX_SAME_Y)) {
+            Pos.Y += (Flags[F] & TTF_VERTEX_POS_Y) ? Delta : -Delta;
+        } else if(!(Flags[F] & TTF_VERTEX_SAME_Y)) {
             Pos.Y += (s16)_SWAPENDIAN16(*(u16*)Data);
             Data += 2;
         }
-        if(Flags[V] & TTF_VERTEX_ON_CURVE)
+        if(Flags[F] & TTF_VERTEX_ON_CURVE) {
             Shape->Segments[V].P1.Y = Pos.Y;
-        else {
+            WasControl = FALSE;
+        } else if(!WasControl) {
             V--;
             Shape->Segments[V].C1.Y = Pos.Y;
-            Shape->Segments[V].CPCount++;
+            WasControl = TRUE;
+        } else {
+            r32 PrevY = Shape->Segments[V-1].C1.Y;
+            Shape->Segments[V].P1.Y = PrevY + (Pos.Y-PrevY)/2;
+            Shape->Segments[V].C1.Y = Pos.Y;
         }
     }
     
@@ -409,13 +407,13 @@ Font_FindSegments(msdf_shape *Shape,
         Shape->Edges[E].Segments = Shape->Segments+V;
         Shape->Edges[E].Color = 0b101;
         
-        for(; V < EndPointsOfContours[C]; V++)
+        for(; V < SegmentCounts[C]-1; V++)
             Shape->Segments[V].P2 = Shape->Segments[V+1].P1;
         Shape->Segments[V].P2 = Shape->Segments[StartV].P1;
         
         r32 Cross, Dot;
         v2r32 FirstDir, PrevDir, CurrDir, NextDir;
-        for(V = StartV; V <= EndPointsOfContours[C]; V++) {
+        for(V = StartV; V < SegmentCounts[C]; V++) {
             if(Shape->Segments[V].CPCount == 0) {
                 CurrDir = V2r32_Sub(Shape->Segments[V].P2, Shape->Segments[V].P1);
                 NextDir = CurrDir;
@@ -451,20 +449,23 @@ Font_FindSegments(msdf_shape *Shape,
         Shape->Contours[C].EdgeCount = E - StartE;
         
         if(Shape->Contours[C].EdgeCount == 1) {
-            CurrDir = V2r32_Norm(CurrDir);
+            PrevDir = V2r32_Norm(PrevDir);
             FirstDir = V2r32_Norm(FirstDir);
-            Cross = V2r32_Cross(CurrDir, FirstDir);
-            Dot = V2r32_Dot(CurrDir, PrevDir);
+            Cross = V2r32_Cross(PrevDir, FirstDir);
+            Dot = V2r32_Dot(PrevDir, PrevDir);
             if(Dot < 0 || R32_Abs(Cross) >= SIN_ALPHA) {
-                u32 OldSegCount = Shape->Edges[E].SegmentCount;
-                u32 NewSegCount = Shape->Edges[E].SegmentCount / 2;
-                Shape->Edges[E].SegmentCount = NewSegCount;
-                Shape->Edges[E+1].SegmentCount = OldSegCount - NewSegCount;
-                Shape->Edges[E+1].Segments = Shape->Segments+StartEV+NewSegCount;
-                Shape->Edges[E+1].Color = 0b110;
+                u32 OldSegCount = Shape->Edges[E-1].SegmentCount;
+                u32 NewSegCount = Shape->Edges[E-1].SegmentCount / 2;
+                Shape->Edges[E-1].SegmentCount = NewSegCount;
+                Shape->Edges[E].SegmentCount = OldSegCount - NewSegCount;
+                Shape->Edges[E].Segments = Shape->Segments+StartEV+NewSegCount;
+                Shape->Edges[E].Color = 0b110;
+                Shape->Contours[C].EdgeCount++;
                 E++;
             } else Shape->Contours[C].Edges[0].Color = 0b111;
         }
+        
+        Shape->EdgeCount += Shape->Contours[C].EdgeCount;
     }
 }
 #undef SIN_ALPHA
@@ -472,8 +473,7 @@ Font_FindSegments(msdf_shape *Shape,
 internal font_glyph
 Font_GetGlyph(font Font,
               u32 Codepoint,
-              r32 Scale/*,
-              stbtt_fontinfo FontInfo*/)
+              r32 Scale)
 {
     font_glyph Glyph = {0};
     u32 GlyphIndex = Font_GetGlyphIndex(Font, Codepoint);
@@ -492,29 +492,63 @@ Font_GetGlyph(font Font,
     u32 NextOffset = Font_GetGlyphOffset(Font, GlyphIndex+1);
     ttf_glyph *GlyphData = (ttf_glyph*)(Font.glyfs+Offset);
     
-    // Glyph.VertexCount = stbtt_GetGlyphShape(&FontInfo, GlyphIndex, &Glyph.Vertices);
-    // Glyph.Shape = MSDF_MakeShape(Glyph.Vertices, Glyph.VertexCount);
-    
     if(NextOffset == Offset) {
         Glyph.Bearing.Y = 0;
         Glyph.Size = (v2u32){0};
     } else {
-        Glyph.Shape.Bounds.X = (s32)R32_Floor( GlyphData->XMin * Scale);
-        Glyph.Shape.Bounds.Y = (s32)R32_Floor(-GlyphData->YMax * Scale);
-        Glyph.Shape.Bounds.Z = (s32)R32_Ceil ( GlyphData->XMax * Scale);
-        Glyph.Shape.Bounds.W = (s32)R32_Ceil (-GlyphData->YMin * Scale);
-        Glyph.Bearing.Y = -Glyph.Shape.Bounds.W;
-        Glyph.Size = (v2u32){Glyph.Shape.Bounds.Z - Glyph.Shape.Bounds.X,
-                             Glyph.Shape.Bounds.W - Glyph.Shape.Bounds.Y};
+        Glyph.Shape.Bounds.X = GlyphData->XMin;
+        Glyph.Shape.Bounds.Y = GlyphData->YMin;
+        Glyph.Shape.Bounds.Z = GlyphData->XMax;
+        Glyph.Shape.Bounds.W = GlyphData->YMax;
+        s32 SX = (s32)R32_Floor( Glyph.Shape.Bounds.X * Scale);
+        s32 SY = (s32)R32_Floor(-Glyph.Shape.Bounds.W * Scale);
+        s32 EX = (s32)R32_Ceil ( Glyph.Shape.Bounds.Z * Scale);
+        s32 EY = (s32)R32_Ceil (-Glyph.Shape.Bounds.Y * Scale);
+        Glyph.Bearing.Y = -EY;
+        Glyph.Size = (v2u32){EX - SX, EY - SY};
         
-        msdf_shape *Shape = &Glyph.Shape;
-        Shape->ContourCount = GlyphData->ContourCount;
-        Assert(Codepoint != '$');
-        Font_FindSegments(Shape, GlyphData->Data);
-        // Shape.Bounds = MSDF_FindEdges(Shape, Vertices, VertexCount);
-        // MSDF_AssignColors(*Shape);
+        Glyph.Shape.ContourCount = GlyphData->ContourCount;
+        Font_FindSegments(&Glyph.Shape, GlyphData->Data);
         
-        // Glyph.Shape = MSDF_MakeShape(Vertices, VertexCount);
+        u32 TotalE=0, TotalV=0;
+        Assert(Glyph.Shape.Contours);
+        Assert(Glyph.Shape.Edges);
+        Assert(Glyph.Shape.Segments);
+        Assert(Glyph.Shape.ContourCount > 0);
+        Assert(Glyph.Shape.EdgeCount > 0);
+        Assert(Glyph.Shape.SegmentCount > 0);
+        for(u32 C = 0; C < Glyph.Shape.ContourCount; C++) {
+            msdf_contour Contour = Glyph.Shape.Contours[C];
+            Assert(Contour.Edges);
+            Assert(Contour.EdgeCount > 0);
+            
+            u32 SegCount = 0;
+            for(u32 E = 0; E < Contour.EdgeCount; E++) {
+                msdf_edge Edge = Contour.Edges[E];
+                Assert(Edge.Segments);
+                Assert(Edge.SegmentCount > 0);
+                Assert((Contour.EdgeCount == 1 && Edge.Color == 0b111) ||
+                       Edge.Color == 0b101 || Edge.Color == 0b110 || Edge.Color == 0b011);
+                if((s32)E <= (s32)Contour.EdgeCount - 2)
+                    Assert(Edge.Segments+Edge.SegmentCount == Glyph.Shape.Contours[C].Edges[E+1].Segments);
+                SegCount += Edge.SegmentCount;
+            }
+            
+            Assert(SegCount >= Contour.EdgeCount);
+            if((s32)C <= (s32)Glyph.Shape.ContourCount - 2) {
+                Assert(Contour.Edges+Contour.EdgeCount == Glyph.Shape.Contours[C+1].Edges);
+                Assert(Contour.Edges[0].Segments+SegCount == Glyph.Shape.Contours[C+1].Edges[0].Segments);
+            }
+            
+            TotalE += Contour.EdgeCount;
+            TotalV += SegCount;
+        }
+        Assert(Glyph.Shape.EdgeCount == TotalE);
+        Assert(Glyph.Shape.SegmentCount == TotalV);
+        Assert(Glyph.Shape.SegmentCount >= Glyph.Shape.EdgeCount);
+        for(u32 V = 0; V < Glyph.Shape.SegmentCount; V++) {
+            Assert(Glyph.Shape.Segments[V].CPCount <= 1);
+        }
     }
     
     return Glyph;

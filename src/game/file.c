@@ -107,19 +107,19 @@ File_CreateAssetpack(c08 *FileName,
 {
     Stack_Push();
     
+    /* TODO
+       - Verify the efficiency of the packer; there's probably a bug
+       - Fix scaling
+    */
+    
     assetpack_header Header;
     heap_handle *Registries;
     heap_handle *Tags;
     heap_handle *TagData;
     heap_handle *Assets;
     
-    u32 Padding = 1;
-    
     u08 *FontData = File_Read("assets\\fonts\\arial.ttf", 0, 0).Text;
     font Font = Font_Init(FontData);
-    // stbtt_fontinfo FontInfo;
-    // u08 *STBTTFontData = File_Read("assets\\fonts\\arial.ttf", 0, 0).Text;
-    // stbtt_InitFont(&FontInfo, STBTTFontData, 0);
     
     r32 Scale = 60.0f / (Font.hhea->Ascent - Font.hhea->Descent);
     s32 Ascent  = (s32)((r32)Font.hhea->Ascent  * Scale);
@@ -164,7 +164,7 @@ File_CreateAssetpack(c08 *FileName,
         u32 GlyphIndex = Font_GetGlyphIndex(Font, Codepoint);
         if(GlyphIndex == 0) continue;
         
-        font_glyph Glyph = Font_GetGlyph(Font, Codepoint, Scale/*, FontInfo*/);
+        font_glyph Glyph = Font_GetGlyph(Font, Codepoint, Scale);
         
         Asset->AdvanceX = Glyph.Advance;
         Asset->Bearing = Glyph.Bearing;
@@ -182,7 +182,7 @@ File_CreateAssetpack(c08 *FileName,
         } else {
             asset_node *AssetNode = Stack_Allocate(sizeof(asset_node));
             AssetNode->Glyph = Glyph;
-            AssetNode->Size = (v2u32){Asset->Size.X+Padding, Asset->Size.Y+Padding};
+            AssetNode->Size = Asset->Size;
             AssetNode->Asset = Asset;
             AssetNode->Prev = NullAssetNode;
             AssetNode->Next = NullAssetNode->Next;
@@ -248,9 +248,9 @@ File_CreateAssetpack(c08 *FileName,
             // Make a new atlas if necessary
             if(BestNode == NULL && Node->Next == NullNode) {
                 binpacker_node *NewNode = Stack_Allocate(sizeof(binpacker_node));
-                NewNode->Pos = (v2u32){Padding, Padding};
+                NewNode->Pos = (v2u32){0};
                 Assert(AssetNode->Size.X < AtlasDims.X && AssetNode->Size.Y < AtlasDims.Y);
-                NewNode->Size = (v2u32){AtlasDims.X-Padding, AtlasDims.Y-Padding};
+                NewNode->Size = AtlasDims;
                 NewNode->AtlasIndex = AtlasCount;
                 NewNode->Next = Node->Next;
                 NewNode->Prev = Node;

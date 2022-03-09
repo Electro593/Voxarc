@@ -176,8 +176,6 @@ typedef struct ttf_maxp {
 } ttf_maxp;
 #pragma pack(pop)
 
-#include <libraries/stb_truetype.h>
-
 typedef struct font {
     ttf_font_dir *FontDir;
     ttf_cmap *cmap;
@@ -188,8 +186,6 @@ typedef struct font {
     ttf_loca *loca;
     ttf_maxp *maxp;
     
-    b08 LoadedSTBTT;
-    stbtt_fontinfo FontInfo;
     ttf_cmap_subtable Encoding;
     
     u08 *FileBase;
@@ -201,7 +197,4 @@ typedef struct font_glyph {
     v2u32 Size;
     
     msdf_shape Shape;
-    
-    // u32 VertexCount;
-    // stbtt_vertex *Vertices;
 } font_glyph;
