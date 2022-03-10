@@ -10,7 +10,7 @@
 internal string File_Read(c08 *FileName, u64 Length, u64 Offset);
 
 typedef enum assetpack_tag_id {
-    TAG_CODEPOINT,
+    TAG_CODEPOINT=1,
     TAG_ATLAS_DESCRIPTOR,
     TAG_FONT_DEF,
 } assetpack_tag_id;
@@ -76,7 +76,7 @@ typedef struct assetpack_tag {
         vptr ValueP;
     };
     u32 AssetCount;
-    assetpack_asset *Assets[];
+    assetpack_asset **Assets;
 } assetpack_tag;
 
 typedef struct assetpack_registry {

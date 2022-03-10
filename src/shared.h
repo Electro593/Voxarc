@@ -120,7 +120,6 @@ typedef struct datetime datetime;
 #include <util/intrin.h>
 #include <util/scalar.h>
 #include <util/vector.h>
-#include <util/bit.h>
 #include <util/memory.h>
 #include <util/string.h>
 #include <renderer/opengl/opengl.h>

@@ -17,8 +17,8 @@ global_state __Global;
 #include <util/string.c>
 #include <game/msdf.c>
 #include <renderer/font.c>
-#include <renderer/opengl/render.c>
 #include <game/file.c>
+#include <renderer/opengl/render.c>
 
 // TODO handle errors, e.g. make a memory representation of a default
 //      file if loading it fails
@@ -38,7 +38,7 @@ Game_Init(platform_state *Platform,
     heap *RendererHeap = Heap_Init(MemBase, RendererHeapSize);
     (u08*)MemBase += RendererHeapSize;
     
-    File_CreateAssetpack("assets\\0.pack", RendererHeap);
+    // File_CreateAssetpack("assets\\0.pack", RendererHeap);
     assetpack Assetpack = File_LoadAssetpack("assets\\0.pack", RendererHeap);
     Renderer->Assetpack = Assetpack;
     

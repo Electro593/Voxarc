@@ -7,6 +7,15 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+internal u32
+Mesh_EncodePosition(v3r32 P)
+{
+    P = V3r32_MulS(P, 511);
+    v3s32 I = V3r32_ToV3s32(P);
+    u32 E = (1<<30)|((I.Z&0x3FF)<<20)|((I.Y&0x3FF)<<10)|(I.X&0x3FF);
+    return E;
+}
+
 internal void
 Mesh_Bind(mesh *Mesh)
 {
@@ -66,10 +75,10 @@ Mesh_Init(mesh *Mesh,
     
     Mesh_Bind(Mesh);
     
-    u32 Stride = sizeof(bfs32);
+    u32 Stride = sizeof(u32);
     u64 Offset = 0;
     if(Mesh->Flags & MESH_HAS_NORMALS)
-        Stride += sizeof(bfs32);
+        Stride += sizeof(u32);
     if(Mesh->Flags & MESH_HAS_TEXTURES)
         Stride += sizeof(u32);
     if(Mesh->Flags & MESH_HAS_COLORS)
@@ -77,11 +86,11 @@ Mesh_Init(mesh *Mesh,
     Mesh->VertexSize = Stride;
     OpenGL_EnableVertexAttribArray(0);
     OpenGL_VertexAttribPointer(0, 4, GL_INT_2_10_10_10_REV, TRUE, Stride, (vptr)Offset);
-    Offset += sizeof(bfs32);
+    Offset += sizeof(u32);
     if(Mesh->Flags & MESH_HAS_NORMALS) {
         OpenGL_EnableVertexAttribArray(1);
         OpenGL_VertexAttribPointer(1, 4, GL_INT_2_10_10_10_REV, TRUE, Stride, (vptr)Offset);
-        Offset += sizeof(bfs32);
+        Offset += sizeof(u32);
     }
     if(Mesh->Flags & MESH_HAS_TEXTURES) {
         OpenGL_EnableVertexAttribArray(2);

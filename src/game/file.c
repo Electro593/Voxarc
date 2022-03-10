@@ -57,6 +57,52 @@ Assetpack_FindFirstTag(assetpack Assetpack,
     return Registry->Tags+0;
 }
 
+#define Assetpack_FindExactTag(Assetpack, TagID, Value) _Assetpack_FindExactTag(Assetpack, TagID, FORCE_CAST(vptr, Value))
+internal assetpack_tag *
+_Assetpack_FindExactTag(assetpack Assetpack,
+                        assetpack_tag_id TagID,
+                        vptr Value)
+{
+    assetpack_registry *Registry = Assetpack_FindRegistry(Assetpack, TagID);
+    if(Registry == NULL) return NULL;
+    if(Registry->TagCount == 0) return NULL;
+    
+    u32 Index;
+    u32 Start = 0;
+    u32 End = Registry->TagCount;
+    while(Start != End) {
+        Index = Start+(End-Start)/2;
+        s08 CmpResult;
+        switch(Registry->Type.ID) {
+            case TYPEID_U32: {
+                if(Registry->Tags[Index].ValueI < (u64)Value) CmpResult = LESS;
+                else if(Registry->Tags[Index].ValueI > (u64)Value) CmpResult = GREATER;
+                else CmpResult = EQUAL;
+            } break;
+            
+            default: {
+                Assert(0, "Not implemented");
+            }
+        }
+        if(CmpResult == EQUAL) return Registry->Tags+Index;
+        if(CmpResult == LESS) Start = Index+1;
+        else End = Index;
+    }
+    return NULL;
+}
+
+internal assetpack_asset *
+Assetpack_FindExactAsset(assetpack Assetpack,
+                         u32 IDCount,
+                         assetpack_tag_id *IDs,
+                         vptr *Values)
+{
+    if(IDCount == 0) return NULL;
+    
+    Assert(0, "Not implemented!");
+    return NULL;
+}
+
 internal assetpack
 File_LoadAssetpack(c08 *FileName,
                    heap *Heap)
@@ -88,13 +134,13 @@ File_LoadAssetpack(c08 *FileName,
     for(u32 R = 0; R < Assetpack.Header->RegistryCount; R++) {
         assetpack_registry *Registry = Assetpack.Registries+R;
         (u08*)Registry->Tags += (u64)Assetpack.Tags;
-        assetpack_tag *Tag = Registry->Tags;
         for(u32 T = 0; T < Registry->TagCount; T++) {
+            assetpack_tag *Tag = Registry->Tags+T;
             if(Registry->Type.ID == TYPEID_VPTR)
-                (u08*)Registry->Tags->ValueP += (u64)Assetpack.TagData;
+                (u08*)Tag->ValueP += (u64)Assetpack.TagData;
+            (u08*)Tag->Assets += (u64)Assetpack.TagData;
             for(u32 A = 0; A < Tag->AssetCount; A++)
                 (u08*)(Tag->Assets[A]) += (u64)Assetpack.Assets;
-            (u08*)Tag += sizeof(assetpack_tag) + Tag->AssetCount*sizeof(assetpack_asset*);
         }
     }
     
@@ -109,7 +155,7 @@ File_CreateAssetpack(c08 *FileName,
     
     /* TODO
        - Verify the efficiency of the packer; there's probably a bug
-       - Fix scaling
+       - Serialize at the end?
     */
     
     assetpack_header Header;
@@ -117,6 +163,8 @@ File_CreateAssetpack(c08 *FileName,
     heap_handle *Tags;
     heap_handle *TagData;
     heap_handle *Assets;
+    
+    u32 Padding = 1;
     
     u08 *FontData = File_Read("assets\\fonts\\arial.ttf", 0, 0).Text;
     font Font = Font_Init(FontData);
@@ -132,8 +180,9 @@ File_CreateAssetpack(c08 *FileName,
     Header.TagCount = Header.AssetCount+1;
     Tags = Heap_Allocate(Heap, Header.TagCount*sizeof(assetpack_tag) + Header.AssetCount*sizeof(assetpack_asset*));
     
-    Header.TagDataSize = sizeof(assetpack_atlas);
+    Header.TagDataSize = sizeof(assetpack_atlas) + Header.AssetCount*sizeof(assetpack_asset*);
     TagData = Heap_Allocate(Heap, Header.TagDataSize);
+    vptr TagDataCursor = TagData->Data;
     
     Header.RegistryCount = 2;
     Registries = Heap_Allocate(Heap, Header.RegistryCount*sizeof(assetpack_registry));
@@ -172,8 +221,9 @@ File_CreateAssetpack(c08 *FileName,
         
         Tag->ValueI = Codepoint;
         Tag->AssetCount = 1;
-        Tag->Assets[0] = (vptr)((u08*)Asset - (u64)Assets->Data);
-        (u08*)Tag += sizeof(assetpack_tag) + sizeof(assetpack_asset*);
+        Tag->Assets = (vptr)((u08*)TagDataCursor - (u64)TagData->Data);
+        *(vptr*)TagDataCursor = (u08*)Asset - (u64)Assets->Data;
+        (u08*)TagDataCursor += sizeof(assetpack_asset*);
         
         if(Glyph.Shape.ContourCount == 0) {
             Asset->Pos = (v2u32){0};
@@ -182,7 +232,7 @@ File_CreateAssetpack(c08 *FileName,
         } else {
             asset_node *AssetNode = Stack_Allocate(sizeof(asset_node));
             AssetNode->Glyph = Glyph;
-            AssetNode->Size = Asset->Size;
+            AssetNode->Size = (v2u32){Asset->Size.X+Padding, Asset->Size.Y+Padding};
             AssetNode->Asset = Asset;
             AssetNode->Prev = NullAssetNode;
             AssetNode->Next = NullAssetNode->Next;
@@ -191,6 +241,7 @@ File_CreateAssetpack(c08 *FileName,
         }
         
         Asset++;
+        Tag++;
     }
     
     binpacker_node *BestNode, *Node;
@@ -248,9 +299,9 @@ File_CreateAssetpack(c08 *FileName,
             // Make a new atlas if necessary
             if(BestNode == NULL && Node->Next == NullNode) {
                 binpacker_node *NewNode = Stack_Allocate(sizeof(binpacker_node));
-                NewNode->Pos = (v2u32){0};
+                NewNode->Pos = (v2u32){Padding, Padding};
                 Assert(AssetNode->Size.X < AtlasDims.X && AssetNode->Size.Y < AtlasDims.Y);
-                NewNode->Size = AtlasDims;
+                NewNode->Size = (v2u32){AtlasDims.X-Padding, AtlasDims.Y-Padding};
                 NewNode->AtlasIndex = AtlasCount;
                 NewNode->Next = Node->Next;
                 NewNode->Prev = Node;
@@ -359,9 +410,10 @@ File_CreateAssetpack(c08 *FileName,
     ((assetpack_registry*)Registries->Data)[1].Type = TYPE_VPTR;
     ((assetpack_registry*)Registries->Data)[1].TagCount = 1;
     ((assetpack_registry*)Registries->Data)[1].Tags = (assetpack_tag*)((u08*)Tag - Tags->Data);
-    Tag->ValueI = 0;
+    Tag->ValueP = (u08*)TagDataCursor - (u64)TagData->Data;
     Tag->AssetCount = 0;
-    assetpack_atlas *AtlasDescriptor = (assetpack_atlas*)TagData->Data;
+    assetpack_atlas *AtlasDescriptor = (assetpack_atlas*)TagDataCursor;
+    (u08*)TagDataCursor += sizeof(assetpack_atlas);
     AtlasDescriptor->DataOffset = 0;
     AtlasDescriptor->Size = AtlasDims;
     AtlasDescriptor->Count = AtlasCount;
