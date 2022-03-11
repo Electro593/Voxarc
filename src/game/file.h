@@ -47,15 +47,18 @@ typedef struct assetpack_header {
 typedef struct assetpack_texture {
     v2u32 Pos;
     v2u32 Size;
-    v2s32 Bearing;
-    s32 AdvanceX;
+    v2r32 SizeR;
+    v2r32 Bearing;
+    r32 AdvanceX;
     u16 AtlasIndex;
     b08 IsRotated;
     u08 _Unused[1];
 } assetpack_texture;
 
 typedef struct assetpack_font {
-    s32 AdvanceY;
+    r32 Ascent;
+    r32 Descent;
+    r32 LineGap;
 } assetpack_font;
 
 typedef struct assetpack_atlas {

@@ -6,13 +6,17 @@ layout(location = 2) in uint TextureIndex;
 struct texture_data {
     uvec2 Pos;
     uvec2 Size;
-    ivec2 Bearing;
-    int AdvanceX;
+    vec2 SizeR;
+    vec2 Bearing;
+    float AdvanceX;
     uint TheRest;
 };
 
-layout(std430, binding = 0) readonly buffer Storage {
+layout(std430, binding = 0) readonly buffer TextureStorage {
     texture_data TextureData[];
+};
+layout(std430, binding = 1) readonly buffer MatrixStorage {
+    mat4 Matrices[];
 };
 
 uniform uvec2 AtlasSize;
@@ -23,6 +27,7 @@ out flat uint AtlasIndex;
 void main()
 {
     gl_Position = PositionIn.xyzw;
+    // gl_Position = PositionIn.xyzw*Matrices[gl_DrawID];
     
     uint Right = TextureIndex & 1;
     uint Up = (TextureIndex & 2) >> 1;

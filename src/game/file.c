@@ -149,7 +149,8 @@ File_LoadAssetpack(c08 *FileName,
 
 internal void
 File_CreateAssetpack(c08 *FileName,
-                     heap *Heap)
+                     heap *Heap,
+                     r32 FontSize)
 {
     Stack_Push();
     
@@ -169,22 +170,19 @@ File_CreateAssetpack(c08 *FileName,
     u08 *FontData = File_Read("assets\\fonts\\arial.ttf", 0, 0).Text;
     font Font = Font_Init(FontData);
     
-    r32 Scale = 60.0f / (Font.hhea->Ascent - Font.hhea->Descent);
-    s32 Ascent  = (s32)((r32)Font.hhea->Ascent  * Scale);
-    s32 Descent = (s32)((r32)Font.hhea->Descent * Scale);
-    s32 LineGap = (s32)((r32)Font.hhea->LineGap * Scale);
+    r32 UnitScale = 1.0f/(Font.hhea->Ascent-Font.hhea->Descent);
     
     Header.AssetCount = 127-32;
     Assets = Heap_Allocate(Heap, (127-32)*sizeof(assetpack_texture));
     
-    Header.TagCount = Header.AssetCount+1;
+    Header.TagCount = Header.AssetCount+1+1;
     Tags = Heap_Allocate(Heap, Header.TagCount*sizeof(assetpack_tag) + Header.AssetCount*sizeof(assetpack_asset*));
     
-    Header.TagDataSize = sizeof(assetpack_atlas) + Header.AssetCount*sizeof(assetpack_asset*);
+    Header.TagDataSize = sizeof(assetpack_atlas) + sizeof(assetpack_font) + Header.AssetCount*sizeof(assetpack_asset*);
     TagData = Heap_Allocate(Heap, Header.TagDataSize);
     vptr TagDataCursor = TagData->Data;
     
-    Header.RegistryCount = 2;
+    Header.RegistryCount = 3;
     Registries = Heap_Allocate(Heap, Header.RegistryCount*sizeof(assetpack_registry));
     ((assetpack_registry*)Registries->Data)[0].ID = TAG_CODEPOINT;
     ((assetpack_registry*)Registries->Data)[0].Type = TYPE_U32;
@@ -213,11 +211,12 @@ File_CreateAssetpack(c08 *FileName,
         u32 GlyphIndex = Font_GetGlyphIndex(Font, Codepoint);
         if(GlyphIndex == 0) continue;
         
-        font_glyph Glyph = Font_GetGlyph(Font, Codepoint, Scale);
+        font_glyph Glyph = Font_GetGlyph(Font, Codepoint, UnitScale);
         
         Asset->AdvanceX = Glyph.Advance;
         Asset->Bearing = Glyph.Bearing;
-        Asset->Size = Glyph.Size;
+        Asset->SizeR = Glyph.Size;
+        Asset->Size = (v2u32){Glyph.Size.X*FontSize, Glyph.Size.Y*FontSize};
         
         Tag->ValueI = Codepoint;
         Tag->AssetCount = 1;
@@ -327,8 +326,8 @@ File_CreateAssetpack(c08 *FileName,
         }
         v4u08 *Bitmap = (v4u08*)(Atlases->Data + Node->AtlasIndex*AtlasSize);
         Bitmap += INDEX_2D(Node->Pos.X, Node->Pos.Y, AtlasDims.X);
-        MSDF_DrawShape(AssetNode->Glyph.Shape, Scale, Asset->Size, Bitmap, Node->Pos, Node->AtlasIndex, AtlasDims);
         Asset->Pos = Node->Pos;
+        MSDF_DrawShape(AssetNode->Glyph.Shape, &Asset->Pos, &Asset->Size, Bitmap, Node->Pos, Node->AtlasIndex, AtlasDims);
         
         v2u32 Pos = Node->Pos;
         v2u32 Pos2 = V2u32_Add(Node->Pos, AssetNode->Size);
@@ -412,11 +411,25 @@ File_CreateAssetpack(c08 *FileName,
     ((assetpack_registry*)Registries->Data)[1].Tags = (assetpack_tag*)((u08*)Tag - Tags->Data);
     Tag->ValueP = (u08*)TagDataCursor - (u64)TagData->Data;
     Tag->AssetCount = 0;
+    Tag++;
     assetpack_atlas *AtlasDescriptor = (assetpack_atlas*)TagDataCursor;
     (u08*)TagDataCursor += sizeof(assetpack_atlas);
     AtlasDescriptor->DataOffset = 0;
     AtlasDescriptor->Size = AtlasDims;
     AtlasDescriptor->Count = AtlasCount;
+    
+    ((assetpack_registry*)Registries->Data)[2].ID = TAG_FONT_DEF;
+    ((assetpack_registry*)Registries->Data)[2].Type = TYPE_VPTR;
+    ((assetpack_registry*)Registries->Data)[2].TagCount = 1;
+    ((assetpack_registry*)Registries->Data)[2].Tags = (assetpack_tag*)((u08*)Tag - Tags->Data);
+    Tag->ValueP = (u08*)TagDataCursor - (u64)TagData->Data;
+    Tag->AssetCount = 0;
+    Tag++;
+    assetpack_font *FontDescriptor = (assetpack_font*)TagDataCursor;
+    (u08*)TagDataCursor += sizeof(assetpack_font);
+    FontDescriptor->Ascent  = Font.hhea->Ascent*UnitScale;
+    FontDescriptor->Descent = Font.hhea->Descent*UnitScale;
+    FontDescriptor->LineGap = Font.hhea->LineGap*UnitScale;
     
     bitmap_header BitmapHeader = {0};
     BitmapHeader.Signature[0] = 'B';

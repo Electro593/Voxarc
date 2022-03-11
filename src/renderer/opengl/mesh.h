@@ -8,24 +8,26 @@
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 typedef enum mesh_flags {
-    MESH_IS_DYNAMIC         = 0x01,
-    MESH_HAS_NORMALS        = 0x02,
-    MESH_HAS_TEXTURES       = 0x04,
-    MESH_HAS_COLORS         = 0x08,
-    MESH_GROW_VERTEX_BUFFER = 0x10,
-    MESH_GROW_INDEX_BUFFER  = 0x20,
-    MESH_GROW_STORAGE_BUFFER  = 0x40,
+    MESH_IS_DYNAMIC          = 0x01,
+    MESH_HAS_NORMALS         = 0x02,
+    MESH_HAS_TEXTURES        = 0x04,
+    MESH_HAS_COLORS          = 0x08,
+    MESH_GROW_VERTEX_BUFFER  = 0x10,
+    MESH_GROW_INDEX_BUFFER   = 0x20,
+    MESH_GROW_TEXTURE_BUFFER = 0x40,
+    MESH_GROW_MATRIX_BUFFER  = 0x80,
 } mesh_flags;
 
 typedef struct mesh_object {
     heap_handle *Vertices;
     heap_handle *Indices;
+    m4x4r32 Matrix;
 } mesh_object;
 
 typedef struct mesh {
     u32 *Program;
     u32 VAO;
-    u32 VBO, EBO, SSBO;
+    u32 VBO, EBO, MatrixSSBO, TextureSSBO;
     u32 Atlases;
     u32 AtlasesSampler, AtlasSize;
     
@@ -39,4 +41,5 @@ typedef struct mesh {
     heap_handle *Vertices;
     heap_handle *Indices;
     heap_handle *Storage;
+    heap_handle *Matrices;
 } mesh;

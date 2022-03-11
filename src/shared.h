@@ -127,6 +127,7 @@ typedef struct datetime datetime;
 #include <game/msdf.h>
 #include <renderer/font.h>
 #include <game/file.h>
+#include <game/ui.h>
 #include <platform/platform.h>
 #include <renderer/renderer.h>
 #include <game/game.h>

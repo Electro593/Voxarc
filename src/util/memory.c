@@ -71,6 +71,7 @@ Mem_BytesUntil(u08 *Data,
 
 
 
+internal heap *Heap_GetHeap(heap_handle *Handle) { return (heap*)(Handle-Handle->Index); }
 internal heap_handle *Heap_GetHandle(vptr Data) { return *((heap_handle**)Data-1); }
 
 internal heap *
@@ -316,6 +317,9 @@ Stack_Push(void)
     __Global.Stack->FirstMarker = Marker;
     __Global.Stack->Cursor += sizeof(vptr);
 }
+
+// For unbounded allocations
+internal vptr Stack_GetCursor(void) { return __Global.Stack->Cursor; }
 
 internal vptr
 Stack_Allocate(u64 Size)

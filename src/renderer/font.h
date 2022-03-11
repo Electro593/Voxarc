@@ -192,9 +192,9 @@ typedef struct font {
 } font;
 
 typedef struct font_glyph {
-    s32 Advance;
-    v2s32 Bearing;
-    v2u32 Size;
+    r32 Advance;
+    v2r32 Bearing;
+    v2r32 Size;
     
     msdf_shape Shape;
 } font_glyph;

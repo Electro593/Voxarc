@@ -7,8 +7,6 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include <renderer/opengl/mesh.c>
-
 internal void API_ENTRY
 OpenGL_DebugCallback(u32 Source,
                      u32 Type,
@@ -90,7 +88,7 @@ Renderer_Resize(v2u32 NewSize)
     }
     
     OpenGL_Viewport(Pos.X, Pos.Y, Size.X, Size.Y);
-    // OpenGL_Scissor(Pos.X, Pos.Y, Size.X, Size.Y);
+    OpenGL_Scissor(Pos.X, Pos.Y, Size.X, Size.Y);
 }
 
 internal void
@@ -109,7 +107,7 @@ Renderer_Init(renderer_state *Renderer,
     #endif
     
     OpenGL_Enable(GL_DEPTH_TEST);
-    // OpenGL_Enable(GL_SCISSOR_TEST);
+    OpenGL_Enable(GL_SCISSOR_TEST);
     OpenGL_Enable(GL_CULL_FACE);
     OpenGL_Enable(GL_BLEND);
     OpenGL_CullFace(GL_FRONT);
@@ -137,36 +135,50 @@ Renderer_Init(renderer_state *Renderer,
     
     Heap_Resize(Renderer->Mesh.Storage, (127-32)*sizeof(assetpack_texture));
     Mem_Cpy(Renderer->Mesh.Storage->Data, Renderer->Assetpack.Assets, Renderer->Mesh.Storage->Size);
-    Renderer->Mesh.Flags |= MESH_GROW_STORAGE_BUFFER;
+    Renderer->Mesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
     
-    c08 Char = '#';
-    Tag = Assetpack_FindExactTag(Renderer->Assetpack, TAG_CODEPOINT, Char);
-    Assert(Tag && Tag->AssetCount);
-    assetpack_texture Asset = Tag->Assets[0]->Texture;
-    r32 Scale = 1.0f/MAX(Asset.Size.X, Asset.Size.Y);
-    v2r32 AS = {Asset.Size.X*Scale, Asset.Size.Y*Scale};
-    v2r32 AP = {-AS.X/2, -AS.Y/2};
+    // c08 Char = '#';
+    // Tag = Assetpack_FindExactTag(Renderer->Assetpack, TAG_CODEPOINT, Char);
+    // Assert(Tag && Tag->AssetCount);
+    // assetpack_texture Asset = Tag->Assets[0]->Texture;
+    // r32 Scale = 1.0f/MAX(Asset.Size.X, Asset.Size.Y);
+    // v2r32 AS = {Asset.Size.X*Scale, Asset.Size.Y*Scale};
+    // v2r32 AP = {-AS.X/2, -AS.Y/2};
     
-    struct {
-        u32 Position;
-        u32 Texture;
-    } Vertices1[4] = {
-        {Mesh_EncodePosition((v3r32){AP.X,     AP.Y,     0}), ((Char-32)<<2) | 0b00},
-        {Mesh_EncodePosition((v3r32){AP.X,     AP.Y+AS.Y,0}), ((Char-32)<<2) | 0b10},
-        {Mesh_EncodePosition((v3r32){AP.X+AS.X,AP.Y+AS.Y,0}), ((Char-32)<<2) | 0b11},
-        {Mesh_EncodePosition((v3r32){AP.X+AS.X,AP.Y,     0}), ((Char-32)<<2) | 0b01},
-    };
+    // struct {
+    //     u32 Position;
+    //     u32 Texture;
+    // } Vertices1[4] = {
+    //     {Mesh_EncodePosition((v3r32){AP.X,     AP.Y,     0}), ((Char-32)<<2) | 0b00},
+    //     {Mesh_EncodePosition((v3r32){AP.X,     AP.Y+AS.Y,0}), ((Char-32)<<2) | 0b10},
+    //     {Mesh_EncodePosition((v3r32){AP.X+AS.X,AP.Y+AS.Y,0}), ((Char-32)<<2) | 0b11},
+    //     {Mesh_EncodePosition((v3r32){AP.X+AS.X,AP.Y,     0}), ((Char-32)<<2) | 0b01},
+    // };
     
-    u32 Indices1[] = {0,1,2,0,2,3};
-    mesh_object Objects[] = {
-        { Heap_Allocate(Heap, sizeof(Vertices1)), Heap_Allocate(Heap, sizeof(Indices1)) },
-    };
+    // u32 Indices1[] = {0,1,2,0,2,3};
+    // mesh_object Objects[] = {
+    //     { Heap_Allocate(Heap, sizeof(Vertices1)), Heap_Allocate(Heap, sizeof(Indices1)) },
+    // };
     
-    Mem_Cpy(Objects[0].Vertices->Data, Vertices1, sizeof(Vertices1));
-    Mem_Cpy(Objects[0].Indices->Data, Indices1, sizeof(Indices1));
+    // Mem_Cpy(Objects[0].Vertices->Data, Vertices1, sizeof(Vertices1));
+    // Mem_Cpy(Objects[0].Indices->Data, Indices1, sizeof(Indices1));
     
-    Mesh_AddObjects(&Renderer->Mesh, 1, Objects);
+    // Mesh_AddObjects(&Renderer->Mesh, 1, Objects);
+    // Mesh_Update(&Renderer->Mesh);
+    
+    ui UI;
+    UI_Init(&UI, &Renderer->Mesh, Renderer->Heap);
+    u16 Index = UI_CreateStringNode(&UI, CString("Hello, personaaaaa. aHow's it going"), 0.25, Renderer->Assetpack);
+    ui_node *Node = UI_GetNode(&UI, Index);
+    Mesh_AddObjects(&Renderer->Mesh, 1, &Node->Object);
+    Heap_Free(Node->Object.Indices);
+    Heap_Free(Node->Object.Vertices);
+    Heap_Free(Node->StringData.Lines);
+    String_Free(Node->StringData.String);
+    
     Mesh_Update(&Renderer->Mesh);
+    
+    OpenGL_ClearColor(.2,.2,.2,1);
 }
 
 internal void

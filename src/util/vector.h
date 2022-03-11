@@ -64,18 +64,23 @@
 #define MAC_FOR_4(NAME, OP, FUNC, ...) OP(NAME, 3, MAC_FOR_3(NAME, OP, FUNC, MAC_ALLBUTLAST(__VA_ARGS__)), FUNC(NAME, MAC_LAST(__VA_ARGS__), 3))
 
 #define MAC_FOR_ARGS_VEC W, Z, Y, X
-
-
+#define MAC_FOR_ARGS_MAT W, Z, Y, X
 
 
 
 #define DECLARE_VECTOR_TYPE(Count, Type) \
-    typedef union v##Count##Type { \
-        struct { \
+    typedef union v##Count##Type {       \
+        struct {                         \
             MAC_FOR(Type, Count, MAC_FOR_OP_SEP_REV, MAC_FOR_FUNC_DECLVAR, MAC_FOR_ARGS_VEC); \
-        }; \
-        Type E[Count]; \
+        };                               \
+        Type E[Count];                   \
     } v##Count##Type;
+
+#define DECLARE_MATRIX_TYPE(Rows, Cols, Type) \
+    typedef union m##Rows##x##Cols##Type {    \
+        v##Cols##Type V[Rows];                \
+        Type E[Rows*Cols];                    \
+    } m##Rows##x##Cols##Type;
 
 DECLARE_VECTOR_TYPE(2, r32)
 DECLARE_VECTOR_TYPE(2, r64)
@@ -92,4 +97,9 @@ DECLARE_VECTOR_TYPE(4, s16)
 DECLARE_VECTOR_TYPE(4, u08)
 DECLARE_VECTOR_TYPE(4, u32)
 
+DECLARE_MATRIX_TYPE(4, 4, r32);
+
+#undef DECLARE_MATRIX_TYPE
 #undef DECLARE_VECTOR_TYPE
+
+#define M4x4r32_I (m4x4r32){1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1}

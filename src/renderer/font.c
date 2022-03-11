@@ -479,14 +479,12 @@ Font_GetGlyph(font Font,
     u32 GlyphIndex = Font_GetGlyphIndex(Font, Codepoint);
     
     if(GlyphIndex < Font.hhea->HMetricCount) {
-        Glyph.Advance = Font.hmtx.HMetrics[GlyphIndex].AdvanceX;
-        Glyph.Bearing.X = Font.hmtx.HMetrics[GlyphIndex].LeftBearing;
+        Glyph.Advance = Font.hmtx.HMetrics[GlyphIndex].AdvanceX*Scale;
+        Glyph.Bearing.X = Font.hmtx.HMetrics[GlyphIndex].LeftBearing*Scale;
     } else {
-        Glyph.Advance = Font.hmtx.HMetrics[Font.hhea->HMetricCount-1].AdvanceX;
-        Glyph.Bearing.X = Font.hmtx.ExtraBearings[GlyphIndex - Font.hhea->HMetricCount];
+        Glyph.Advance = Font.hmtx.HMetrics[Font.hhea->HMetricCount-1].AdvanceX*Scale;
+        Glyph.Bearing.X = Font.hmtx.ExtraBearings[GlyphIndex - Font.hhea->HMetricCount]*Scale;
     }
-    Glyph.Advance = (s32)((r32)Glyph.Advance * Scale);
-    Glyph.Bearing.X = (s32)((r32)Glyph.Bearing.X * Scale);
     
     u32 Offset = Font_GetGlyphOffset(Font, GlyphIndex);
     u32 NextOffset = Font_GetGlyphOffset(Font, GlyphIndex+1);
@@ -494,18 +492,18 @@ Font_GetGlyph(font Font,
     
     if(NextOffset == Offset) {
         Glyph.Bearing.Y = 0;
-        Glyph.Size = (v2u32){0};
+        Glyph.Size = (v2r32){0};
     } else {
         Glyph.Shape.Bounds.X = GlyphData->XMin;
         Glyph.Shape.Bounds.Y = GlyphData->YMin;
         Glyph.Shape.Bounds.Z = GlyphData->XMax;
         Glyph.Shape.Bounds.W = GlyphData->YMax;
-        s32 SX = (s32)R32_Floor( Glyph.Shape.Bounds.X * Scale);
-        s32 SY = (s32)R32_Floor(-Glyph.Shape.Bounds.W * Scale);
-        s32 EX = (s32)R32_Ceil ( Glyph.Shape.Bounds.Z * Scale);
-        s32 EY = (s32)R32_Ceil (-Glyph.Shape.Bounds.Y * Scale);
+        r32 SX =  Glyph.Shape.Bounds.X * Scale;
+        r32 SY = -Glyph.Shape.Bounds.W * Scale;
+        r32 EX =  Glyph.Shape.Bounds.Z * Scale;
+        r32 EY = -Glyph.Shape.Bounds.Y * Scale;
         Glyph.Bearing.Y = -EY;
-        Glyph.Size = (v2u32){EX - SX, EY - SY};
+        Glyph.Size = (v2r32){EX - SX, EY - SY};
         
         Glyph.Shape.ContourCount = GlyphData->ContourCount;
         Font_FindSegments(&Glyph.Shape, GlyphData->Data);

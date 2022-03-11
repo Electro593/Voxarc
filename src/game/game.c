@@ -18,6 +18,8 @@ global_state __Global;
 #include <game/msdf.c>
 #include <renderer/font.c>
 #include <game/file.c>
+#include <renderer/opengl/mesh.c>
+#include <game/ui.c>
 #include <renderer/opengl/render.c>
 
 // TODO handle errors, e.g. make a memory representation of a default
@@ -38,7 +40,7 @@ Game_Init(platform_state *Platform,
     heap *RendererHeap = Heap_Init(MemBase, RendererHeapSize);
     (u08*)MemBase += RendererHeapSize;
     
-    // File_CreateAssetpack("assets\\0.pack", RendererHeap);
+    // File_CreateAssetpack("assets\\0.pack", RendererHeap, 60.0f);
     assetpack Assetpack = File_LoadAssetpack("assets\\0.pack", RendererHeap);
     Renderer->Assetpack = Assetpack;
     

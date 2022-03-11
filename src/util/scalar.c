@@ -40,6 +40,12 @@ R32_Sign(r32 N)
     return FORCE_CAST(r32, Binary);
 }
 
+internal r32
+R32_Round(r32 N)
+{
+    return (r32)(s32)(N+R32_Sign(N)*0.5);
+}
+
 internal s32
 R32_Exponent(r32 N)
 {

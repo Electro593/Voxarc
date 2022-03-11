@@ -430,8 +430,8 @@ MSDF_FixErrors(u08 *ErrorMap,
 
 internal void
 MSDF_DrawShape(msdf_shape Shape,
-               r32 _Scale,
-               v2u32 SlotSize,
+               v2u32 *_SlotPos,
+               v2u32 *_SlotSize,
                v4u08 *Bitmap,
                v2u32 BitmapOffset,
                u32 BitmapIndex,
@@ -441,8 +441,11 @@ MSDF_DrawShape(msdf_shape Shape,
        - Short edge merging
     */
     
+    v2u32 SlotSize = *_SlotSize;
     v4s16 Bounds = Shape.Bounds;
     v2r32 Offset = {1, 1};
+    *_SlotPos = V2u32_Add(*_SlotPos, (v2u32){1,1});
+    *_SlotSize = V2u32_Sub(*_SlotSize, (v2u32){2,2});
     v2r32 SlotSizeR = {SlotSize.X, SlotSize.Y};
     v2r32 Size = V2r32_Sub(SlotSizeR, V2r32_MulS(Offset, 2));
     v2r32 MaxBounds = {Bounds.Z - Bounds.X, Bounds.W - Bounds.Y};
