@@ -10,8 +10,9 @@
 internal u32
 Mesh_EncodePosition(v3r32 P)
 {
+    P = V3r32_Clamp(P, -1, 1);
     P = V3r32_MulS(P, 511);
-    v3s32 I = {R32_Round(P.X), R32_Round(P.Y), R32_Round(P.Z)};
+    v3s32 I = V3r32_ToV3s32(P);
     u32 E = (1<<30)|((I.Z&0x3FF)<<20)|((I.Y&0x3FF)<<10)|(I.X&0x3FF);
     return E;
 }
@@ -130,13 +131,22 @@ Mesh_AddObjects(mesh *Mesh,
     for(u32 I = 0; I < ObjectCount; I++) {
         Mem_Cpy(Mesh->Vertices->Data+VertexOffsets[I]*Mesh->VertexSize, Objects[I].Vertices->Data, Objects[I].Vertices->Size);
         Mem_Cpy(Mesh->Indices->Data+IndexOffsets[I]*sizeof(u32), Objects[I].Indices->Data, Objects[I].Indices->Size);
-        ((m4x4r32*)Mesh->Matrices->Data)[Mesh->ObjectCount+I] = Objects[I].Matrix;
+        m4x4r32 ModelMatrix = M4x4r32_Mul(M4x4r32_Mul(Objects[I].TranslationMatrix, Objects[I].RotationMatrix), Objects[I].ScalingMatrix);
+        ((m4x4r32*)Mesh->Matrices->Data)[Mesh->ObjectCount+I] = ModelMatrix;
         VertexOffsets[I+1] = VertexOffsets[I] + Objects[I].Vertices->Size / Mesh->VertexSize;
         IndexOffsets[I+1] = IndexOffsets[I] + Objects[I].Indices->Size / sizeof(u32);
     }
     
     Mesh->ObjectCount += ObjectCount;
     Mesh->Flags |= MESH_GROW_VERTEX_BUFFER|MESH_GROW_INDEX_BUFFER|MESH_GROW_MATRIX_BUFFER;
+}
+
+internal void
+Mesh_UpdateMatrix(mesh *Mesh,
+                  m4x4r32 Matrix,
+                  u32 ObjectIndex)
+{
+    ((m4x4r32*)Mesh->Matrices->Data)[ObjectIndex] = Matrix;
 }
 
 //TODO: Make this a per-object update for shrinking
@@ -149,26 +159,30 @@ Mesh_Update(mesh *Mesh)
     else
         DrawType = GL_STATIC_DRAW;
     
-    if(Mesh->Flags & MESH_GROW_VERTEX_BUFFER)
+    if(Mesh->Flags & MESH_GROW_VERTEX_BUFFER) {
         OpenGL_BufferData(GL_ARRAY_BUFFER, Mesh->Vertices->Size, Mesh->Vertices->Data, DrawType);
-    else
+        Mesh->Flags &= ~MESH_GROW_VERTEX_BUFFER;
+    } else
         OpenGL_BufferSubData(GL_ARRAY_BUFFER, 0, Mesh->Vertices->Size, Mesh->Vertices->Data);
     
-    if(Mesh->Flags & MESH_GROW_INDEX_BUFFER)
-        OpenGL_BufferData(GL_ELEMENT_ARRAY_BUFFER, Mesh->Indices->Size, Mesh->Indices->Data, DrawType);
-    else
+    if(Mesh->Flags & MESH_GROW_INDEX_BUFFER) {
+            OpenGL_BufferData(GL_ELEMENT_ARRAY_BUFFER, Mesh->Indices->Size, Mesh->Indices->Data, DrawType);
+            Mesh->Flags &= ~MESH_GROW_INDEX_BUFFER;
+    } else
         OpenGL_BufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, Mesh->Indices->Size, Mesh->Indices->Data);
     
     OpenGL_BindBuffer(GL_SHADER_STORAGE_BUFFER, Mesh->TextureSSBO);
-    if(Mesh->Flags & MESH_GROW_TEXTURE_BUFFER)
+    if(Mesh->Flags & MESH_GROW_TEXTURE_BUFFER) {
         OpenGL_BufferData(GL_SHADER_STORAGE_BUFFER, Mesh->Storage->Size, Mesh->Storage->Data, DrawType);
-    else
+        Mesh->Flags &= ~MESH_GROW_TEXTURE_BUFFER;
+    } else
         OpenGL_BufferSubData(GL_SHADER_STORAGE_BUFFER, 0, Mesh->Storage->Size, Mesh->Storage->Data);
     
     OpenGL_BindBuffer(GL_SHADER_STORAGE_BUFFER, Mesh->MatrixSSBO);
-    if(Mesh->Flags & MESH_GROW_MATRIX_BUFFER)
+    if(Mesh->Flags & MESH_GROW_MATRIX_BUFFER) {
         OpenGL_BufferData(GL_SHADER_STORAGE_BUFFER, Mesh->Matrices->Size, Mesh->Matrices->Data, DrawType);
-    else
+        Mesh->Flags &= ~MESH_GROW_MATRIX_BUFFER;
+    } else
         OpenGL_BufferSubData(GL_SHADER_STORAGE_BUFFER, 0, Mesh->Matrices->Size, Mesh->Matrices->Data);
 }
 

@@ -71,6 +71,8 @@ UI_AddSibling(ui *UI,
 internal u16
 UI_CreateStringNode(ui *UI,
                     string String,
+                    v2r32 Pos,
+                    v2r32 Size,
                     r32 FontHeight,
                     assetpack Assetpack)
 {
@@ -91,11 +93,12 @@ UI_CreateStringNode(ui *UI,
     u32 LineCount = 0;
     heap_handle *Lines = Heap_Allocate(Heap, LineCount*sizeof(u32));
     Node->StringData.Lines = Lines;
+    r32 StringLength = String.Length;
     
     r32 UnitAdvance = Font->Ascent-Font->Descent+Font->LineGap;
     
     v2r32 Scale = {FontHeight, FontHeight};
-    v2r32 P = {-1,1-Font->Ascent*Scale.Y};
+    v2r32 P = {Pos.X,Pos.Y+Size.Y-Font->Ascent*Scale.Y};
     v2r32 A = {0,UnitAdvance*Scale.Y};
     u32 PrintedChars = 0;
     r32 MaxWidth = 0;
@@ -103,35 +106,19 @@ UI_CreateStringNode(ui *UI,
     r32 HighestAscent = 0;
     r32 LowestDescent = 0;
     u32 LastBreakChar = 0;
-    r32 WidthSinceBreak;
+    r32 WidthSinceBreak = 0;
     r32 AdvanceSinceBreak = 0;
-    for(u32 C = 0; C < String.Length; C++) {
+    for(u32 C = 0; C < StringLength; C++) {
         c08 Char = String.Text[C];
-        r32 Multiplier = 1;
         
-        if(Char == '\n' || Char == ' ' || Char == '-') {
-            LastBreakChar = C;
+        if(!Char || Char == '\n' || Char == '\t') continue;
+        
+        b08 IsBreakChar = Char == ' ' || Char == '-';
+        if(IsBreakChar && P.X+A.X < Pos.X+Size.X) {
+            LastBreakChar = C+1;
             AdvanceSinceBreak = 0;
             WidthSinceBreak = 0;
         }
-        
-        if(Char == '\n') {
-            LineCount++;
-            P.X = -1 + AdvanceSinceBreak;
-            if(LineCount * sizeof(u32) > Lines->Size)
-                Heap_Resize(Lines, LineCount*2*sizeof(u32));
-            ((u32*)Lines->Data)[LineCount-1] = LastBreakChar+1;
-            
-            if(CurrWidth > MaxWidth) MaxWidth = CurrWidth;
-            CurrWidth = WidthSinceBreak;
-            
-            continue;
-        }
-        if(Char == '\t') {
-            Char = ' ';
-            Multiplier = 4;
-        }
-        if(Char == 0) continue;
         
         if(!Cache[Char-' ']) {
             Tag = _Assetpack_FindExactTag(Assetpack, TAG_CODEPOINT, (vptr)(u64)Char);
@@ -140,34 +127,43 @@ UI_CreateStringNode(ui *UI,
         }
         
         assetpack_texture *Asset = Cache[Char-' '];
-        A.X = Asset->AdvanceX*Scale.X*Multiplier;
+        A.X = Asset->AdvanceX*Scale.X;
         
         if(Asset->Bearing.Y < LowestDescent)
             LowestDescent = Asset->Bearing.Y;
         if(Asset->Bearing.Y+Asset->SizeR.Y > HighestAscent)
             HighestAscent = Asset->Bearing.Y+Asset->SizeR.Y;
         
-        if(P.X + A.X > 1) {
-            P.X = -1 + AdvanceSinceBreak;
+        if(P.X + A.X > Pos.X+Size.X) {
+            P.Y -= A.Y;
+            if(P.Y < Pos.Y) {
+                StringLength = C;
+                break;
+            }
+            
             LineCount++;
             if(LineCount * sizeof(u32) > Lines->Size)
                 Heap_Resize(Lines, LineCount*2*sizeof(u32));
             
-            if(AdvanceSinceBreak <= 1) {
-                ((u32*)Lines->Data)[LineCount-1] = LastBreakChar+1;
+            if(AdvanceSinceBreak+A.X <= Size.X) {
+                ((u32*)Lines->Data)[LineCount-1] = LastBreakChar;
+                if(CurrWidth-WidthSinceBreak > MaxWidth) MaxWidth = CurrWidth-WidthSinceBreak;
+                CurrWidth = WidthSinceBreak;
+                P.X = Pos.X + AdvanceSinceBreak;
             } else {
                 ((u32*)Lines->Data)[LineCount-1] = C;
+                if(CurrWidth > MaxWidth) MaxWidth = CurrWidth;
+                CurrWidth = 0;
+                P.X = Pos.X;
             }
-            
-            if(CurrWidth > MaxWidth) MaxWidth = CurrWidth;
-            CurrWidth = WidthSinceBreak;
         }
         
         P.X += A.X;
-        CurrWidth += Asset->AdvanceX;
-        
         AdvanceSinceBreak += A.X;
+        CurrWidth += Asset->AdvanceX;
         WidthSinceBreak += Asset->AdvanceX;
+        
+        if(!Asset->Size.X || !Asset->Size.Y) continue;
         
         PrintedChars++;
     }
@@ -177,17 +173,11 @@ UI_CreateStringNode(ui *UI,
     Scale.X = 2/MaxWidth;
     Scale.Y = 2/HeightDiff;
     
-    v2r32 D = {LineCount ? 1+P.X : 2,
-               LineCount*A.Y+(Font->Ascent-Font->Descent)*Scale.Y};
+    r32 DescentDiff = Font->Descent-LowestDescent;
     
-    // Node->Object.Matrix.V[0] = (v4r32){D.X/2, 0,     0, -D.X/2};
-    // Node->Object.Matrix.V[1] = (v4r32){0,     D.Y/2, 0,  D.Y/2};
-    // Node->Object.Matrix.V[2] = (v4r32){0,     0,     1,  0};
-    // Node->Object.Matrix.V[3] = (v4r32){0,     0,     0,  1};
-    Node->Object.Matrix.V[0] = (v4r32){1, 0, 0, 0};
-    Node->Object.Matrix.V[1] = (v4r32){0, 1, 0, 0};
-    Node->Object.Matrix.V[2] = (v4r32){0, 0, 1, 0};
-    Node->Object.Matrix.V[3] = (v4r32){0, 0, 0, 1};
+    Node->Object.TranslationMatrix = M4x4r32_Translation(FontHeight/Scale.X+Pos.X, FontHeight/Scale.Y+Pos.Y+Size.Y-FontHeight*HeightDiff, 0);
+    Node->Object.ScalingMatrix = M4x4r32_Scaling(FontHeight/Scale.X, FontHeight/Scale.Y, 1);
+    Node->Object.RotationMatrix = M4x4r32_Rotation(R32_PI/6, (v3r32){0,0,1});
     
     Node->Object.Indices = Heap_Allocate(Heap, PrintedChars*sizeof(u32)*6);
     Node->Object.Vertices = Heap_Allocate(Heap, PrintedChars*VertexSize*4);
@@ -202,29 +192,15 @@ UI_CreateStringNode(ui *UI,
     P = (v2r32){-1,1-HighestAscent*Scale.Y};
     u32 LineIndex = 0;
     u32 V = 0;
-    for(u32 C = 0; C < String.Length; C++) {
+    for(u32 C = 0; C < StringLength; C++) {
         c08 Char = String.Text[C];
-        r32 Multiplier = 1;
         
-        if(Char == '\n') continue;
-        if(Char == '\0') continue;
-        if(Char == '\t') {
-            Multiplier = 4;
-            Char = ' ';
-        }
-        
-        Indices[6*V+0] = 4*V+0;
-        Indices[6*V+1] = 4*V+1;
-        Indices[6*V+2] = 4*V+2;
-        Indices[6*V+3] = 4*V+0;
-        Indices[6*V+4] = 4*V+2;
-        Indices[6*V+5] = 4*V+3;
+        if(!Char || Char == '\n' || Char == '\t') continue;
         
         assetpack_texture *Asset = Cache[Char-' '];
-        A.X = Asset->AdvanceX*Multiplier*Scale.X;
+        A.X = Asset->AdvanceX*Scale.X;
         v2r32 B = V2r32_Mul(Asset->Bearing, Scale);
         v2r32 S = V2r32_Mul(Asset->SizeR, Scale);
-        S.X *= Multiplier;
         
         if(LineCount && C == ((u32*)Lines->Data)[LineIndex]) {
             P.X = -1;
@@ -232,24 +208,34 @@ UI_CreateStringNode(ui *UI,
             LineIndex++;
         }
         
-        v3r32 Positions[4] = {
-            {P.X+B.X,     P.Y+B.Y,     0},
-            {P.X+B.X,     P.Y+B.Y+S.Y, 0},
-            {P.X+B.X+S.X, P.Y+B.Y+S.Y, 0},
-            {P.X+B.X+S.X, P.Y+B.Y,     0},
-        };
-        
-        Vertices[4*V+0].Position = Mesh_EncodePosition(Positions[0]);
-        Vertices[4*V+0].Texture = ((Char-32)<<2) | 0b00;
-        Vertices[4*V+1].Position = Mesh_EncodePosition(Positions[1]);
-        Vertices[4*V+1].Texture = ((Char-32)<<2) | 0b10;
-        Vertices[4*V+2].Position = Mesh_EncodePosition(Positions[2]);
-        Vertices[4*V+2].Texture = ((Char-32)<<2) | 0b11;
-        Vertices[4*V+3].Position = Mesh_EncodePosition(Positions[3]);
-        Vertices[4*V+3].Texture = ((Char-32)<<2) | 0b01;
+        if(Asset->Size.X && Asset->Size.Y) {
+            Indices[6*V+0] = 4*V+0;
+            Indices[6*V+1] = 4*V+1;
+            Indices[6*V+2] = 4*V+2;
+            Indices[6*V+3] = 4*V+0;
+            Indices[6*V+4] = 4*V+2;
+            Indices[6*V+5] = 4*V+3;
+            
+            v3r32 Positions[4] = {
+                {P.X+B.X,     P.Y+B.Y,     0},
+                {P.X+B.X,     P.Y+B.Y+S.Y, 0},
+                {P.X+B.X+S.X, P.Y+B.Y+S.Y, 0},
+                {P.X+B.X+S.X, P.Y+B.Y,     0},
+            };
+            
+            Vertices[4*V+0].Position = Mesh_EncodePosition(Positions[0]);
+            Vertices[4*V+0].Texture = ((Char-32)<<2) | 0b00;
+            Vertices[4*V+1].Position = Mesh_EncodePosition(Positions[1]);
+            Vertices[4*V+1].Texture = ((Char-32)<<2) | 0b10;
+            Vertices[4*V+2].Position = Mesh_EncodePosition(Positions[2]);
+            Vertices[4*V+2].Texture = ((Char-32)<<2) | 0b11;
+            Vertices[4*V+3].Position = Mesh_EncodePosition(Positions[3]);
+            Vertices[4*V+3].Texture = ((Char-32)<<2) | 0b01;
+            
+            V++;
+        }
         
         P.X += A.X;
-        V++;
     }
     
     return Node->Index;

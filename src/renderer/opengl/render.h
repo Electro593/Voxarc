@@ -16,7 +16,10 @@ typedef struct renderer_state {
     u32 PTProgram;
     datetime PTLastModified[2];
     
+    u32 DEBUGCounter;
+    
     heap *Heap;
     mesh Mesh;
+    ui UI;
     assetpack Assetpack;
 } renderer_state;

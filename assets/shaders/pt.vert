@@ -26,8 +26,7 @@ out flat uint AtlasIndex;
 
 void main()
 {
-    gl_Position = PositionIn.xyzw;
-    // gl_Position = PositionIn.xyzw*Matrices[gl_DrawID];
+    gl_Position = PositionIn.xyzw*Matrices[gl_DrawID];
     
     uint Right = TextureIndex & 1;
     uint Up = (TextureIndex & 2) >> 1;

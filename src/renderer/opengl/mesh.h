@@ -21,7 +21,9 @@ typedef enum mesh_flags {
 typedef struct mesh_object {
     heap_handle *Vertices;
     heap_handle *Indices;
-    m4x4r32 Matrix;
+    m4x4r32 ScalingMatrix;
+    m4x4r32 TranslationMatrix;
+    m4x4r32 RotationMatrix;
 } mesh_object;
 
 typedef struct mesh {

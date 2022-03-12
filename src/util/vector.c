@@ -204,6 +204,8 @@ DEFINE_VECTOR_DIVS(4, r32)
 
 DEFINE_VECTOR_DOT(2, r32)
 DEFINE_VECTOR_DOT(2, s16)
+DEFINE_VECTOR_DOT(3, r32)
+DEFINE_VECTOR_DOT(4, r32)
 
 DEFINE_VECTOR_CROSS(2, r32)
 DEFINE_VECTOR_CROSS(2, s16)
@@ -212,6 +214,7 @@ DEFINE_VECTOR_CAST(2, s16, r32)
 DEFINE_VECTOR_CAST(3, r32, s32)
 
 DEFINE_VECTOR_NOCAST(2, r32)
+DEFINE_VECTOR_NOCAST(3, r32)
 
 DEFINE_VECTOR_CLAMP(3, r32, R32)
 DEFINE_VECTOR_CLAMP(4, r32, R32)
@@ -220,18 +223,105 @@ DEFINE_VECTOR_LERP(4, u08, U08)
 
 DEFINE_VECTOR_LEN(2, r32)
 DEFINE_VECTOR_LEN(2, s16)
+DEFINE_VECTOR_LEN(3, r32)
 
-DEFINE_VECTOR_NORM(2, s16)
 DEFINE_VECTOR_NORM(2, r32)
+DEFINE_VECTOR_NORM(2, s16)
+DEFINE_VECTOR_NORM(3, r32)
 
 #undef DEFINE_VECTOR_INIT
 #undef DEFINE_VECTOR_ADD
+#undef DEFINE_VECTOR_ADDS
 #undef DEFINE_VECTOR_SUB
-#undef DEFINE_VECTOR_MUL_VV
-#undef DEFINE_VECTOR_MUL_VS
+#undef DEFINE_VECTOR_SUBS
+#undef DEFINE_VECTOR_MUL
+#undef DEFINE_VECTOR_MULS
 #undef DEFINE_VECTOR_DIV
+#undef DEFINE_VECTOR_DIVS
 #undef DEFINE_VECTOR_DOT
 #undef DEFINE_VECTOR_CROSS
 #undef DEFINE_VECTOR_CAST
+#undef DEFINE_VECTOR_NOCAST
+#undef DEFINE_VECTOR_LERP
 #undef DEFINE_VECTOR_LEN
 #undef DEFINE_VECTOR_NORM
+
+internal m4x4r32
+M4x4r32_Translation(r32 X,
+                    r32 Y,
+                    r32 Z)
+{
+    m4x4r32 Result = M4x4r32_I;
+    Result.V[0].E[3] = X;
+    Result.V[1].E[3] = Y;
+    Result.V[2].E[3] = Z;
+    return Result;
+}
+
+internal m4x4r32
+M4x4r32_Scaling(r32 X,
+                r32 Y,
+                r32 Z)
+{
+    m4x4r32 Result = M4x4r32_I;
+    Result.V[0].E[0] = X;
+    Result.V[1].E[1] = Y;
+    Result.V[2].E[2] = Z;
+    return Result;
+}
+
+internal m4x4r32
+M4x4r32_Rotation(r32 Theta,
+                 v3r32 Axis)
+{
+    r32 X,Y,Z, C,S;
+    
+    v3r32 A = V3r32_Norm(Axis);
+    X = A.X; Y = A.Y; Z = A.Z;
+    C = R32_cos(Theta);
+    S = R32_sin(Theta);
+    
+    m4x4r32 Result;
+    Result.V[0] = (v4r32){X*X*(1-C)+C,   Y*X*(1-C)-Z*S, Z*X*(1-C)+Y*S, 0};
+    Result.V[1] = (v4r32){X*Y*(1-C)+Z*S, Y*Y*(1-C)+C,   Z*Y*(1-C)-X*S, 0};
+    Result.V[2] = (v4r32){X*Z*(1-C)-Y*S, Y*Z*(1-C)+X*S, Z*Z*(1-C)+C,   0};
+    Result.V[3] = (v4r32){0,             0,             0,             1};
+    return Result;
+}
+
+internal m4x4r32
+M4x4r32_Transpose(m4x4r32 M)
+{
+    m4x4r32 Result;
+    Result.V[0] = (v4r32){M.V[0].E[0], M.V[1].E[0], M.V[2].E[0], M.V[3].E[0]};
+    Result.V[1] = (v4r32){M.V[0].E[1], M.V[1].E[1], M.V[2].E[1], M.V[3].E[1]};
+    Result.V[2] = (v4r32){M.V[0].E[2], M.V[1].E[2], M.V[2].E[2], M.V[3].E[2]};
+    Result.V[3] = (v4r32){M.V[0].E[3], M.V[1].E[3], M.V[2].E[3], M.V[3].E[3]};
+    return Result;
+}
+
+internal m4x4r32
+M4x4r32_Mul(m4x4r32 A,
+            m4x4r32 B)
+{
+    B = M4x4r32_Transpose(B);
+    
+    m4x4r32 Result;
+    Result.V[0].E[0] = V4r32_Dot(A.V[0], B.V[0]);
+    Result.V[0].E[1] = V4r32_Dot(A.V[0], B.V[1]);
+    Result.V[0].E[2] = V4r32_Dot(A.V[0], B.V[2]);
+    Result.V[0].E[3] = V4r32_Dot(A.V[0], B.V[3]);
+    Result.V[1].E[0] = V4r32_Dot(A.V[1], B.V[0]);
+    Result.V[1].E[1] = V4r32_Dot(A.V[1], B.V[1]);
+    Result.V[1].E[2] = V4r32_Dot(A.V[1], B.V[2]);
+    Result.V[1].E[3] = V4r32_Dot(A.V[1], B.V[3]);
+    Result.V[2].E[0] = V4r32_Dot(A.V[2], B.V[0]);
+    Result.V[2].E[1] = V4r32_Dot(A.V[2], B.V[1]);
+    Result.V[2].E[2] = V4r32_Dot(A.V[2], B.V[2]);
+    Result.V[2].E[3] = V4r32_Dot(A.V[2], B.V[3]);
+    Result.V[3].E[0] = V4r32_Dot(A.V[3], B.V[0]);
+    Result.V[3].E[1] = V4r32_Dot(A.V[3], B.V[1]);
+    Result.V[3].E[2] = V4r32_Dot(A.V[3], B.V[2]);
+    Result.V[3].E[3] = V4r32_Dot(A.V[3], B.V[3]);
+    return Result;
+}

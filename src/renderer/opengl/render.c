@@ -137,46 +137,25 @@ Renderer_Init(renderer_state *Renderer,
     Mem_Cpy(Renderer->Mesh.Storage->Data, Renderer->Assetpack.Assets, Renderer->Mesh.Storage->Size);
     Renderer->Mesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
     
-    // c08 Char = '#';
-    // Tag = Assetpack_FindExactTag(Renderer->Assetpack, TAG_CODEPOINT, Char);
-    // Assert(Tag && Tag->AssetCount);
-    // assetpack_texture Asset = Tag->Assets[0]->Texture;
-    // r32 Scale = 1.0f/MAX(Asset.Size.X, Asset.Size.Y);
-    // v2r32 AS = {Asset.Size.X*Scale, Asset.Size.Y*Scale};
-    // v2r32 AP = {-AS.X/2, -AS.Y/2};
-    
-    // struct {
-    //     u32 Position;
-    //     u32 Texture;
-    // } Vertices1[4] = {
-    //     {Mesh_EncodePosition((v3r32){AP.X,     AP.Y,     0}), ((Char-32)<<2) | 0b00},
-    //     {Mesh_EncodePosition((v3r32){AP.X,     AP.Y+AS.Y,0}), ((Char-32)<<2) | 0b10},
-    //     {Mesh_EncodePosition((v3r32){AP.X+AS.X,AP.Y+AS.Y,0}), ((Char-32)<<2) | 0b11},
-    //     {Mesh_EncodePosition((v3r32){AP.X+AS.X,AP.Y,     0}), ((Char-32)<<2) | 0b01},
-    // };
-    
-    // u32 Indices1[] = {0,1,2,0,2,3};
-    // mesh_object Objects[] = {
-    //     { Heap_Allocate(Heap, sizeof(Vertices1)), Heap_Allocate(Heap, sizeof(Indices1)) },
-    // };
-    
-    // Mem_Cpy(Objects[0].Vertices->Data, Vertices1, sizeof(Vertices1));
-    // Mem_Cpy(Objects[0].Indices->Data, Indices1, sizeof(Indices1));
-    
-    // Mesh_AddObjects(&Renderer->Mesh, 1, Objects);
-    // Mesh_Update(&Renderer->Mesh);
-    
-    ui UI;
-    UI_Init(&UI, &Renderer->Mesh, Renderer->Heap);
-    u16 Index = UI_CreateStringNode(&UI, CString("Hello, personaaaaa. aHow's it going"), 0.25, Renderer->Assetpack);
-    ui_node *Node = UI_GetNode(&UI, Index);
-    Mesh_AddObjects(&Renderer->Mesh, 1, &Node->Object);
-    Heap_Free(Node->Object.Indices);
-    Heap_Free(Node->Object.Vertices);
-    Heap_Free(Node->StringData.Lines);
-    String_Free(Node->StringData.String);
+    UI_Init(&Renderer->UI, &Renderer->Mesh, Renderer->Heap);
+    // string String0 = CString("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz 1234567890`~!@#$%^&*()-_=+[]{}<>\\|/;:\'\",.");
+    string String1 = CString("Hello, world!");
+    // u16 Index0 = UI_CreateStringNode(&Renderer->UI, String0, (v2r32){-1,-1}, (v2r32){1,1}, 0.1, Renderer->Assetpack);
+    u16 Index1 = UI_CreateStringNode(&Renderer->UI, String1, (v2r32){-1,-1}, (v2r32){2,1}, 0.4, Renderer->Assetpack);
+    // ui_node *Node0 = UI_GetNode(&Renderer->UI, Index0);
+    ui_node *Node1 = UI_GetNode(&Renderer->UI, Index1);
+    Mesh_AddObjects(&Renderer->Mesh, 1, &Node1->Object);
+    // Heap_Free(Node0->Object.Indices);
+    Heap_Free(Node1->Object.Indices);
+    // Heap_Free(Node0->StringData.Lines);
+    Heap_Free(Node1->StringData.Lines);
+    // Heap_Free(Node0->Object.Vertices);
+    Heap_Free(Node1->Object.Vertices);
+    // String_Free(Node0->StringData.String);
+    String_Free(Node1->StringData.String);
     
     Mesh_Update(&Renderer->Mesh);
+    Renderer->DEBUGCounter = 0;
     
     OpenGL_ClearColor(.2,.2,.2,1);
 }
@@ -210,6 +189,15 @@ Renderer_Draw(renderer_state *Renderer)
     }
     
     OpenGL_Clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    
+    ui_node *Node = UI_GetNode(&Renderer->UI, 1);
+    u32 Loops = Renderer->DEBUGCounter/180;
+    r32 Theta = Renderer->DEBUGCounter++*R32_PI/90;
+    Node->Object.RotationMatrix = M4x4r32_Rotation(Theta, (v3r32){0,0,1});
+    m4x4r32 ModelMatrix = M4x4r32_Mul(M4x4r32_Mul(Node->Object.TranslationMatrix, Node->Object.RotationMatrix), Node->Object.ScalingMatrix);
+    Mesh_UpdateMatrix(&Renderer->Mesh, ModelMatrix, 0);
+    OpenGL_BindBuffer(GL_SHADER_STORAGE_BUFFER, Renderer->Mesh.MatrixSSBO);
+    OpenGL_BufferSubData(GL_SHADER_STORAGE_BUFFER, 0, Renderer->Mesh.Matrices->Size, Renderer->Mesh.Matrices->Data);
     
     Mesh_Draw(&Renderer->Mesh);
 }
