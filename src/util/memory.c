@@ -129,6 +129,39 @@ Heap_Defragment(heap *Heap)
     } while(Block->Index);
 }
 
+internal void
+Heap_AllocateBlock(heap *Heap,
+                   heap_handle *Handle,
+                   u32 Size)
+{
+    heap_handle *Handles = (vptr)Heap;
+    heap_handle *PrevBlock = Handles + Handles[0].PrevBlock;
+    while(PrevBlock->Index && PrevBlock->Offset < Size)
+        PrevBlock = Handles+PrevBlock->PrevBlock;
+    if(PrevBlock->Offset < Size) {
+        Heap_Defragment(Heap);
+        Assert(PrevBlock->Offset >= Size, "Not enough memory for new heap block");
+    }
+    Handle->Data = PrevBlock->Data + PrevBlock->Size + PrevBlock->Offset - Size;
+    PrevBlock->Offset -= Size;
+    Handle->PrevBlock = PrevBlock->Index;
+    Handle->NextBlock = PrevBlock->NextBlock;
+    Handles[Handle->NextBlock].PrevBlock = Handle->Index;
+    Handles[Handle->PrevBlock].NextBlock = Handle->Index;
+    Handle->Offset = 0;
+    Handle->Size = Size;
+}
+
+internal void
+Heap_FreeBlock(heap *Heap,
+               heap_handle *Handle)
+{
+    heap_handle *Handles = (vptr)Heap;
+    Handles[Handle->PrevBlock].Offset += Handle->Size + Handle->Offset;
+    Handles[Handle->PrevBlock].NextBlock = Handle->NextBlock;
+    Handles[Handle->NextBlock].PrevBlock = Handle->PrevBlock;
+}
+
 internal heap_handle *
 _Heap_Allocate(heap *Heap,
                u32 Size,
@@ -175,22 +208,7 @@ _Heap_Allocate(heap *Heap,
     Handle->Anchored = Anchored;
     Handle->Free = FALSE;
     
-    heap_handle *PrevBlock = Handles + Handles[0].PrevBlock;
-    while(PrevBlock->Index && PrevBlock->Offset < Size) {
-        PrevBlock = Handles+PrevBlock->PrevBlock;
-    }
-    if(PrevBlock->Offset < Size && !Defragmented) {
-        Heap_Defragment(Heap);
-        Assert(PrevBlock->Offset >= Size, "Not enough memory for new heap block");
-    }
-    Handle->Data = PrevBlock->Data + PrevBlock->Size + PrevBlock->Offset - Size;
-    PrevBlock->Offset -= Size;
-    Handle->PrevBlock = PrevBlock->Index;
-    Handle->NextBlock = PrevBlock->NextBlock;
-    Handles[Handle->NextBlock].PrevBlock = Handle->Index;
-    Handles[Handle->PrevBlock].NextBlock = Handle->Index;
-    Handle->Offset = 0;
-    Handle->Size = Size;
+    Heap_AllocateBlock(Heap, Handle, Size);
     
     if(Anchored) *(heap_handle**)Handle->Data = Handle;
     
@@ -212,30 +230,9 @@ Heap_Resize(heap_handle *Handle,
     } else {
         u08 *PrevData = Handle->Data;
         u32 PrevSize = Handle->Size;
-        
-        heap_handle *Handles = Handle - Handle->Index;
-        Handles[Handle->PrevBlock].Offset += Handle->Size + Handle->Offset;
-        Handles[Handle->PrevBlock].NextBlock = Handle->NextBlock;
-        Handles[Handle->NextBlock].PrevBlock = Handle->PrevBlock;
-        
-        heap *Heap = (heap*)Handles;
-        heap_handle *PrevBlock = Handles + Handles[0].PrevBlock;
-        while(PrevBlock->Index && PrevBlock->Offset < NewSize) {
-            PrevBlock = Handles+PrevBlock->PrevBlock;
-        }
-        if(PrevBlock->Offset < NewSize) {
-            Heap_Defragment(Heap);
-            Assert(PrevBlock->Offset >= NewSize, "Not enough memory for new heap block");
-        }
-        Handle->Data = PrevBlock->Data + PrevBlock->Size + PrevBlock->Offset - NewSize;
-        PrevBlock->Offset -= NewSize;
-        Handle->PrevBlock = PrevBlock->Index;
-        Handle->NextBlock = PrevBlock->NextBlock;
-        Handles[Handle->NextBlock].PrevBlock = Handle->Index;
-        Handles[Handle->PrevBlock].NextBlock = Handle->Index;
-        Handle->Offset = 0;
-        Handle->Size = NewSize;
-        
+        heap *Heap = (heap*)(Handle - Handle->Index);
+        Heap_FreeBlock(Heap, Handle);
+        Heap_AllocateBlock(Heap, Handle, NewSize);
         Mem_Cpy(Handle->Data, PrevData, PrevSize);
     }
 }
@@ -254,10 +251,10 @@ Heap_Free(heap_handle *Handle)
 {
     Assert(Handle);
     heap_handle *Handles = Handle - Handle->Index;
+    heap *Heap = (vptr)Handles;
     
-    Handles[Handle->PrevBlock].Offset += Handle->Size + Handle->Offset;
-    Handles[Handle->PrevBlock].NextBlock = Handle->NextBlock;
-    Handles[Handle->NextBlock].PrevBlock = Handle->PrevBlock;
+    Heap_FreeBlock(Heap, Handle);
+    
     Handles[Handle->NextUsed].PrevUsed = Handle->PrevUsed;
     Handles[Handle->PrevUsed].NextUsed = Handle->NextUsed;
     

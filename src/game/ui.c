@@ -7,80 +7,76 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-internal ui_node * UI_GetNode(ui *UI, u16 Index) { return (ui_node*)UI->Nodes->Data + Index; }
-
 internal ui_node *
-_UI_CreateNode(ui *UI)
+UI_GetNode(ui *UI,
+           u16 Index)
 {
-    UI->NodeCount++;
-    if(UI->Nodes->Size < UI->NodeCount*sizeof(ui_node))
-        Heap_Resize(UI->Nodes, UI->NodeCount*sizeof(ui_node)*2);
-    
-    ui_node *NewNode = UI_GetNode(UI, UI->NodeCount-1);
-    Mem_Set(NewNode, 0, sizeof(ui_node));
-    NewNode->Index = UI->NodeCount-1;
-    
-    return NewNode;
+    if(!UI || Index == -1) return NULL;
+    return (ui_node*)UI->Nodes->Data + Index;
 }
 
 internal void
 UI_Init(ui *UI,
         mesh *Mesh,
-        heap *Heap)
+        heap *Heap,
+        v3u08 Color)
 {
     UI->Mesh = Mesh;
-    
     UI->NodeCount = 1;
+    UI->Nodes = Heap_Allocate(Heap, sizeof(ui_node));
     
-    UI->Nodes = Heap_Allocate(Heap, UI->NodeCount*sizeof(ui_node));
+    ui_node *Node = UI_GetNode(UI, 0);
+    Node->Index = 0;
+    Node->ChildCount = 0;
+    Node->FirstChild = UI_NULL_INDEX;
+    Node->NextSibling = UI_NULL_INDEX;
+    Node->Parent = UI_NULL_INDEX;
+    Node->Flags = 0;
     
-    Mem_Set(UI->Nodes->Data, 0, sizeof(ui_node));
+    u32 C = (Color.X<<18)|(Color.Y<<10)|(Color.Z<<2);
+    Node->Object.Vertices = Heap_Allocate(Heap, Mesh->VertexSize*4);
+    struct {
+        u32 Position;
+        u32 Texture;
+    } *Vertices = (vptr)Node->Object.Vertices->Data;
+    Vertices[0].Position = Mesh_EncodePosition((v3r32){-1,-1,0});
+    Vertices[1].Position = Mesh_EncodePosition((v3r32){-1, 0,0});
+    Vertices[2].Position = Mesh_EncodePosition((v3r32){ 0, 0,0});
+    Vertices[3].Position = Mesh_EncodePosition((v3r32){ 0,-1,0});
+    Vertices[0].Texture = 0x80000000 | C | 0b00;
+    Vertices[1].Texture = 0x80000000 | C | 0b10;
+    Vertices[2].Texture = 0x80000000 | C | 0b11;
+    Vertices[3].Texture = 0x80000000 | C | 0b01;
+    
+    Node->Object.Indices = Heap_Allocate(Heap, sizeof(u32)*6);
+    u32 *Indices = (u32*)Node->Object.Indices->Data;
+    Indices[0] = 0;
+    Indices[1] = 1;
+    Indices[2] = 2;
+    Indices[3] = 0;
+    Indices[4] = 2;
+    Indices[5] = 3;
+    
+    Node->Object.TranslationMatrix = M4x4r32_I;
+    Node->Object.ScalingMatrix = M4x4r32_I;
+    Node->Object.RotationMatrix = M4x4r32_I;
+    
+    Mesh_AddObjects(Mesh, 1, &Node->Object, &Node->ObjectIndex);
+    Mesh_Update(Mesh);
+    
+    Node->Size = (v2r32){2,2};
 }
 
 internal void
-UI_AddChild(ui *UI,
-           u16 ParentIndex,
-           u16 ChildIndex)
-{
-    Assert(UI);
-    
-    ui_node *ParentNode = UI_GetNode(UI, ParentIndex);
-    ui_node *ChildNode = UI_GetNode(UI, ChildIndex);
-    
-    ChildNode->Parent = ParentNode->Index;
-    ChildNode->NextSibling = ParentNode->FirstChild;
-    ParentNode->FirstChild = ChildNode->Index;
-    ParentNode->ChildCount++;
-}
-
-internal void
-UI_AddSibling(ui *UI,
-              u16 PrevSiblingIndex,
-              u16 SiblingIndex)
-{
-    Assert(UI);
-    
-    ui_node *PrevSiblingNode = UI_GetNode(UI, PrevSiblingIndex);
-    ui_node *SiblingNode = UI_GetNode(UI, SiblingIndex);
-    ui_node *ParentNode = UI_GetNode(UI, SiblingNode->Parent);
-    
-    SiblingNode->NextSibling = PrevSiblingNode->NextSibling;
-    PrevSiblingNode->NextSibling = SiblingNode->Index;
-}
-
-internal u16
-UI_CreateStringNode(ui *UI,
+UI_UpdateNodeString(ui *UI,
+                    ui_node *Node,
                     string String,
                     v2r32 Pos,
                     v2r32 Size,
                     r32 FontHeight,
                     assetpack Assetpack)
 {
-    ui_node *Node = _UI_CreateNode(UI);
     heap *Heap = Heap_GetHeap(UI->Nodes);
-    
-    Node->Type = UI_NODE_TYPE_STRING;
-    Node->StringData.String = String;
     
     u32 VertexSize = UI->Mesh->VertexSize;
     
@@ -92,7 +88,6 @@ UI_CreateStringNode(ui *UI,
     
     u32 LineCount = 0;
     heap_handle *Lines = Heap_Allocate(Heap, LineCount*sizeof(u32));
-    Node->StringData.Lines = Lines;
     r32 StringLength = String.Length;
     
     r32 UnitAdvance = Font->Ascent-Font->Descent+Font->LineGap;
@@ -177,10 +172,15 @@ UI_CreateStringNode(ui *UI,
     
     Node->Object.TranslationMatrix = M4x4r32_Translation(FontHeight/Scale.X+Pos.X, FontHeight/Scale.Y+Pos.Y+Size.Y-FontHeight*HeightDiff, 0);
     Node->Object.ScalingMatrix = M4x4r32_Scaling(FontHeight/Scale.X, FontHeight/Scale.Y, 1);
-    Node->Object.RotationMatrix = M4x4r32_Rotation(R32_PI/6, (v3r32){0,0,1});
+    Node->Object.RotationMatrix = M4x4r32_I;
     
-    Node->Object.Indices = Heap_Allocate(Heap, PrintedChars*sizeof(u32)*6);
-    Node->Object.Vertices = Heap_Allocate(Heap, PrintedChars*VertexSize*4);
+    if(Node->Flags & UI_NODE_INITIALIZED) {
+        Heap_Resize(Node->Object.Indices, PrintedChars*sizeof(u32)*6);
+        Heap_Resize(Node->Object.Vertices, PrintedChars*VertexSize*4);
+    } else {
+        Node->Object.Indices = Heap_Allocate(Heap, PrintedChars*sizeof(u32)*6);
+        Node->Object.Vertices = Heap_Allocate(Heap, PrintedChars*VertexSize*4);
+    }
     
     u32 *Indices = (u32*)Node->Object.Indices->Data;
     struct {
@@ -238,74 +238,62 @@ UI_CreateStringNode(ui *UI,
         P.X += A.X;
     }
     
-    return Node->Index;
+    Heap_Free(Lines);
 }
 
 internal void
-UI_FreeNode(ui *UI,
-            u32 Index)
+UI_CreateNodeObject(mesh *Mesh,
+                    mesh_object *Object,
+                    string String,
+                    v3u08 Color,
+                    v2r32 Size)
 {
-    ui_node *Node = UI_GetNode(UI, Index);
-    ui_node *Parent = UI_GetNode(UI, Node->Parent);
     
-    if(Parent->FirstChild == Node->Index)
-        Parent->FirstChild = Node->NextSibling;
-    else {
-        ui_node *Sibling = UI_GetNode(UI, Parent->FirstChild);
-        while(Sibling->NextSibling != Node->Index)
+    Node->ObjectIndex = 0;
+    Node->Object.Vertices = NULL;
+    Node->Object.Indices = NULL;
+    Node->Object.TranslationMatrix = M4x4r32_I;
+    Node->Object.ScalingMatrix = M4x4r32_I;
+    Node->Object.RotationMatrix = M4x4r32_I;
+}
+
+internal u16
+UI_CreateNode(ui *UI,
+              string String,
+              v3u08 Color,
+              v2r32 Size,
+              u16 ParentIndex,
+              u16 InsertIndex)
+{
+    UI->NodeCount++;
+    if(UI->Nodes->Size < UI->NodeCount*sizeof(ui_node))
+        Heap_Resize(UI->Nodes, UI->NodeCount*sizeof(ui_node)*2);
+    ui_node *Node = UI_GetNode(UI, UI->NodeCount-1);
+    Node->Index = UI->NodeCount-1;
+    
+    Node->ChildCount = 0;
+    Node->FirstChild = UI_NULL_INDEX;
+    Node->Flags = 0;
+    Node->Size = Size;
+    Node->Parent = ParentIndex;
+    
+    ui_node *Parent = UI_GetNode(UI, ParentIndex);
+    ui_node *Sibling = UI_GetNode(UI, Parent->FirstChild);
+    if(InsertIndex == 0) {
+        Node->NextSibling = Parent->FirstChild;
+        Parent->FirstChild = Node->Index;
+    } else {
+        for(u32 I = 1; I < InsertIndex && Sibling->NextSibling != UI_NULL_NODE; I++)
             Sibling = UI_GetNode(UI, Sibling->NextSibling);
-        Sibling->NextSibling = Node->NextSibling;
+        Node->NextSibling = Sibling->NextSibling;
+        Sibling->NextSibling = Node->Index;
     }
+    Parent->ChildCount++;
     
-    // Mesh_FreeObject();
-    Heap_Free(Node->Object.Indices);
-    Heap_Free(Node->Object.Vertices);
+    UI_CreateNodeObject(UI->Mesh, &Node->Object, String, Color, Size);
     
-    switch(Node->Type) {
-        case UI_NODE_TYPE_STRING: {
-            Heap_Free(Node->StringData.Lines);
-            String_Free(Node->StringData.String);
-        } break;
-    }
+    return Node->Index;
 }
 
 //TODO: Consider a geometry shader, that takes an asset index and a
 //      starting position and creates the character vertices
-
-// internal void
-// UI_UpdateMatrices(ui *UI)
-// {
-//     Stack_Push();
-    
-//     ui_propagation_frame *NodeStack = Stack_GetCursor();
-    
-//     u32 StackCount = 0;
-//     NodeStack[StackCount++] = (ui_propagation_frame){M4x4r32_I, 0};
-    
-//     while(StackCount) {
-//         ui_propagation_frame Frame = NodeStack[--StackCount];
-//         ui_node *Node = UI_GetNode(UI, Frame.NodeIndex);
-        
-//         v4x4r32 OffsetMat = M4x4r32_Transformation2D(Node->Offset);
-//         Node->Matrix = M4x4r32_Mul(Frame.Transform, OffsetMat);
-        
-//         // TODO actually change the mesh
-        
-//         if(Node->NextSibling) {
-//             OffsetMat = M4x4r32_Transformation2D((v2r32){0,Node->Offset.Y+Node->Size.Y});
-//             v4r32 Transform = M4x4r32_Mul(Frame.Transform, OffsetMat);
-//             NodeStack[StackCount++] = (ui_propagation_frame){
-//                 Transform,
-//                 Node->NextSibling
-//             };
-//         }
-//         if(Node->FirstChild) {
-//             NodeStack[StackCount++] = (ui_propagation_frame){
-//                 Node->Matrix;
-//                 Node->FirstChild
-//             };
-//         }
-//     }
-    
-//     Stack_Pop();
-// }

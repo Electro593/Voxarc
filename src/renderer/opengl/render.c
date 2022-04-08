@@ -137,24 +137,10 @@ Renderer_Init(renderer_state *Renderer,
     Mem_Cpy(Renderer->Mesh.Storage->Data, Renderer->Assetpack.Assets, Renderer->Mesh.Storage->Size);
     Renderer->Mesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
     
-    UI_Init(&Renderer->UI, &Renderer->Mesh, Renderer->Heap);
-    // string String0 = CString("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz 1234567890`~!@#$%^&*()-_=+[]{}<>\\|/;:\'\",.");
-    string String1 = CString("Hello, world!");
-    // u16 Index0 = UI_CreateStringNode(&Renderer->UI, String0, (v2r32){-1,-1}, (v2r32){1,1}, 0.1, Renderer->Assetpack);
-    u16 Index1 = UI_CreateStringNode(&Renderer->UI, String1, (v2r32){-1,-1}, (v2r32){2,1}, 0.4, Renderer->Assetpack);
-    // ui_node *Node0 = UI_GetNode(&Renderer->UI, Index0);
-    ui_node *Node1 = UI_GetNode(&Renderer->UI, Index1);
-    Mesh_AddObjects(&Renderer->Mesh, 1, &Node1->Object);
-    // Heap_Free(Node0->Object.Indices);
-    Heap_Free(Node1->Object.Indices);
-    // Heap_Free(Node0->StringData.Lines);
-    Heap_Free(Node1->StringData.Lines);
-    // Heap_Free(Node0->Object.Vertices);
-    Heap_Free(Node1->Object.Vertices);
-    // String_Free(Node0->StringData.String);
-    String_Free(Node1->StringData.String);
+    u16 ParentIndex = UI_Init(&Renderer->UI, &Renderer->Mesh, Renderer->Heap, (v3u08){127,127,127});
+    UI_CreateNode(&Renderer->UI, CString("Hello!"), (v3u08){255,255,255},
+                  (v2r32){1,1}, ParentIndex, 0);
     
-    Mesh_Update(&Renderer->Mesh);
     Renderer->DEBUGCounter = 0;
     
     OpenGL_ClearColor(.2,.2,.2,1);
@@ -190,16 +176,11 @@ Renderer_Draw(renderer_state *Renderer)
     
     OpenGL_Clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     
-    ui_node *Node = UI_GetNode(&Renderer->UI, 1);
-    u32 Loops = Renderer->DEBUGCounter/180;
-    r32 Theta = Renderer->DEBUGCounter++*R32_PI/90;
-    Node->Object.RotationMatrix = M4x4r32_Rotation(Theta, (v3r32){0,0,1});
-    m4x4r32 ModelMatrix = M4x4r32_Mul(M4x4r32_Mul(Node->Object.TranslationMatrix, Node->Object.RotationMatrix), Node->Object.ScalingMatrix);
-    Mesh_UpdateMatrix(&Renderer->Mesh, ModelMatrix, 0);
-    OpenGL_BindBuffer(GL_SHADER_STORAGE_BUFFER, Renderer->Mesh.MatrixSSBO);
-    OpenGL_BufferSubData(GL_SHADER_STORAGE_BUFFER, 0, Renderer->Mesh.Matrices->Size, Renderer->Mesh.Matrices->Data);
+    UI_PropagateUpdates(&Renderer->UI);
     
     Mesh_Draw(&Renderer->Mesh);
+    
+    Stack_Push();
 }
 
 internal void

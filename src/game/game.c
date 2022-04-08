@@ -57,16 +57,6 @@ Game_Update(platform_state *Platform,
         Platform->Updates &= ~WINDOW_RESIZED;
     }
     
-    u32 Scale = 400;
-    s32 Value = Game->DebugCounter%Scale - (Scale/2);
-    
-    r32 R = 0;
-    r32 G = 0;
-    r32 B = R32_Abs((r32)Value/(Scale/2));
-    
-    // OpenGL_ClearColor(R, G, B, 1);
-    Game->DebugCounter++;
-    
     Renderer_Draw(Renderer);
 }
 

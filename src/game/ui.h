@@ -7,13 +7,16 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#define UI_NULL_INDEX ((u16)-1)
+
 typedef enum ui_node_type {
     UI_NODE_TYPE_NONE=0,
     UI_NODE_TYPE_STRING,
 } ui_node_type;
 
 typedef enum ui_node_flags {
-    UI_NODE_MATRIX_UPDATED = 1,
+    UI_NODE_INITIALIZED    = 1,
+    UI_NODE_MATRIX_UPDATED = 2,
 } ui_node_flags;
 
 typedef struct ui_string_node {
@@ -28,16 +31,12 @@ typedef struct ui_node {
     u16 NextSibling;
     u16 Parent;
     
-    b08 Flags;
+    u16 Flags;
     
+    u32 ObjectIndex;
     mesh_object Object;
-    v2r32 Offset;
-    v2r32 Size;
     
-    ui_node_type Type;
-    union {
-        ui_string_node StringData;
-    };
+    v2r32 Size;
 } ui_node;
 
 typedef struct ui {
