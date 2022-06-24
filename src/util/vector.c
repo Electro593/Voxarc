@@ -158,6 +158,16 @@
         };                                                                                    \
     }
 
+#define DEFINE_VECTOR_EQUAL(Count, Type)                                                  \
+    internal b08                                                               \
+    V##Count##Type##_IsEqual(v##Count##Type A,                                            \
+                             v##Count##Type B)                                            \
+    {                                                                                     \
+        if(MAC_FOR(&&, Count, MAC_FOR_OP_NAME_REV, MAC_FOR_FUNC_VV_EQ, MAC_FOR_ARGS_VEC)) \
+            return TRUE;                                                                  \
+        return FALSE;                                                                     \
+    }
+
 #define DEFINE_VECTOR_LEN(Count, Type)                            \
     internal r32                                                  \
     V##Count##Type##_Len(v##Count##Type V)                        \
@@ -220,6 +230,8 @@ DEFINE_VECTOR_CLAMP(3, r32, R32)
 DEFINE_VECTOR_CLAMP(4, r32, R32)
 
 DEFINE_VECTOR_LERP(4, u08, U08)
+
+DEFINE_VECTOR_EQUAL(3, r32)
 
 DEFINE_VECTOR_LEN(2, r32)
 DEFINE_VECTOR_LEN(2, s16)
@@ -297,6 +309,18 @@ M4x4r32_Transpose(m4x4r32 M)
     Result.V[1] = (v4r32){M.V[0].E[1], M.V[1].E[1], M.V[2].E[1], M.V[3].E[1]};
     Result.V[2] = (v4r32){M.V[0].E[2], M.V[1].E[2], M.V[2].E[2], M.V[3].E[2]};
     Result.V[3] = (v4r32){M.V[0].E[3], M.V[1].E[3], M.V[2].E[3], M.V[3].E[3]};
+    return Result;
+}
+
+internal v4r32
+M4x4r32_MulMV(m4x4r32 M,
+              v4r32 V)
+{
+    v4r32 Result;
+    Result.X = V4r32_Dot(M.V[0], V);
+    Result.Y = V4r32_Dot(M.V[1], V);
+    Result.Z = V4r32_Dot(M.V[2], V);
+    Result.W = V4r32_Dot(M.V[3], V);
     return Result;
 }
 

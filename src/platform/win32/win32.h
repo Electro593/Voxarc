@@ -76,6 +76,10 @@ typedef s64 (API_ENTRY *func_Win32_WindowCallback)(win32_window Window, u32 Mess
 #define WM_SIZE       0x0005
 #define WM_CLOSE      0x0010
 #define WM_QUIT       0x0012
+#define WM_KEYDOWN    0x0100
+#define WM_KEYUP      0x0101
+#define WM_SYSKEYDOWN 0x0104
+#define WM_SYSKEYUP   0x0105
 #define WM_SIZING     0x0214
 
 #define PM_REMOVE 0x1

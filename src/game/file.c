@@ -57,11 +57,10 @@ Assetpack_FindFirstTag(assetpack Assetpack,
     return Registry->Tags+0;
 }
 
-#define Assetpack_FindExactTag(Assetpack, TagID, Value) _Assetpack_FindExactTag(Assetpack, TagID, FORCE_CAST(vptr, Value))
 internal assetpack_tag *
-_Assetpack_FindExactTag(assetpack Assetpack,
-                        assetpack_tag_id TagID,
-                        vptr Value)
+Assetpack_FindExactTag(assetpack Assetpack,
+                       assetpack_tag_id TagID,
+                       vptr Value)
 {
     assetpack_registry *Registry = Assetpack_FindRegistry(Assetpack, TagID);
     if(Registry == NULL) return NULL;

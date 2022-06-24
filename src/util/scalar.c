@@ -118,14 +118,17 @@ R32_sin(r32 R)
     b08 N=FALSE;
     
     D = R*180/R32_PI;
-    if(D < 0) D = -D;
+    if(D < 0) {
+        N = !N;
+        D = -D;
+    }
     if(D >= 360) D = (u32)D%360;
     if(D >= 270) {
-        N = TRUE;
+        N = !N;
         D = 360 - D;
     }
     if(D >= 180) {
-        N = TRUE;
+        N = !N;
         D -= 180;
     }
     if(D > 90) D = 180 - D;

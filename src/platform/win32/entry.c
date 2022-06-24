@@ -432,6 +432,39 @@ Platform_WindowCallback(win32_window Window,
             Platform->WindowSize.Y = (s16)(LParam >> 16);
             Platform->Updates |= WINDOW_RESIZED;
         } return 0;
+        
+        case WM_KEYUP:
+        case WM_KEYDOWN:
+        case WM_SYSKEYUP:
+        case WM_SYSKEYDOWN: {
+            u08 ScanCode    = (LParam >> 16) & 0xFF;
+            b08 IsExtended  = (LParam >> 24) & 0x01;
+            b08 WasDown     = (LParam >> 30) & 0x01;
+            b08 IsUp        = (LParam >> 31) & 0x01;
+            
+            key_state KeyState;
+            if(IsUp == TRUE && WasDown == TRUE) KeyState = KEY_RELEASED;
+            else if(IsUp == FALSE && WasDown == FALSE) KeyState = KEY_PRESSED;
+            else KeyState = KEY_HELD;
+            
+            if(IsExtended)
+            {
+                // Exclude NumLock
+                if(ScanCode != 0x45)
+                    ScanCode |= 0x80;
+            }
+            else
+            {
+                // Pause key
+                if(ScanCode == 0x45)
+                    ScanCode = 0xFF;
+                // Alt + PrintScreen
+                else if(ScanCode == 0x54)
+                    ScanCode = 0x80 | 0x37;
+            }
+            
+            Platform->Keys[ScanCode] = KeyState;
+        } return 0;
     }
     
     return Win32_DefWindowProcA(Window, Message, WParam, LParam);

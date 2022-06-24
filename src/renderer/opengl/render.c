@@ -17,7 +17,7 @@ OpenGL_DebugCallback(u32 Source,
                      vptr UserParam)
 {
     Error(Message);
-    Assert(FALSE);
+    // Assert(FALSE);
 }
 
 internal u32
@@ -69,11 +69,11 @@ Renderer_LoadShaders(c08 *VertFileName,
 }
 
 internal void
-Renderer_Resize(v2u32 NewSize)
+Renderer_Resize(v2u32 NewSize, m4x4r32 *PerspectiveMatrix)
 {
     v2u32 Pos;
     v2u32 Size;
-    v2u32 Res = {1, 1};
+    v2u32 Res = NewSize;
     
     if(NewSize.X/Res.X < NewSize.Y/Res.Y) {
         Size.X = NewSize.X;
@@ -87,13 +87,31 @@ Renderer_Resize(v2u32 NewSize)
         Pos.Y = 0;
     }
     
+    // https://ogldev.org/www/tutorial12/tutorial12.html
+    
+    r32 AspectRatio = (r32)NewSize.X / (r32)NewSize.Y;
+    r32 FOV = R32_PI/2;
+    //TODO: Implement a tan function
+    r32 CotHalfFOV = R32_cos(FOV/2) / R32_sin(FOV/2);
+    r32 NearZ = 0.1f;
+    r32 FarZ = 256;
+    r32 ZRange = NearZ - FarZ;
+    
+    *PerspectiveMatrix = (m4x4r32){
+        CotHalfFOV, 0, 0, 0,
+        0, CotHalfFOV, 0, 0,
+        0, 0, (-NearZ-FarZ)/ZRange, 2*FarZ*NearZ/ZRange,
+        0, 0, 1, 0
+    };
+    
     OpenGL_Viewport(Pos.X, Pos.Y, Size.X, Size.Y);
     OpenGL_Scissor(Pos.X, Pos.Y, Size.X, Size.Y);
 }
 
 internal void
 Renderer_Init(renderer_state *Renderer,
-              heap *Heap)
+              heap *Heap,
+              v2u32 WindowSize)
 {
     Renderer->Heap = Heap;
     
@@ -109,12 +127,15 @@ Renderer_Init(renderer_state *Renderer,
     OpenGL_Enable(GL_DEPTH_TEST);
     OpenGL_Enable(GL_SCISSOR_TEST);
     OpenGL_Enable(GL_CULL_FACE);
-    OpenGL_Enable(GL_BLEND);
     OpenGL_CullFace(GL_FRONT);
+    OpenGL_Enable(GL_BLEND);
     OpenGL_BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
     Renderer->PCProgram = Renderer_LoadShaders(SHADERS_DIR "pc.vert", SHADERS_DIR "pc.frag");
     Renderer->PTProgram = Renderer_LoadShaders(SHADERS_DIR "pt.vert", SHADERS_DIR "pt.frag");
+    Renderer->UIProgram = Renderer_LoadShaders(SHADERS_DIR "ui.vert", SHADERS_DIR "ui.frag");
+    Platform_GetFileTime(SHADERS_DIR "pc.vert", 0, 0, Renderer->PCLastModified+0);
+    Platform_GetFileTime(SHADERS_DIR "pc.frag", 0, 0, Renderer->PCLastModified+1);
     Platform_GetFileTime(SHADERS_DIR "pt.vert", 0, 0, Renderer->PTLastModified+0);
     Platform_GetFileTime(SHADERS_DIR "pt.frag", 0, 0, Renderer->PTLastModified+1);
     Mesh_Init(&Renderer->Mesh, Renderer->Heap, &Renderer->PTProgram, MESH_HAS_TEXTURES);
@@ -137,13 +158,114 @@ Renderer_Init(renderer_state *Renderer,
     Mem_Cpy(Renderer->Mesh.Storage->Data, Renderer->Assetpack.Assets, Renderer->Mesh.Storage->Size);
     Renderer->Mesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
     
-    u16 ParentIndex = UI_Init(&Renderer->UI, &Renderer->Mesh, Renderer->Heap, (v3u08){127,127,127});
-    UI_CreateNode(&Renderer->UI, CString("Hello!"), (v3u08){255,255,255},
-                  (v2r32){1,1}, ParentIndex, 0);
+    UI_Init(&Renderer->UI, Renderer->Heap, &Renderer->PTProgram, Renderer->Assetpack, WindowSize);
+    OpenGL_DeleteBuffers(1, &Renderer->UI.Mesh.TextureSSBO);
+    Renderer->UI.Mesh.TextureSSBO = Renderer->Mesh.TextureSSBO;
+    OpenGL_DeleteTextures(1, &Renderer->UI.Mesh.Atlases);
+    Renderer->UI.Mesh.Atlases = Renderer->Mesh.Atlases;
+    Heap_Free(Renderer->UI.Mesh.Storage);
+    Renderer->UI.Mesh.Storage = Renderer->Mesh.Storage;
+    Renderer->UI.Mesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
+    
+    ui_node_style Style;
+    Style.BackgroundColor = (v3u08){128,128,0};
+    Style.ZIndex = 1;
+    Style.FontSize = 200.f;
+    Style.Size = (v2u32){WindowSize.X/2, WindowSize.Y/2};
+    UI_CreateNode(&Renderer->UI, CString("a"), Style);
+    UI_Update(&Renderer->UI);
     
     Renderer->DEBUGCounter = 0;
     
     OpenGL_ClearColor(.2,.2,.2,1);
+    
+    // Mesh_Init(&Renderer->OtherUIMesh, Renderer->Heap, &Renderer->UIProgram, MESH_HAS_COLORS|MESH_IS_FOR_OTHER_UI);
+    
+    
+    // mesh_object Object;
+    // mesh_object *Objects[] = { &Object };
+    // Object.Indices = Heap_Allocate(Renderer->Heap, 6*sizeof(u32));
+    // Object.Vertices = Heap_Allocate(Renderer->Heap, 4*Renderer->Mesh.VertexSize);
+    // pt_vertex *Vertices = (vptr)Object.Vertices->Data;
+    // *Vertices++ = (pt_vertex){(1<<30)|(0<<20)|((-512&0x3FF)<<10)|(-512&0x3FF), (('a'-' ')<<2) | 0b00};
+    // *Vertices++ = (pt_vertex){(1<<30)|(0<<20)|(( 511&0x3FF)<<10)|(-512&0x3FF), (('a'-' ')<<2) | 0b10};
+    // *Vertices++ = (pt_vertex){(1<<30)|(0<<20)|(( 511&0x3FF)<<10)|( 511&0x3FF), (('a'-' ')<<2) | 0b11};
+    // *Vertices++ = (pt_vertex){(1<<30)|(0<<20)|((-512&0x3FF)<<10)|( 511&0x3FF), (('a'-' ')<<2) | 0b01};
+    
+    // u32 *Indices = (u32*)Object.Indices->Data;
+    // *Indices++ = 0;
+    // *Indices++ = 1;
+    // *Indices++ = 2;
+    // *Indices++ = 0;
+    // *Indices++ = 2;
+    // *Indices++ = 3;
+    
+    // Object.TranslationMatrix = M4x4r32_I;
+    // Object.ScalingMatrix = M4x4r32_Scaling(0.5,0.5,1);
+    // Object.RotationMatrix = M4x4r32_I;
+    
+    // Mesh_AddObjects(&Renderer->Mesh, 1, Objects);
+    // Mesh_Update(&Renderer->Mesh);
+    
+    // r32 n = 0.1f;
+    // r32 f = 100.0f;
+    // r32 l = -1.0f;
+    // r32 r = 1.0f;
+    // r32 t = 1.0f;
+    // r32 b = -1.0f;
+    // Renderer->PerspectiveMatrix = (m4x4r32){
+    //     2*n/(r-l), 0,         (r+l)/(r-l), 0,
+    //     0,         2*n/(t-b), (t+b)/(t-b), 0,
+    //     0,         0,         -(f+n)/(f-n), -2*f*n/(f-n),
+    //     0,         0,         -1,          0
+    // };
+    Renderer->Pos = (v3r32){0,0,2};
+    Renderer->Dir = (v3r32){0,0,0};
+    
+    // mesh_object Object;
+    // mesh_object *Objects[] = { &Object };
+    
+    // Object.Indices = Heap_Allocate(Heap, 6*sizeof(u32));
+    // Object.Vertices = Heap_Allocate(Heap, 4*Renderer->OtherUIMesh.VertexSize);
+    
+    // u32 *Indices = (vptr)Object.Indices->Data;
+    // struct {
+    //     v4r32 Pos;
+    //     v4u08 Color;
+    // } *Vertices = (vptr)Object.Vertices->Data;
+    
+    // *Indices++ = 0;
+    // *Indices++ = 1;
+    // *Indices++ = 2;
+    // *Indices++ = 0;
+    // *Indices++ = 2;
+    // *Indices++ = 3;
+    
+    // *Vertices++ = (pt_vertex){ (1024<<12)|(1024), (u32)(1<<31)|(128<<18)|(0<<10)|(0<<2) };
+    // *Vertices++ = (pt_vertex){ (3072<<12)|(1024), (u32)(1<<31)|(128<<18)|(0<<10)|(0<<2) };
+    // *Vertices++ = (pt_vertex){ (3072<<12)|(3072), (u32)(1<<31)|(128<<18)|(0<<10)|(0<<2) };
+    // *Vertices++ = (pt_vertex){ (1024<<12)|(3072), (u32)(1<<31)|(128<<18)|(0<<10)|(0<<2) };
+    // Vertices[0].Pos   = (v4r32){ -0.5, 0.5, 1, -1 };
+    // Vertices[1].Pos   = Vertices[0].Pos;
+    // Vertices[2].Pos   = Vertices[0].Pos;
+    // Vertices[3].Pos   = Vertices[0].Pos;
+    // Vertices[0].Color = (v4u08){ 128, 0, 0, 255 };
+    // Vertices[1].Color = Vertices[0].Color;
+    // Vertices[2].Color = Vertices[0].Color;
+    // Vertices[3].Color = Vertices[0].Color;
+    
+    // OpenGL_Uniform2ui(Renderer->OtherUIMesh.ViewSize, WindowSize.X, WindowSize.Y);
+    // OpenGL_Uniform1f(OpenGL_GetUniformLocation(Renderer->UIProgram, "testIn"), 1);
+    
+    // Object.TranslationMatrix = M4x4r32_Translation(-1, -1, 0);
+    // Object.ScalingMatrix = M4x4r32_Scaling(2.0f/4095, 2.0f/4095, 1);
+    // Object.RotationMatrix = M4x4r32_I;
+    
+    // Mesh_AddObjects(&Renderer->OtherUIMesh, 1, Objects);
+    // Mesh_Update(&Renderer->OtherUIMesh);
+    
+    // Heap_Free(Object.Vertices);
+    // Heap_Free(Object.Indices);
 }
 
 internal void
@@ -176,11 +298,14 @@ Renderer_Draw(renderer_state *Renderer)
     
     OpenGL_Clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     
-    UI_PropagateUpdates(&Renderer->UI);
+    // OpenGL_UniformMatrix4fv(Renderer->OtherUIMesh.VPMatrix, 1, FALSE, VPMatrix);
     
-    Mesh_Draw(&Renderer->Mesh);
+    // Mesh_Draw(&Renderer->Mesh);
+    // Mesh_Draw(&Renderer->OtherUIMesh);
     
-    Stack_Push();
+    UI_Draw(&Renderer->UI);
+    
+    Renderer->DEBUGCounter++;
 }
 
 internal void

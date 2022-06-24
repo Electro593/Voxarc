@@ -19,6 +19,7 @@
 #define GL_SCISSOR_TEST           0x0C11
 #define GL_DONT_CARE              0x1100
 #define GL_UNSIGNED_BYTE          0x1401
+#define GL_UNSIGNED_SHORT         0x1403
 #define GL_UNSIGNED_INT           0x1405
 #define GL_FLOAT                  0x1406
 #define GL_RGBA                   0x1908
@@ -94,8 +95,10 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
     IMPORT(u32,  CreateShader,                u32 Type) \
     IMPORT(void, DebugMessageCallback,        func_OpenGL_DebugProc Callback, vptr UserParam) \
     IMPORT(void, DebugMessageControl,         u32 Source, u32 Type, u32 Severity, s32 Count, u32 *IDs, u08 Enabled) \
+    IMPORT(void, DeleteBuffers,               u32 Count, u32 *Buffers) \
     IMPORT(void, DeleteProgram,               u32 Program) \
     IMPORT(void, DeleteShader,                u32 Shader) \
+    IMPORT(void, DeleteTextures,              u32 Count, u32 *Textures) \
     IMPORT(void, DetachShader,                u32 Program, u32 Shader) \
     IMPORT(void, DrawElementsBaseVertex,      u32 Mode, s32 Count, u32 Type, vptr *Indices, s32 BaseVertex) \
     IMPORT(void, EnableVertexAttribArray,     u32 Index) \
@@ -111,8 +114,10 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
     IMPORT(void, TexBuffer,                   u32 Target, u32 InternalFormat, u32 Buffer) \
     IMPORT(void, TexImage3D,                  u32 Target, s32 Level, s32 InternalFormat, s32 Width, s32 Height, s32 Depth, s32 Border, u32 Format, u32 Type, vptr Pixels) \
     IMPORT(void, ShaderSource,                u32 Shader, s32 Count, c08 **String, s32 *Length) \
+    IMPORT(void, Uniform1f,                   s32 Location, r32 V0) \
     IMPORT(void, Uniform1i,                   s32 Location, s32 V0) \
     IMPORT(void, Uniform2ui,                  s32 Location, u32 V0, u32 V1) \
+    IMPORT(void, UniformMatrix4fv,            s32 Location, u32 Count, b08 Transpose, m4x4r32 Matrix) \
     IMPORT(void, UseProgram,                  u32 Program) \
     IMPORT(void, VertexAttribPointer,         u32 Index, s32 Size, u32 Type, b08 Normalized, s32 Stride, vptr Offset) \
     IMPORT(void, VertexAttribIPointer,        u32 Index, s32 Size, u32 Type, s32 Stride, vptr Offset) \

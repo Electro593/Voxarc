@@ -44,7 +44,7 @@ Game_Init(platform_state *Platform,
     assetpack Assetpack = File_LoadAssetpack("assets\\0.pack", RendererHeap);
     Renderer->Assetpack = Assetpack;
     
-    Renderer_Init(Renderer, RendererHeap);
+    Renderer_Init(Renderer, RendererHeap, Platform->WindowSize);
 }
 
 internal void
@@ -53,7 +53,51 @@ Game_Update(platform_state *Platform,
             renderer_state *Renderer)
 {
     if(Platform->Updates & WINDOW_RESIZED) {
-        Renderer_Resize(Platform->WindowSize);
+        Renderer_Resize(Platform->WindowSize, &Renderer->PerspectiveMatrix);
+    }
+    
+    r32 Step = 0.01;
+    v3r32 PosDelta = {0};
+    if(Platform->Keys[ScanCode_ArrowLeft] != KEY_RELEASED)
+        PosDelta.X -= Step;
+    if(Platform->Keys[ScanCode_ArrowRight] != KEY_RELEASED)
+        PosDelta.X += Step;
+    if(Platform->Keys[ScanCode_ArrowDown] != KEY_RELEASED)
+        PosDelta.Z += Step;
+    if(Platform->Keys[ScanCode_ArrowUp] != KEY_RELEASED)
+        PosDelta.Z -= Step;
+    if(Platform->Keys[ScanCode_Space] != KEY_RELEASED)
+        PosDelta.Y += Step;
+    if(Platform->Keys[ScanCode_ShiftLeft]  != KEY_RELEASED ||
+       Platform->Keys[ScanCode_ShiftRight] != KEY_RELEASED)
+        PosDelta.Y -= Step;
+    V3r32_Norm(PosDelta);
+    Renderer->Pos = V3r32_Add(Renderer->Pos, PosDelta);
+    
+    Step = 0.01;
+    v3r32 DirDelta = (v3r32){0};
+    if(Platform->Keys[ScanCode_X] != KEY_RELEASED)
+        DirDelta.Y += Step;
+    if(Platform->Keys[ScanCode_C] != KEY_RELEASED)
+        DirDelta.Y -= Step;
+    Renderer->Dir = V3r32_Add(Renderer->Dir, DirDelta);
+    
+    if((Platform->Updates & WINDOW_RESIZED) ||
+       !V3r32_IsEqual(PosDelta, (v3r32){0}) ||
+       !V3r32_IsEqual(DirDelta, (v3r32){0}))
+    {
+        r32 y = Renderer->Dir.Y;
+        
+        Renderer->ViewMatrix = (m4x4r32){
+             R32_cos(y), 0,      R32_sin(y), -Renderer->Pos.X,
+             0,          1,      0,          -Renderer->Pos.Y,
+            -R32_sin(y), 0,      R32_cos(y),  Renderer->Pos.Z,
+             0,          0,      0,           1
+        };
+        
+        m4x4r32 VPMatrix = M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
+        OpenGL_UniformMatrix4fv(Renderer->UI.Mesh.VPMatrix, 1, FALSE, VPMatrix);
+        
         Platform->Updates &= ~WINDOW_RESIZED;
     }
     

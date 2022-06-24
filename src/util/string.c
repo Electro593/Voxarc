@@ -18,7 +18,7 @@ CLString(c08 *Chars,
     String.Text = Chars;
     return String;
 }
-internal string CString(c08 *Chars) { return CLString(Chars, Mem_BytesUntil(Chars, 0)+1); }
+internal string CString(c08 *Chars) { return CLString(Chars, Mem_BytesUntil(Chars, 0)); }
 internal string EString(u64 Length) { return CLString(Stack_Allocate(Length), Length); }
 
 // internal void
