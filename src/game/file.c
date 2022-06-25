@@ -165,33 +165,53 @@ File_CreateAssetpack(c08 *FileName,
     heap_handle *Assets;
     
     u32 Padding = 1;
+    v4u08 BorderColor = {0, 0, 0, 255};
     
     u08 *FontData = File_Read("assets\\fonts\\arial.ttf", 0, 0).Text;
     font Font = Font_Init(FontData);
     
     r32 UnitScale = 1.0f/(Font.hhea->Ascent-Font.hhea->Descent);
     
-    Header.AssetCount = 127-32;
-    Assets = Heap_Allocate(Heap, (127-32)*sizeof(assetpack_texture));
+    u32 GlyphAssetSize = sizeof(struct assetpack_asset_header) + sizeof(assetpack_glyph);
+    u32 BlockAssetSize = sizeof(struct assetpack_asset_header);
     
-    Header.TagCount = Header.AssetCount+1+1;
-    Tags = Heap_Allocate(Heap, Header.TagCount*sizeof(assetpack_tag) + Header.AssetCount*sizeof(assetpack_asset*));
+    u32 CodepointCount = 127 - 32;
+    u32 AssetCount = CodepointCount + BLOCK_Count;
+    Header.AssetsSize = CodepointCount*GlyphAssetSize + BLOCK_Count*BlockAssetSize;
+    Assets = Heap_Allocate(Heap, Header.AssetsSize);
     
-    Header.TagDataSize = sizeof(assetpack_atlas) + sizeof(assetpack_font) + Header.AssetCount*sizeof(assetpack_asset*);
+    Header.TagCount = AssetCount+1+1;
+    Tags = Heap_Allocate(Heap, Header.TagCount*sizeof(assetpack_tag) + AssetCount*sizeof(assetpack_asset*));
+    
+    Header.TagDataSize = sizeof(assetpack_atlas) + sizeof(assetpack_font) + AssetCount*sizeof(assetpack_asset*);
     TagData = Heap_Allocate(Heap, Header.TagDataSize);
     vptr TagDataCursor = TagData->Data;
     
-    Header.RegistryCount = 3;
+    u32 RegistryIndex = 0;
+    Header.RegistryCount = 4;
     Registries = Heap_Allocate(Heap, Header.RegistryCount*sizeof(assetpack_registry));
-    ((assetpack_registry*)Registries->Data)[0].ID = TAG_CODEPOINT;
-    ((assetpack_registry*)Registries->Data)[0].Type = TYPE_U32;
-    ((assetpack_registry*)Registries->Data)[0].TagCount = Header.AssetCount;
-    ((assetpack_registry*)Registries->Data)[0].Tags = 0;
+    ((assetpack_registry*)Registries->Data)[RegistryIndex].ID = TAG_CODEPOINT;
+    ((assetpack_registry*)Registries->Data)[RegistryIndex].Type = TYPE_U32;
+    ((assetpack_registry*)Registries->Data)[RegistryIndex].TagCount = CodepointCount;
+    ((assetpack_registry*)Registries->Data)[RegistryIndex].Tags = 0;
+    RegistryIndex++;
+    
+    ((assetpack_registry*)Registries->Data)[RegistryIndex].ID = TAG_BLOCK_TEXTURE;
+    ((assetpack_registry*)Registries->Data)[RegistryIndex].Type = TYPE_U32;
+    ((assetpack_registry*)Registries->Data)[RegistryIndex].TagCount = BLOCK_Count;
+    ((assetpack_registry*)Registries->Data)[RegistryIndex].Tags = (assetpack_tag*)(sizeof(assetpack_tag)*CodepointCount);
+    RegistryIndex++;
     
     v2u32 AtlasDims = {512, 512};
     u32 AtlasSize = AtlasDims.X*AtlasDims.Y*sizeof(v4u08);
     u32 AtlasCount = 0;
     heap_handle *Atlases = Heap_Allocate(Heap, 0);
+    
+    // Load in block bitmaps
+    file_handle BlockHandles[BLOCK_Count];
+    for(u32 BlockIndex = 0; BlockIndex < BLOCK_Count; BlockIndex++) {
+        Platform_OpenFile(BlockHandles+BlockIndex, BlockTexturePaths[BlockIndex], FILE_READ);
+    }
     
     binpacker_node *NullNode = Stack_Allocate(sizeof(binpacker_node));
     NullNode->AtlasIndex = 0;
@@ -204,18 +224,19 @@ File_CreateAssetpack(c08 *FileName,
     NullAssetNode->Next = NullAssetNode;
     NullAssetNode->Prev = NullAssetNode;
     
-    assetpack_texture *Asset = (assetpack_texture*)Assets->Data;
     assetpack_tag *Tag = (assetpack_tag*)Tags->Data;
+    assetpack_asset *Asset = (assetpack_asset*)Assets->Data;
+    
     for(c08 Codepoint = ' '; Codepoint <= '~'; Codepoint++) {
         u32 GlyphIndex = Font_GetGlyphIndex(Font, Codepoint);
         if(GlyphIndex == 0) continue;
         
         font_glyph Glyph = Font_GetGlyph(Font, Codepoint, UnitScale);
         
-        Asset->AdvanceX = Glyph.Advance;
-        Asset->Bearing = Glyph.Bearing;
-        Asset->SizeR = Glyph.Size;
         Asset->Size = (v2u32){Glyph.Size.X*FontSize, Glyph.Size.Y*FontSize};
+        Asset->Glyph.AdvanceX = Glyph.Advance;
+        Asset->Glyph.Bearing = Glyph.Bearing;
+        Asset->Glyph.SizeR = Glyph.Size;
         
         Tag->ValueI = Codepoint;
         Tag->AssetCount = 1;
@@ -226,9 +247,9 @@ File_CreateAssetpack(c08 *FileName,
         if(Glyph.Shape.ContourCount == 0) {
             Asset->Pos = (v2u32){0};
             Asset->AtlasIndex = 0;
-            Asset->IsRotated = FALSE;
         } else {
             asset_node *AssetNode = Stack_Allocate(sizeof(asset_node));
+            AssetNode->Type = ASSET_GLYPH;
             AssetNode->Glyph = Glyph;
             AssetNode->Size = (v2u32){Asset->Size.X+Padding, Asset->Size.Y+Padding};
             AssetNode->Asset = Asset;
@@ -238,59 +259,69 @@ File_CreateAssetpack(c08 *FileName,
             AssetNode->Next->Prev = AssetNode;
         }
         
-        Asset++;
+        (u08*)Asset += GlyphAssetSize;
         Tag++;
     }
     
-    binpacker_node *BestNode, *Node;
-    asset_node *BestAssetNode=NULL, *AssetNode;
-    u32 MinShortSide, MinLongSide;
-    b08 IsRotated;
+    for(u32 BlockIndex = 0; BlockIndex < BLOCK_Count; BlockIndex++) {
+        bitmap_header BitmapHeader;
+        Platform_ReadFile(BlockHandles[BlockIndex], &BitmapHeader, sizeof(bitmap_header), 0);
+        
+        Asset->Size = (v2u32){BitmapHeader.Width, BitmapHeader.Height};
+        
+        Tag->ValueI = BlockIndex;
+        Tag->AssetCount = 1;
+        Tag->Assets = (vptr)((u08*)TagDataCursor - (u64)TagData->Data);
+        *(vptr*)TagDataCursor = (u08*)Asset - (u64)Assets->Data;
+        (u08*)TagDataCursor += sizeof(assetpack_asset*);
+        
+        asset_node *AssetNode = Stack_Allocate(sizeof(asset_node));
+        AssetNode->Type = ASSET_BLOCK;
+        AssetNode->HandleIndex = BlockIndex;
+        AssetNode->BitmapOffset = BitmapHeader.DataOffset;
+        AssetNode->Size = (v2u32){Asset->Size.X+Padding, Asset->Size.Y+Padding};
+        AssetNode->Asset = Asset;
+        AssetNode->Prev = NullAssetNode;
+        AssetNode->Next = NullAssetNode->Next;
+        AssetNode->Prev->Next = AssetNode;
+        AssetNode->Next->Prev = AssetNode;
+        
+        (u08*)Asset += BlockAssetSize;
+        Tag++;
+    }
+    
     while(NullAssetNode->Next != NullAssetNode) {
         // Find a fitting node
-        IsRotated = FALSE;
-        MinShortSide = U32_MAX;
-        MinLongSide = U32_MAX;
-        BestNode = NULL;
-        AssetNode = NullAssetNode;
+        s32 MinShortSide = S32_MAX;
+        s32 MinLongSide = S32_MAX;
+        binpacker_node *Node = NullNode;
+        binpacker_node *BestNode = NULL;
+        asset_node *BestAssetNode=NULL;
         
-        Node = NullNode;
         do {
             Node = Node->Next;
+            asset_node *AssetNode = NullAssetNode;
             
-            AssetNode = NullAssetNode;
-            while(AssetNode->Next != NullAssetNode) {
-                AssetNode = AssetNode->Next;
-                Asset = AssetNode->Asset;
-                
-                u32 ShortSideN = U32_MAX;
-                u32 ShortSideR = U32_MAX;
-                u32 LongSideN = U32_MAX;
-                u32 LongSideR = U32_MAX;
-                if(AssetNode->Size.X < Node->Size.X && AssetNode->Size.Y < Node->Size.Y) {
-                    v2u32 SizeDiff = V2u32_Sub(Node->Size, AssetNode->Size);
-                    ShortSideN = MIN(SizeDiff.X, SizeDiff.Y);
-                    LongSideN = MAX(SizeDiff.X, SizeDiff.Y);
-                }
-                if(AssetNode->Size.Y < Node->Size.X && AssetNode->Size.X < Node->Size.Y) {
-                    v2u32 AssetSize = (v2u32){AssetNode->Size.Y, AssetNode->Size.X};
-                    v2u32 SizeDiff = V2u32_Sub(Node->Size, AssetSize);
-                    // ShortSideR = MIN(SizeDiff.X, SizeDiff.Y);
-                    // LongSideR = MAX(SizeDiff.X, SizeDiff.Y);
-                }
-                
-                u32 ShortSide = MIN(ShortSideN, ShortSideR);
-                u32 LongSide = MIN(LongSideN, LongSideR);
-                if(ShortSide < MinShortSide) {
-                    BestNode = Node;
-                    BestAssetNode = AssetNode;
-                    MinShortSide = ShortSide;
-                    IsRotated = ShortSide != ShortSideN;
-                } else if(ShortSide == MinShortSide && LongSide < MinLongSide) {
-                    BestNode = Node;
-                    BestAssetNode = AssetNode;
-                    MinLongSide = LongSide;
-                    IsRotated = LongSide != LongSideN;
+            if(Node != NullNode) {
+                while(AssetNode->Next != NullAssetNode) {
+                    AssetNode = AssetNode->Next;
+                    
+                    v2s32 SizeDiff = {Node->Size.X-AssetNode->Size.X, Node->Size.Y-AssetNode->Size.Y};
+                    
+                    if(SizeDiff.X < 0 || SizeDiff.Y < 0) continue;
+                    
+                    s32 ShortSide = MIN(SizeDiff.X, SizeDiff.Y);
+                    s32 LongSide = MAX(SizeDiff.X, SizeDiff.Y);
+                    
+                    if(ShortSide < MinShortSide) {
+                        BestNode = Node;
+                        BestAssetNode = AssetNode;
+                        MinShortSide = ShortSide;
+                    } else if(ShortSide == MinShortSide && LongSide < MinLongSide) {
+                        BestNode = Node;
+                        BestAssetNode = AssetNode;
+                        MinLongSide = LongSide;
+                    }
                 }
             }
             
@@ -305,28 +336,53 @@ File_CreateAssetpack(c08 *FileName,
                 NewNode->Prev = Node;
                 NewNode->Next->Prev = NewNode;
                 NewNode->Prev->Next = NewNode;
+                
                 Heap_Resize(Atlases, Atlases->Size + AtlasSize);
-                Mem_Set(Atlases->Data+AtlasSize*AtlasCount, 0, AtlasSize);
+                v4u08 *Bitmap = (v4u08*)(Atlases->Data + AtlasSize*AtlasCount);
+                
+                //TODO: Less granular memset?
+                for(u32 Y = 0; Y < AtlasDims.Y; Y++) {
+                    for(u32 X = 0; X < AtlasDims.X; X++) {
+                        Bitmap[INDEX_2D(X, Y, AtlasDims.X)] = BorderColor;
+                    }
+                }
                 AtlasCount++;
             }
         } while(Node->Next != NullNode);
+        
         Node = BestNode;
-        AssetNode = BestAssetNode;
+        asset_node *AssetNode = BestAssetNode;
         AssetNode->Prev->Next = AssetNode->Next;
         AssetNode->Next->Prev = AssetNode->Prev;
+        
         Asset = AssetNode->Asset;
-        Asset->IsRotated = IsRotated;
         Asset->AtlasIndex = Node->AtlasIndex;
         
-        // Place the texture
-        if(IsRotated) {
-            SWAP(Asset->Size.X, Asset->Size.Y, u32);
-            SWAP(AssetNode->Size.X, AssetNode->Size.Y, u32);
-        }
         v4u08 *Bitmap = (v4u08*)(Atlases->Data + Node->AtlasIndex*AtlasSize);
         Bitmap += INDEX_2D(Node->Pos.X, Node->Pos.Y, AtlasDims.X);
         Asset->Pos = Node->Pos;
-        MSDF_DrawShape(AssetNode->Glyph.Shape, &Asset->Pos, &Asset->Size, Bitmap, Node->Pos, Node->AtlasIndex, AtlasDims);
+        
+        switch(AssetNode->Type) {
+            case ASSET_GLYPH: {
+                MSDF_DrawShape(AssetNode->Glyph.Shape, &Asset->Pos, &Asset->Size, Bitmap, Node->Pos, Node->AtlasIndex, AtlasDims);
+            } break;
+            
+            case ASSET_BLOCK: {
+                Stack_Push();
+                u32 Size = Asset->Size.X*Asset->Size.Y*sizeof(v4u08);
+                v4u08 *Src = Stack_Allocate(Size);
+                //TODO: Async read?
+                Platform_ReadFile(BlockHandles[AssetNode->HandleIndex], Src, Size, AssetNode->BitmapOffset);
+                for(u32 Y = 0; Y < Asset->Size.Y; Y++) {
+                    for(u32 X = 0; X < Asset->Size.X; X++) {
+                        v4u08 Color = {Src->Z, Src->Y, Src->X, 255};
+                        Bitmap[INDEX_2D(X, Y, AtlasDims.X)] = Color;
+                        Src++;
+                    }
+                }
+                Stack_Pop();
+            } break;
+        }
         
         v2u32 Pos = Node->Pos;
         v2u32 Pos2 = V2u32_Add(Node->Pos, AssetNode->Size);
@@ -404,10 +460,11 @@ File_CreateAssetpack(c08 *FileName,
         }
     }
     
-    ((assetpack_registry*)Registries->Data)[1].ID = TAG_ATLAS_DESCRIPTOR;
-    ((assetpack_registry*)Registries->Data)[1].Type = TYPE_VPTR;
-    ((assetpack_registry*)Registries->Data)[1].TagCount = 1;
-    ((assetpack_registry*)Registries->Data)[1].Tags = (assetpack_tag*)((u08*)Tag - Tags->Data);
+    ((assetpack_registry*)Registries->Data)[RegistryIndex].ID = TAG_ATLAS_DESCRIPTOR;
+    ((assetpack_registry*)Registries->Data)[RegistryIndex].Type = TYPE_VPTR;
+    ((assetpack_registry*)Registries->Data)[RegistryIndex].TagCount = 1;
+    ((assetpack_registry*)Registries->Data)[RegistryIndex].Tags = (assetpack_tag*)((u08*)Tag - Tags->Data);
+    RegistryIndex++;
     Tag->ValueP = (u08*)TagDataCursor - (u64)TagData->Data;
     Tag->AssetCount = 0;
     Tag++;
@@ -417,10 +474,11 @@ File_CreateAssetpack(c08 *FileName,
     AtlasDescriptor->Size = AtlasDims;
     AtlasDescriptor->Count = AtlasCount;
     
-    ((assetpack_registry*)Registries->Data)[2].ID = TAG_FONT_DEF;
-    ((assetpack_registry*)Registries->Data)[2].Type = TYPE_VPTR;
-    ((assetpack_registry*)Registries->Data)[2].TagCount = 1;
-    ((assetpack_registry*)Registries->Data)[2].Tags = (assetpack_tag*)((u08*)Tag - Tags->Data);
+    ((assetpack_registry*)Registries->Data)[RegistryIndex].ID = TAG_FONT_DEF;
+    ((assetpack_registry*)Registries->Data)[RegistryIndex].Type = TYPE_VPTR;
+    ((assetpack_registry*)Registries->Data)[RegistryIndex].TagCount = 1;
+    ((assetpack_registry*)Registries->Data)[RegistryIndex].Tags = (assetpack_tag*)((u08*)Tag - Tags->Data);
+    RegistryIndex++;
     Tag->ValueP = (u08*)TagDataCursor - (u64)TagData->Data;
     Tag->AssetCount = 0;
     Tag++;
@@ -464,6 +522,10 @@ File_CreateAssetpack(c08 *FileName,
     Platform_WriteFile(FileHandle, Atlases->Data, Atlases->Size, Offset);
     Platform_WriteFile(FileHandle, &Header, sizeof(assetpack_header), 0);
     Platform_CloseFile(FileHandle);
+    
+    for(u32 BlockIndex = 0; BlockIndex < BLOCK_Count; BlockIndex++) {
+        Platform_CloseFile(BlockHandles[BlockIndex]);
+    }
     
     Heap_Free(Atlases);
     Heap_Free(Assets);

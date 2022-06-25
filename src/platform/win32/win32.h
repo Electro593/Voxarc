@@ -117,6 +117,7 @@ typedef s64 (API_ENTRY *func_Win32_WindowCallback)(win32_window Window, u32 Mess
 #define WM_SYSKEYUP       0x0105
 #define WM_MOUSEMOVE      0x0200
 #define WM_LBUTTONDOWN    0x0201
+#define WM_LBUTTONUP      0x0202
 #define WM_SIZING         0x0214
 #define WM_CAPTURECHANGED 0x0215
 

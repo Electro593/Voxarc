@@ -1,19 +1,18 @@
-#version 460
+#version 460 core
 
-layout(location = 0) in uint PositionIn;
-layout(location = 2) in uint TextureIndex;
+#define LITTLE_ENDIAN 1
+
+layout(location = 0) in vec4 PositionIn;
+layout(location = 2) in uint TextureData;
 
 struct texture_data {
    uvec2 Pos;
    uvec2 Size;
-   vec2 SizeR;
-   vec2 Bearing;
-   float AdvanceX;
-   uint TheRest;
+   uint AtlasIndex;
 };
 
 layout(std430, binding = 0) readonly buffer TextureStorage {
-   texture_data TextureData[];
+   uint Assets[];
 };
 layout(std430, binding = 1) readonly buffer MatrixStorage {
    mat4 Matrices[];
@@ -22,36 +21,32 @@ layout(std430, binding = 1) readonly buffer MatrixStorage {
 uniform uvec2 AtlasSize;
 uniform mat4 VPMatrix;
 
-out vec4 Color;
-out vec2 TexCoords;
-out flat uint AtlasIndex;
+out vec2 TextureCoords;
+out uint AtlasIndex;
 
 void main()
 {
-   vec4 Position = vec4(float((PositionIn>> 0)&0xFFF),
-                        float((PositionIn>>12)&0xFFF),
-                        float((PositionIn>>24)&0xFF),
-                        1);
-   
-   if((TextureIndex & 0x80000000) != 0) {
-      Color.x = float((TextureIndex>>18)&0xFF)/255;
-      Color.y = float((TextureIndex>>10)&0xFF)/255;
-      Color.z = float((TextureIndex>> 2)&0xFF)/255;
-      Color.w = 1;
-   } else {
-      uint Right = TextureIndex & 1;
-      uint Up = (TextureIndex & 2) >> 1;
-      texture_data Data = TextureData[TextureIndex>>2];
-      
-      float XCoord = float(Data.Pos.x + Data.Size.x*Right) / float(AtlasSize.x);
-      float YCoord = float(Data.Pos.y + Data.Size.y*Up) / float(AtlasSize.y);
-      TexCoords = vec2(XCoord, YCoord);
-      
-      AtlasIndex = (Data.TheRest >> 0) & 0xFFFF;
-      
-      Color.w = 0;
-   }
-   
    mat4 MVPMatrix = Matrices[gl_DrawID]*VPMatrix;
-   gl_Position = Position*MVPMatrix;
+   gl_Position = PositionIn*MVPMatrix;
+   
+   uint Right = TextureData & 1;
+   uint Up = (TextureData >> 1) & 1;
+   uint DWords = TextureData >> 2;
+   
+   texture_data Data;
+   Data.Pos.x   = Assets[DWords+0];
+   Data.Pos.y   = Assets[DWords+1];
+   Data.Size.x  = Assets[DWords+2];
+   Data.Size.y  = Assets[DWords+3];
+   Data.AtlasIndex = Assets[DWords+4];
+   
+   float U = float(Data.Pos.x + Data.Size.x*Right) / float(AtlasSize.x);
+   float V = float(Data.Pos.y + Data.Size.y*Up) / float(AtlasSize.y);
+   TextureCoords = vec2(U, V);
+   
+   #if LITTLE_ENDIAN
+      AtlasIndex = Data.AtlasIndex & 0xFFFF;
+   #else
+      AtlasIndex = (Data.AtlasIndex>>16) & 0xFFFF;
+   #endif
 }

@@ -73,13 +73,12 @@ Mesh_Init(mesh *Mesh,
     OpenGL_GenVertexArrays(1, &Mesh->VAO);
     OpenGL_GenBuffers(4, &Mesh->VBO);
     
+    Mesh->VPMatrix = OpenGL_GetUniformLocation(*Mesh->Program, "VPMatrix");
     if(Mesh->Flags & MESH_HAS_TEXTURES) {
         OpenGL_GenTextures(1, &Mesh->Atlases);
         Mesh->AtlasesSampler = OpenGL_GetUniformLocation(*Mesh->Program, "Atlases");
         Mesh->AtlasSize = OpenGL_GetUniformLocation(*Mesh->Program, "AtlasSize");
     }
-    Mesh->VPMatrix = OpenGL_GetUniformLocation(*Mesh->Program, "VPMatrix");
-    Mesh->ViewSize = OpenGL_GetUniformLocation(*Mesh->Program, "ViewSize");
     
     Mesh_Bind(Mesh);
     

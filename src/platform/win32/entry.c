@@ -422,7 +422,7 @@ Platform_LoadGame(module *Module,
 internal void
 Platform_HideCursor(win32_window Window)
 {
-    // Win32_SetCursor(NULL);
+    Win32_SetCursor(NULL);
     
     Win32_GetCursorPos(&Platform->RestoreCursorPos);
     Win32_ScreenToClient(Window, &Platform->RestoreCursorPos);
@@ -476,8 +476,8 @@ Platform_WindowCallback(win32_window Window,
         } return 0;
         
         case WM_KILLFOCUS: {
-            if(Platform->CursorIsDisabled)
-                Platform_ShowCursor(Window);
+            // if(Platform->CursorIsDisabled)
+            //     Platform_ShowCursor(Window);
             
             Platform->FocusState = FOCUS_NONE;
         } return 0;
@@ -606,7 +606,7 @@ Platform_Entry(void)
     win32_raw_input_device RawInputDevice;
     RawInputDevice.UsagePage = HID_USAGE_PAGE_GENERIC;
     RawInputDevice.Usage     = HID_USAGE_GENERIC_MOUSE;
-    RawInputDevice.Flags     = 0;//RIDEV_NOLEGACY;
+    RawInputDevice.Flags     = 0;
     RawInputDevice.Target    = Window;
     b32 Res = Win32_RegisterRawInputDevices(&RawInputDevice, 1, sizeof(win32_raw_input_device));
     Assert(Res == TRUE);
@@ -632,8 +632,15 @@ Platform_Entry(void)
             Win32_DispatchMessageA(&Message);
         }
         
+        if(Platform->CursorIsDisabled) {
+            // HACK: Not sure why, but the cursor keeps reappearing
+            // otherwise
+            Win32_SetCursor(NULL);
+        }
+        
         if(Platform->FocusState == FOCUS_CLIENT && !Platform->CursorIsDisabled && Platform->Buttons[Button_Left] == PRESSED) {
             Platform_HideCursor(Window);
+            Platform->Updates |= CURSOR_DISABLED;
             Platform->CursorIsDisabled = TRUE;
         }
         if(Platform->CursorIsDisabled && Platform->Keys[ScanCode_Escape] == PRESSED) {

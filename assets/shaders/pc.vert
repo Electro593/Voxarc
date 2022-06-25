@@ -4,7 +4,7 @@ layout(location = 0) in vec4 PositionIn;
 layout(location = 3) in vec4 ColorIn;
 
 layout(std430, binding = 1) readonly buffer MatrixStorage {
-   mat4 Matrices[];
+    mat4 Matrices[];
 };
 
 uniform mat4 VPMatrix;

@@ -41,10 +41,17 @@ typedef struct mesh_object {
 
 typedef struct mesh {
     u32 *Program;
+    
     u32 VAO;
-    u32 VBO, EBO, MatrixSSBO, TextureSSBO;
+    u32 VBO;
+    u32 EBO;
+    u32 MatrixSSBO;
+    u32 TextureSSBO;
+    
     u32 Atlases;
-    u32 AtlasesSampler, AtlasSize, VPMatrix, ViewSize;
+    u32 AtlasesSampler;
+    u32 AtlasSize;
+    u32 VPMatrix;
     
     mesh_flags Flags;
     u32 VertexSize;
@@ -53,6 +60,9 @@ typedef struct mesh {
     heap_handle *VertexOffsets;
     heap_handle *IndexOffsets;
     
+    //TODO: Are indices really useful? Just quads would be better,
+    // for textures with greedy meshing, since they basically aren't
+    // repeated anyway.
     heap_handle *Vertices;
     heap_handle *Indices;
     heap_handle *Storage;

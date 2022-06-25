@@ -56,7 +56,7 @@ UI_UpdateNodeString(ui *UI,
     
     u32 VertexSize = UI->Mesh.VertexSize;
     
-    assetpack_texture *Cache['~'-' '+1] = {0};
+    assetpack_asset *Cache['~'-' '+1] = {0};
     
     assetpack_tag *Tag = Assetpack_FindFirstTag(Assetpack, TAG_FONT_DEF);
     Assert(Tag);
@@ -94,16 +94,16 @@ UI_UpdateNodeString(ui *UI,
         if(!Cache[Char-' ']) {
             Tag = Assetpack_FindExactTag(Assetpack, TAG_CODEPOINT, (vptr)(u64)Char);
             Assert(Tag && Tag->AssetCount);
-            Cache[Char-' '] = &(Tag->Assets[0])->Texture;
+            Cache[Char-' '] = Tag->Assets[0];
         }
         
-        assetpack_texture *Asset = Cache[Char-' '];
-        A.X = Asset->AdvanceX*Scale.X;
+        assetpack_asset *Asset = Cache[Char-' '];
+        A.X = Asset->Glyph.AdvanceX*Scale.X;
         
-        if(Asset->Bearing.Y < LowestDescent)
-            LowestDescent = Asset->Bearing.Y;
-        if(Asset->Bearing.Y+Asset->SizeR.Y > HighestAscent)
-            HighestAscent = Asset->Bearing.Y+Asset->SizeR.Y;
+        if(Asset->Glyph.Bearing.Y < LowestDescent)
+            LowestDescent = Asset->Glyph.Bearing.Y;
+        if(Asset->Glyph.Bearing.Y+Asset->Glyph.SizeR.Y > HighestAscent)
+            HighestAscent = Asset->Glyph.Bearing.Y+Asset->Glyph.SizeR.Y;
         
         if(P.X + A.X > Pos.X+Size.X) {
             P.Y -= A.Y;
@@ -131,8 +131,8 @@ UI_UpdateNodeString(ui *UI,
         
         P.X += A.X;
         AdvanceSinceBreak += A.X;
-        CurrWidth += Asset->AdvanceX;
-        WidthSinceBreak += Asset->AdvanceX;
+        CurrWidth += Asset->Glyph.AdvanceX;
+        WidthSinceBreak += Asset->Glyph.AdvanceX;
         
         if(!Asset->Size.X || !Asset->Size.Y) continue;
         
@@ -170,10 +170,10 @@ UI_UpdateNodeString(ui *UI,
         
         if(!Char || Char == '\n' || Char == '\t') continue;
         
-        assetpack_texture *Asset = Cache[Char-' '];
-        A.X = Asset->AdvanceX*Scale.X;
-        v2r32 B = V2r32_Mul(Asset->Bearing, Scale);
-        v2r32 S = V2r32_Mul(Asset->SizeR, Scale);
+        assetpack_asset *Asset = Cache[Char-' '];
+        A.X = Asset->Glyph.AdvanceX*Scale.X;
+        v2r32 B = V2r32_Mul(Asset->Glyph.Bearing, Scale);
+        v2r32 S = V2r32_Mul(Asset->Glyph.SizeR, Scale);
         
         if(LineCount && C == ((u32*)Lines->Data)[LineIndex]) {
             P.X = -1;
@@ -251,10 +251,10 @@ UI_CreateNodeString(heap *Heap,
     
     r32 X = 0;
     r32 ToAdvance;
-    assetpack_texture *CharCache[95] = {0};
+    assetpack_asset *CharCache[95] = {0};
     Tag = Assetpack_FindExactTag(Assetpack, TAG_CODEPOINT, (vptr)' ');
     Assert(Tag && Tag->AssetCount);
-    CharCache[0] = &(Tag->Assets[0])->Texture;
+    CharCache[0] = Tag->Assets[0];
     
     for(u32 I = 0; I < String.Length; I++) {
         c08 C = String.Text[I];
@@ -263,16 +263,16 @@ UI_CreateNodeString(heap *Heap,
             if(!CharCache[C-' ']) {
                 Tag = Assetpack_FindExactTag(Assetpack, TAG_CODEPOINT, (vptr)(u64)C);
                 Assert(Tag && Tag->AssetCount);
-                CharCache[C-' '] = &(Tag->Assets[0])->Texture;
+                CharCache[C-' '] = Tag->Assets[0];
             }
             
-            assetpack_texture *Asset = CharCache[C-' '];
+            assetpack_asset *Asset = CharCache[C-' '];
             
-            ToAdvance = Asset->AdvanceX * Style.FontSize;
+            ToAdvance = Asset->Glyph.AdvanceX * Style.FontSize;
             
             if(C != ' ') Result.PrintableCount++;
         } else if(C == '\t') {
-            ToAdvance = CharCache[0]->AdvanceX * Style.FontSize * 4;
+            ToAdvance = CharCache[0]->Glyph.AdvanceX * Style.FontSize * 4;
         } else if(C == '\n') {
             if(Y + AdvanceY > Style.Size.Y) break;
             Y += AdvanceY;
@@ -357,10 +357,10 @@ UI_CreateNodeObject(mesh *Mesh,
         r32 Y = String.Size.Y - Font->Ascent*Style.FontSize;
         r32 AdvanceY = (Font->LineGap + 1) * Style.FontSize;
         
-        assetpack_texture *CharCache[95] = {0};
+        assetpack_asset *CharCache[95] = {0};
         Tag = Assetpack_FindExactTag(Assetpack, TAG_CODEPOINT, (vptr)' ');
         Assert(Tag && Tag->AssetCount);
-        CharCache[0] = &(Tag->Assets[0])->Texture;
+        CharCache[0] = Tag->Assets[0];
         
         u32 LineIndex = 0;
         u32 *Lines = (u32*)String.Lines->Data;
@@ -380,15 +380,15 @@ UI_CreateNodeObject(mesh *Mesh,
                 if(!CharCache[C-' ']) {
                     Tag = Assetpack_FindExactTag(Assetpack, TAG_CODEPOINT, (vptr)(u64)C);
                     Assert(Tag && Tag->AssetCount);
-                    CharCache[C-' '] = &(Tag->Assets[0])->Texture;
+                    CharCache[C-' '] = Tag->Assets[0];
                 }
                 
-                assetpack_texture *Asset = CharCache[C-' '];
+                assetpack_asset *Asset = CharCache[C-' '];
                 
-                r32 PX = X + Asset->Bearing.X*Style.FontSize;
-                r32 PY = Y + Asset->Bearing.Y*Style.FontSize;
-                r32 SX = Asset->SizeR.X*Style.FontSize;
-                r32 SY = Asset->SizeR.Y*Style.FontSize;
+                r32 PX = X + Asset->Glyph.Bearing.X*Style.FontSize;
+                r32 PY = Y + Asset->Glyph.Bearing.Y*Style.FontSize;
+                r32 SX = Asset->Glyph.SizeR.X*Style.FontSize;
+                r32 SY = Asset->Glyph.SizeR.Y*Style.FontSize;
                 Vertices[0].Position = UI_EncodePositionInPixels(PX,    PY,    Style.ZIndex-1, Style.Size);
                 Vertices[1].Position = UI_EncodePositionInPixels(PX,    PY+SY, Style.ZIndex-1, Style.Size);
                 Vertices[2].Position = UI_EncodePositionInPixels(PX+SX, PY+SY, Style.ZIndex-1, Style.Size);
@@ -404,9 +404,9 @@ UI_CreateNodeObject(mesh *Mesh,
                 Indices += 6;
                 PrintedIndex++;
                 
-                X += Asset->AdvanceX * Style.FontSize;
+                X += Asset->Glyph.AdvanceX * Style.FontSize;
             } else if(C == '\t') {
-                X += CharCache[0]->AdvanceX * Style.FontSize * 4;
+                X += CharCache[0]->Glyph.AdvanceX * Style.FontSize * 4;
             } else if(!C) break;
         }
         

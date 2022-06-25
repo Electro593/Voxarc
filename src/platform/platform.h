@@ -28,6 +28,7 @@ struct datetime {
 
 typedef enum platform_updates {
     WINDOW_RESIZED = 0x01,
+    CURSOR_DISABLED = 0x02,
 } platform_updates;
 
 typedef enum execution_state {

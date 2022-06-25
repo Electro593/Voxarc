@@ -9,8 +9,15 @@
 
 internal string File_Read(c08 *FileName, u64 Length, u64 Offset);
 
+typedef enum asset_type {
+    ASSET_GLYPH,
+    ASSET_BLOCK
+} asset_type;
+
+//IMPORTANT: Remember, these have to be sorted!
 typedef enum assetpack_tag_id {
     TAG_CODEPOINT=1,
+    TAG_BLOCK_TEXTURE,
     TAG_ATLAS_DESCRIPTOR,
     TAG_FONT_DEF,
 } assetpack_tag_id;
@@ -39,21 +46,16 @@ typedef struct assetpack_header {
     u32 TagCount;
     u32 TagDataOffset;
     u32 TagDataSize;
-    u32 AssetCount;
+    u32 AssetsSize;
     u32 AssetDataOffset;
     u32 AssetDataSize;
 } assetpack_header;
 
-typedef struct assetpack_texture {
-    v2u32 Pos;
-    v2u32 Size;
+typedef struct assetpack_glyph {
+    r32 AdvanceX;
     v2r32 SizeR;
     v2r32 Bearing;
-    r32 AdvanceX;
-    u16 AtlasIndex;
-    b08 IsRotated;
-    u08 _Unused[1];
-} assetpack_texture;
+} assetpack_glyph;
 
 typedef struct assetpack_font {
     r32 Ascent;
@@ -67,9 +69,17 @@ typedef struct assetpack_atlas {
     u32 Count;
 } assetpack_atlas;
 
-typedef union assetpack_asset {
-    assetpack_texture Texture;
-    assetpack_font Font;
+//NOTE: Size MUST be a multiple of 4
+typedef struct assetpack_asset {
+    struct assetpack_asset_header {
+        v2u32 Pos;
+        v2u32 Size;
+        u16 AtlasIndex;
+        u16 _Unused;
+    };
+    union {
+        assetpack_glyph Glyph;
+    };
 } assetpack_asset;
 
 typedef struct assetpack_tag {
@@ -102,9 +112,12 @@ typedef struct assetpack {
 #pragma pack(pop)
 
 typedef struct asset_node {
+    asset_type Type;
     font_glyph Glyph;
+    u16 HandleIndex;
+    u16 BitmapOffset;
     v2u32 Size;
-    assetpack_texture *Asset;
+    assetpack_asset *Asset;
     struct asset_node *Prev;
     struct asset_node *Next;
 } asset_node;

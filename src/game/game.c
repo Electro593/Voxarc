@@ -42,23 +42,25 @@ Game_Init(platform_state *Platform,
     (u08*)MemBase += RendererHeapSize;
     
     // File_CreateAssetpack("assets\\0.pack", RendererHeap, 60.0f);
-    assetpack Assetpack = File_LoadAssetpack("assets\\0.pack", RendererHeap);
-    Renderer->Assetpack = Assetpack;
+    Renderer->Assetpack = File_LoadAssetpack("assets\\0.pack", RendererHeap);
     
     Renderer_Init(Renderer, RendererHeap, Platform->WindowSize);
+    
+    assetpack_tag *Tag = Assetpack_FindExactTag(Renderer->Assetpack, TAG_BLOCK_TEXTURE, BLOCK_TEST);
+    assetpack_asset *Asset = Tag->Assets[0];
+    u32 Bytes = (u64)((u08*)Asset - (u64)Renderer->Assetpack.Assets);
     
     mesh_object Objects[25];
     mesh_object *PObjects[25];
     for(s32 I = 0; I < 5; I++) {
         for(s32 J = 0; J < 5; J++) {
-            mesh_object Object = MakePCBlockObject(&Renderer->PCMesh, RendererHeap, (v4u08){127,0,0,255}, (v3r32){I-2,0,J-2});
+            mesh_object Object = MakePTBlockObject(&Renderer->PTMesh, RendererHeap, (v3r32){I-2,0,J-2}, Bytes);
             Objects[I*5+J] = Object;
             PObjects[I*5+J] = Objects+I*5+J;
         }
     }
-    Mesh_AddObjects(&Renderer->PCMesh, 25, PObjects);
-    
-    Mesh_Update(&Renderer->PCMesh);
+    Mesh_AddObjects(&Renderer->PTMesh, 25, PObjects);
+    Mesh_Update(&Renderer->PTMesh);
 }
 
 internal void
@@ -69,16 +71,15 @@ Game_Update(platform_state *Platform,
     if(Platform->Updates & WINDOW_RESIZED) {
         Renderer_Resize(Platform->WindowSize, &Renderer->PerspectiveMatrix);
     }
+    if(Platform->Updates & CURSOR_DISABLED) {
+        Game->PrevCursorPos = Platform->CursorPos;
+        Platform->Updates &= ~CURSOR_DISABLED;
+    }
     
     b08 Moved = FALSE;
     v3r32 DirDelta = (v3r32){0};
     
     if(Platform->CursorIsDisabled) {
-        if(!Game->PostInitComplete) {
-            Game->PrevCursorPos = Platform->CursorPos;
-            Game->PostInitComplete = TRUE;
-        }
-        
         v2s32 CursorDelta = V2s32_Sub(Platform->CursorPos, Game->PrevCursorPos);
         Game->PrevCursorPos = Platform->CursorPos;
         
@@ -149,21 +150,14 @@ Game_Update(platform_state *Platform,
         };
         
         m4x4r32 VPMatrix = M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
-        OpenGL_UseProgram(Renderer->PCProgram);
-        OpenGL_UniformMatrix4fv(Renderer->PCMesh.VPMatrix,  1, FALSE, VPMatrix);
-        // OpenGL_UseProgram(Renderer->PTProgram);
-        // OpenGL_UniformMatrix4fv(Renderer->UI.Mesh.VPMatrix, 1, FALSE, VPMatrix);
         
-        v4r32 Vector = {-1, -1, -1, 1};
-        m4x4r32 ModelMatrix = {
-            0.4, 0, 0, -1,
-            0, 0.4, 0, 0,
-            0, 0, 0.4, 0,
-            0, 0, 0, 1
-        };
-        m4x4r32 MVPMatrix = M4x4r32_Mul(VPMatrix, ModelMatrix);
-        v4r32 C = M4x4r32_MulMV(MVPMatrix, Vector);
-        v4r32 N = {C.X/C.W, C.Y/C.W, C.Z/C.W, C.W};
+        // OpenGL_UseProgram(Renderer->PCProgram);
+        // OpenGL_UniformMatrix4fv(Renderer->PCMesh.VPMatrix,  1, FALSE, VPMatrix);
+        
+        OpenGL_UseProgram(Renderer->PTProgram);
+        OpenGL_UniformMatrix4fv(Renderer->PTMesh.VPMatrix, 1, FALSE, VPMatrix);
+        
+        // OpenGL_UniformMatrix4fv(Renderer->UI.Mesh.VPMatrix, 1, FALSE, VPMatrix);
         
         Platform->Updates &= ~WINDOW_RESIZED;
     }

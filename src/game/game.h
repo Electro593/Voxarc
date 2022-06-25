@@ -12,8 +12,6 @@ typedef struct global_state {
 } global_state;
 
 struct game_state {
-    b08 PostInitComplete;
-    
     u32 DebugCounter;
     v2s32 PrevCursorPos;
     

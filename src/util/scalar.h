@@ -14,6 +14,7 @@
 
 #define S16_MIN 0x8000
 #define S16_MAX 0x7FFF
+#define S32_MAX 0x7FFFFFFF
 
 #define U16_MAX 0xFFFF
 #define U32_MAX 0xFFFFFFFF
