@@ -23,6 +23,7 @@
 #define GL_UNSIGNED_INT           0x1405
 #define GL_FLOAT                  0x1406
 #define GL_RGBA                   0x1908
+#define GL_LINE                   0x1B01
 #define GL_NEAREST                0x2600
 #define GL_LINEAR                 0x2601
 #define GL_TEXTURE_MAG_FILTER     0x2800
@@ -78,6 +79,7 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
     IMPORT(void, DrawElements,  u32 Mode, s32 Count, u32 Type, vptr Indices) \
     IMPORT(void, Enable,        u32 Capability) \
     IMPORT(void, GenTextures,   s32 Count, u32 *Textures) \
+    IMPORT(void, PolygonMode,   u32 Face, u32 Mode) \
     IMPORT(void, Scissor,       s32 X, s32 Y, s32 Width, s32 Height) \
     IMPORT(void, TexParameteri, u32 Target, u32 Name, s32 Param) \
     IMPORT(void, Viewport,      s32 X, s32 Y, s32 Width, s32 Height) \

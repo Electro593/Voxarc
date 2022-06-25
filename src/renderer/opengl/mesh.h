@@ -20,6 +20,11 @@ typedef enum mesh_flags {
     MESH_IS_FOR_OTHER_UI     = 0x200,
 } mesh_flags;
 
+typedef struct pc_vertex {
+    u32 Position;
+    v4u08 Color;
+} pc_vertex;
+
 typedef struct pt_vertex {
     u32 Position;
     u32 Texture;

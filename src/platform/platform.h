@@ -256,6 +256,9 @@ struct platform_exports {
 #endif
 
 struct platform_state {
+    b08 CursorIsDisabled;
+    v2s32 RestoreCursorPos;
+    
     v2u32 WindowSize; 
     execution_state ExecutionState;
     platform_updates Updates;

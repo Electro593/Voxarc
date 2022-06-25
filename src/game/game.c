@@ -21,6 +21,7 @@ global_state __Global;
 #include <renderer/opengl/mesh.c>
 #include <game/ui.c>
 #include <renderer/opengl/render.c>
+#include <game/world.c>
 
 // TODO handle errors, e.g. make a memory representation of a default
 //      file if loading it fails
@@ -45,6 +46,11 @@ Game_Init(platform_state *Platform,
     Renderer->Assetpack = Assetpack;
     
     Renderer_Init(Renderer, RendererHeap, Platform->WindowSize);
+    
+    mesh_object Object = MakePCBlockObject(&Renderer->PCMesh, RendererHeap, (v4u08){127,0,0,255}, (v3r32){0,0,0});
+    mesh_object *Objects[] = { &Object };
+    Mesh_AddObjects(&Renderer->PCMesh, 1, Objects);
+    Mesh_Update(&Renderer->PCMesh);
 }
 
 internal void
@@ -58,13 +64,13 @@ Game_Update(platform_state *Platform,
     
     r32 Step = 0.01;
     v3r32 PosDelta = {0};
-    if(Platform->Keys[ScanCode_ArrowLeft] != KEY_RELEASED)
+    if(Platform->Keys[ScanCode_A] != KEY_RELEASED)
         PosDelta.X -= Step;
-    if(Platform->Keys[ScanCode_ArrowRight] != KEY_RELEASED)
+    if(Platform->Keys[ScanCode_D] != KEY_RELEASED)
         PosDelta.X += Step;
-    if(Platform->Keys[ScanCode_ArrowDown] != KEY_RELEASED)
+    if(Platform->Keys[ScanCode_S] != KEY_RELEASED)
         PosDelta.Z += Step;
-    if(Platform->Keys[ScanCode_ArrowUp] != KEY_RELEASED)
+    if(Platform->Keys[ScanCode_W] != KEY_RELEASED)
         PosDelta.Z -= Step;
     if(Platform->Keys[ScanCode_Space] != KEY_RELEASED)
         PosDelta.Y += Step;
@@ -74,7 +80,7 @@ Game_Update(platform_state *Platform,
     V3r32_Norm(PosDelta);
     Renderer->Pos = V3r32_Add(Renderer->Pos, PosDelta);
     
-    Step = 0.01;
+    Step = 0.02;
     v3r32 DirDelta = (v3r32){0};
     if(Platform->Keys[ScanCode_X] != KEY_RELEASED)
         DirDelta.Y += Step;
@@ -86,17 +92,36 @@ Game_Update(platform_state *Platform,
        !V3r32_IsEqual(PosDelta, (v3r32){0}) ||
        !V3r32_IsEqual(DirDelta, (v3r32){0}))
     {
-        r32 y = Renderer->Dir.Y;
+        r32 Yaw = Renderer->Dir.Y;
+        v3r32 Right = { R32_cos(Yaw), 0, R32_sin(Yaw)};
+        v3r32 Up    = { 0,            1, 0};
+        v3r32 Front = {-R32_sin(Yaw), 0, R32_cos(Yaw)};
+        v3r32 Pos   = {-Renderer->Pos.X, -Renderer->Pos.Y, Renderer->Pos.Z};
         
         Renderer->ViewMatrix = (m4x4r32){
-             R32_cos(y), 0,      R32_sin(y), -Renderer->Pos.X,
-             0,          1,      0,          -Renderer->Pos.Y,
-            -R32_sin(y), 0,      R32_cos(y),  Renderer->Pos.Z,
-             0,          0,      0,           1
+            Right.X, Right.Y, Right.Z, V3r32_Dot(Right, Pos),
+            Up.X,    Up.Y,    Up.Z,    V3r32_Dot(Up,    Pos),
+            Front.X, Front.Y, Front.Z, V3r32_Dot(Front, Pos),
+            0,       0,       0,       1
+        };
+        
+        v4r32 Vertex = { 1, 1, 1, 1};
+        m4x4r32 ModelMatrix = {
+            0.125, 0,     0,     0,
+            0,     0.125, 0,     0,
+            0,     0,     0.125, 0,
+            0,     0,     0,     1
         };
         
         m4x4r32 VPMatrix = M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
-        OpenGL_UniformMatrix4fv(Renderer->UI.Mesh.VPMatrix, 1, FALSE, VPMatrix);
+        OpenGL_UseProgram(Renderer->PCProgram);
+        OpenGL_UniformMatrix4fv(Renderer->PCMesh.VPMatrix,  1, FALSE, VPMatrix);
+        // OpenGL_UseProgram(Renderer->PTProgram);
+        // OpenGL_UniformMatrix4fv(Renderer->UI.Mesh.VPMatrix, 1, FALSE, VPMatrix);
+        
+        m4x4r32 MVPMatrix = M4x4r32_Mul(VPMatrix, ModelMatrix);
+        v4r32 ClipVertex = M4x4r32_MulMV(MVPMatrix, Vertex);
+        v4r32 NormVertex = {ClipVertex.X/ClipVertex.W, ClipVertex.Y/ClipVertex.W, ClipVertex.Z/ClipVertex.W, ClipVertex.W};
         
         Platform->Updates &= ~WINDOW_RESIZED;
     }

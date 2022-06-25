@@ -13,10 +13,10 @@ typedef struct renderer_state {
     u32 EBO;
     
     u32 PCProgram;
-    u32 PTProgram;
-    u32 UIProgram;
+    // u32 PTProgram;
+    // u32 UIProgram;
     datetime PCLastModified[2];
-    datetime PTLastModified[2];
+    // datetime PTLastModified[2];
     
     m4x4r32 PerspectiveMatrix, ViewMatrix;
     
@@ -26,7 +26,7 @@ typedef struct renderer_state {
     v3r32 Dir;
     
     heap *Heap;
-    mesh Mesh, OtherUIMesh;
-    ui UI;
+    mesh PCMesh;//, Mesh, OtherUIMesh;
+    // ui UI;
     assetpack Assetpack;
 } renderer_state;

@@ -415,6 +415,37 @@ Platform_LoadGame(module *Module,
     #include <x.h>
 }
 
+internal void
+Platform_HideCursor(win32_window Window)
+{
+    Win32_GetCursorPos(&Platform->RestoreCursorPos);
+    Win32_ScreenToClient(Window, &Platform->RestoreCursorPos);
+    
+    Win32_SetCursor(NULL);
+    
+    win32_rect ClipRect;
+    Win32_GetClientRect(Window, &ClipRect);
+    Win32_ClientToScreen(Window, (v2s32*)&ClipRect.Left);
+    Win32_ClientToScreen(Window, (v2s32*)&ClipRect.Right);
+    Win32_ClipCursor(&ClipRect);
+    
+    win32_raw_input_device RawInputDevice;
+    RawInputDevice.UsagePage = HID_USAGE_PAGE_GENERIC;
+    RawInputDevice.Usage     = HID_USAGE_GENERIC_MOUSE;
+    RawInputDevice.Flags     = RIDEV_NOLEGACY;
+    RawInputDevice.Target    = Window;
+    b32 Res = Win32_RegisterRawInputDevices(&RawInputDevice, 1, sizeof(win32_raw_input_device));
+    Assert(Res == TRUE);
+    
+    Platform->CursorIsDisabled = TRUE;
+}
+
+internal void
+Platform_ShowCursor(win32_window Window)
+{
+    
+}
+
 internal s64
 Platform_WindowCallback(win32_window Window,
                         u32 Message,

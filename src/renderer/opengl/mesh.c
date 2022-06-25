@@ -20,6 +20,8 @@ Mesh_EncodePosition(v3r32 P)
 internal void
 Mesh_Bind(mesh *Mesh)
 {
+    OpenGL_UseProgram(*Mesh->Program);
+    
     OpenGL_BindVertexArray(Mesh->VAO);
     OpenGL_BindBuffer(GL_ARRAY_BUFFER, Mesh->VBO);
     OpenGL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, Mesh->EBO);
