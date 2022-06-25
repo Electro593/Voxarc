@@ -37,6 +37,12 @@ typedef enum execution_state {
     EXECUTION_ENDED,
 } execution_state;
 
+typedef enum focus_state {
+    FOCUS_CLIENT,
+    FOCUS_FRAME,
+    FOCUS_NONE
+} focus_state;
+
 typedef enum scancode {
     ScanCode_Unknown          = 0x00,
     
@@ -198,10 +204,16 @@ typedef enum scancode {
     ScanCode_Pause            = 0xFF, //0xE11D45,
 } scancode;
 
+typedef enum button {
+    Button_Left   = 0,
+    Button_Right  = 1,
+    Button_Middle = 2
+} button;
+
 typedef enum key_state {
-    KEY_RELEASED,
-    KEY_PRESSED,
-    KEY_HELD,
+    RELEASED,
+    PRESSED,
+    HELD,
 } key_state;
 
 typedef enum file_mode {
@@ -258,9 +270,12 @@ struct platform_exports {
 struct platform_state {
     b08 CursorIsDisabled;
     v2s32 RestoreCursorPos;
+    v2s32 CursorPos;
     
     v2u32 WindowSize; 
     execution_state ExecutionState;
+    focus_state FocusState;
     platform_updates Updates;
+    u08 Buttons[5];
     u08 Keys[256];
 };

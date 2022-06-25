@@ -64,7 +64,7 @@ MakePCBlockObject(mesh *Mesh, heap *Heap, v4u08 Color, v3r32 Pos)
    Mem_Cpy(Object.Indices->Data, Indices, sizeof(Indices));
    
    Object.TranslationMatrix = M4x4r32_Translation(Pos.X, Pos.Y, Pos.Z);
-   Object.ScalingMatrix = M4x4r32_Scaling(0.125, 0.125, 0.125);
+   Object.ScalingMatrix = M4x4r32_Scaling(0.4, 0.4, 0.4);
    Object.RotationMatrix = M4x4r32_I;
    
    return Object;

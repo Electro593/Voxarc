@@ -9,6 +9,10 @@
 
 #include <shared.h>
 
+global_state __Global;
+
+#include <util/memory.c>
+
 global platform_state *Platform;
 
 internal void
@@ -418,32 +422,27 @@ Platform_LoadGame(module *Module,
 internal void
 Platform_HideCursor(win32_window Window)
 {
+    // Win32_SetCursor(NULL);
+    
     Win32_GetCursorPos(&Platform->RestoreCursorPos);
     Win32_ScreenToClient(Window, &Platform->RestoreCursorPos);
-    
-    Win32_SetCursor(NULL);
     
     win32_rect ClipRect;
     Win32_GetClientRect(Window, &ClipRect);
     Win32_ClientToScreen(Window, (v2s32*)&ClipRect.Left);
     Win32_ClientToScreen(Window, (v2s32*)&ClipRect.Right);
     Win32_ClipCursor(&ClipRect);
-    
-    win32_raw_input_device RawInputDevice;
-    RawInputDevice.UsagePage = HID_USAGE_PAGE_GENERIC;
-    RawInputDevice.Usage     = HID_USAGE_GENERIC_MOUSE;
-    RawInputDevice.Flags     = RIDEV_NOLEGACY;
-    RawInputDevice.Target    = Window;
-    b32 Res = Win32_RegisterRawInputDevices(&RawInputDevice, 1, sizeof(win32_raw_input_device));
-    Assert(Res == TRUE);
-    
-    Platform->CursorIsDisabled = TRUE;
 }
 
 internal void
 Platform_ShowCursor(win32_window Window)
 {
+    Win32_ClipCursor(NULL);
     
+    Win32_ClientToScreen(Window, &Platform->RestoreCursorPos);
+    Win32_SetCursorPos(Platform->RestoreCursorPos.X, Platform->RestoreCursorPos.Y);
+    
+    Win32_SetCursor(Win32_LoadCursorA(NULL, IDC_ARROW));
 }
 
 internal s64
@@ -464,6 +463,67 @@ Platform_WindowCallback(win32_window Window,
             Platform->Updates |= WINDOW_RESIZED;
         } return 0;
         
+        case WM_SETFOCUS: {
+            if(Platform->FocusState == FOCUS_NONE) {
+                if(Platform->CursorIsDisabled)
+                    Platform_HideCursor(Window);
+                
+                Mem_Set(Platform->Keys, 0, sizeof(Platform->Keys));
+                Mem_Set(Platform->Buttons, 0, sizeof(Platform->Buttons));
+                
+                Platform->FocusState = FOCUS_CLIENT;
+            }
+        } return 0;
+        
+        case WM_KILLFOCUS: {
+            if(Platform->CursorIsDisabled)
+                Platform_ShowCursor(Window);
+            
+            Platform->FocusState = FOCUS_NONE;
+        } return 0;
+        
+        case WM_MOUSEACTIVATE: {
+            if(((LParam>>16)&0xFFFF) == WM_LBUTTONDOWN) {
+                if((LParam&0xFFFF) != HTCLIENT) {
+                    Platform->FocusState = FOCUS_FRAME;
+                }
+            }
+        } return MA_ACTIVATEANDEAT;
+        
+        case WM_INPUT: {
+            Stack_Push();
+            
+            u32 Size;
+            win32_raw_input_handle Handle = (vptr)LParam;
+            u32 Res = Win32_GetRawInputData(Handle, RID_INPUT, NULL, &Size, sizeof(win32_raw_input_header));
+            Assert(Res == 0);
+            win32_raw_input *Data = Stack_Allocate(sizeof(win32_raw_mouse));
+            Res = Win32_GetRawInputData(Handle, RID_INPUT, Data, &Size, sizeof(win32_raw_input_header));
+            Assert(Res == sizeof(win32_raw_input));
+            
+            if(Data->Mouse.Flags & MOUSE_MOVE_ABSOLUTE) {
+                Assert(FALSE, "Absolute mouse movement not supported.");
+            } else {
+                Platform->CursorPos = (v2s32){
+                    Platform->CursorPos.X + Data->Mouse.LastX,
+                    Platform->CursorPos.Y + Data->Mouse.LastY
+                };
+            }
+            
+            // Automatically goes through RI_MOUSE_BUTTON_1_DOWN/UP,
+            // RI_MOUSE_BUTTON_2_DOWN/UP, etc.
+            for(u32 I = 0; I < 6; I++) {
+                if(Data->Mouse.ButtonFlags & (1<<(2*I)))
+                    Platform->Buttons[I] = PRESSED;
+                else if(Data->Mouse.ButtonFlags & (2<<(2*I)))
+                    Platform->Buttons[I] = RELEASED;
+                else if(Platform->Buttons[I] == PRESSED)
+                    Platform->Buttons[I] = HELD;
+            }
+            
+            Stack_Pop();
+        } return 0;
+        
         case WM_KEYUP:
         case WM_KEYDOWN:
         case WM_SYSKEYUP:
@@ -474,9 +534,9 @@ Platform_WindowCallback(win32_window Window,
             b08 IsUp        = (LParam >> 31) & 0x01;
             
             key_state KeyState;
-            if(IsUp == TRUE && WasDown == TRUE) KeyState = KEY_RELEASED;
-            else if(IsUp == FALSE && WasDown == FALSE) KeyState = KEY_PRESSED;
-            else KeyState = KEY_HELD;
+            if(IsUp == TRUE && WasDown == TRUE) KeyState = RELEASED;
+            else if(IsUp == FALSE && WasDown == FALSE) KeyState = PRESSED;
+            else KeyState = HELD;
             
             if(IsExtended)
             {
@@ -539,6 +599,18 @@ Platform_Entry(void)
     win32_device_context DeviceContext = Win32_GetDC(Window);
     opengl_funcs OpenGLFuncs = Platform_LoadOpenGL(DeviceContext);
     
+    u32 Size = 1*1024*1024;
+    vptr Mem = Platform_AllocateMemory(Size);
+    __Global.Stack = Stack_Init(Mem, Size);
+    
+    win32_raw_input_device RawInputDevice;
+    RawInputDevice.UsagePage = HID_USAGE_PAGE_GENERIC;
+    RawInputDevice.Usage     = HID_USAGE_GENERIC_MOUSE;
+    RawInputDevice.Flags     = 0;//RIDEV_NOLEGACY;
+    RawInputDevice.Target    = Window;
+    b32 Res = Win32_RegisterRawInputDevices(&RawInputDevice, 1, sizeof(win32_raw_input_device));
+    Assert(Res == TRUE);
+    
     module GameModule = {0};
     Platform_LoadGame(&GameModule, &GameState, &PlatformExports, &OpenGLFuncs);
     Game_Init(Platform, &GameState, &Renderer);
@@ -546,6 +618,7 @@ Platform_Entry(void)
     Platform->ExecutionState = EXECUTION_RUNNING;
     while(Platform->ExecutionState == EXECUTION_RUNNING)
     {
+        // Will reload the game if necessary
         Platform_LoadGame(&GameModule, &GameState, &PlatformExports, &OpenGLFuncs);
         
         win32_message Message;
@@ -557,6 +630,15 @@ Platform_Entry(void)
             
             Win32_TranslateMessage(&Message);
             Win32_DispatchMessageA(&Message);
+        }
+        
+        if(Platform->FocusState == FOCUS_CLIENT && !Platform->CursorIsDisabled && Platform->Buttons[Button_Left] == PRESSED) {
+            Platform_HideCursor(Window);
+            Platform->CursorIsDisabled = TRUE;
+        }
+        if(Platform->CursorIsDisabled && Platform->Keys[ScanCode_Escape] == PRESSED) {
+            Platform_ShowCursor(Window);
+            Platform->CursorIsDisabled = FALSE;
         }
         
         Game_Update(Platform, &GameState, &Renderer);

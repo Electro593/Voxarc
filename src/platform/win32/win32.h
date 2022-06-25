@@ -34,7 +34,31 @@
 
 #define HID_USAGE_GENERIC_MOUSE 0x02
 
+#define RIDEV_REMOVE   0x00000001
 #define RIDEV_NOLEGACY 0x00000030
+
+#define RID_INPUT 0x10000003
+
+#define MOUSE_MOVE_RELATIVE 0x00
+#define MOUSE_MOVE_ABSOLUTE 0x01
+
+#define RI_MOUSE_LEFT_BUTTON_DOWN   0x0001
+#define RI_MOUSE_LEFT_BUTTON_UP     0x0002
+#define RI_MOUSE_RIGHT_BUTTON_DOWN  0x0004
+#define RI_MOUSE_RIGHT_BUTTON_UP    0x0008
+#define RI_MOUSE_MIDDLE_BUTTON_DOWN 0x0010
+#define RI_MOUSE_MIDDLE_BUTTON_UP   0x0020
+#define RI_MOUSE_BUTTON_4_DOWN      0x0040
+#define RI_MOUSE_BUTTON_4_UP        0x0080
+#define RI_MOUSE_BUTTON_5_DOWN      0x0100
+#define RI_MOUSE_BUTTON_5_UP        0x0200
+
+#define HTCLIENT 1
+
+#define MA_ACTIVATE         1
+#define MA_ACTIVATEANDEAT   2
+#define MA_NOACTIVATE       3
+#define MA_NOACTIVATEANDEAT 4
 
 
 
@@ -50,6 +74,7 @@ typedef win32_handle win32_icon;
 typedef win32_handle win32_instance;
 typedef win32_handle win32_menu;
 typedef win32_handle win32_opengl_render_context;
+typedef win32_handle win32_raw_input_handle;
 typedef win32_handle win32_window;
 typedef win32_instance win32_module;
 
@@ -78,15 +103,22 @@ typedef s64 (API_ENTRY *func_Win32_WindowCallback)(win32_window Window, u32 Mess
 #define WS_CAPTION     0x00C00000
 #define WS_VISIBLE     0x10000000
 
-#define WM_DESTROY    0x0002
-#define WM_SIZE       0x0005
-#define WM_CLOSE      0x0010
-#define WM_QUIT       0x0012
-#define WM_KEYDOWN    0x0100
-#define WM_KEYUP      0x0101
-#define WM_SYSKEYDOWN 0x0104
-#define WM_SYSKEYUP   0x0105
-#define WM_SIZING     0x0214
+#define WM_DESTROY        0x0002
+#define WM_SIZE           0x0005
+#define WM_SETFOCUS       0x0007
+#define WM_KILLFOCUS      0x0008
+#define WM_CLOSE          0x0010
+#define WM_QUIT           0x0012
+#define WM_MOUSEACTIVATE  0x0021
+#define WM_INPUT          0x00FF
+#define WM_KEYDOWN        0x0100
+#define WM_KEYUP          0x0101
+#define WM_SYSKEYDOWN     0x0104
+#define WM_SYSKEYUP       0x0105
+#define WM_MOUSEMOVE      0x0200
+#define WM_LBUTTONDOWN    0x0201
+#define WM_SIZING         0x0214
+#define WM_CAPTURECHANGED 0x0215
 
 #define PM_REMOVE 0x1
 
@@ -1026,6 +1058,52 @@ typedef struct win32_raw_input_device {
     win32_window Target;
 } win32_raw_input_device;
 
+typedef struct win32_raw_input_header {
+    u32 Type;
+    u32 Size;
+    win32_handle Device;
+    u64 WParam;
+} win32_raw_input_header;
+
+typedef struct win32_raw_mouse {
+    u16 Flags;
+    union {
+        u32 Buttons;
+        struct {
+            u16 ButtonFlags;
+            u16 ButtonData;
+        };
+    };
+    u32 RawButtons;
+    s32 LastX;
+    s32 LastY;
+    u32 ExtraInformation;
+} win32_raw_mouse;
+
+typedef struct win32_raw_keyboard {
+    u16 MakeCode;
+    u16 Flags;
+    u16 Reserved;
+    u16 VKey;
+    u32 Message;
+    u32 ExtraInformation;
+} win32_raw_keyboard;
+
+typedef struct win32_raw_hid {
+    u32 Size;
+    u32 Count;
+    u08 RawData[1];
+} win32_raw_hid;
+
+typedef struct win32_raw_input {
+    win32_raw_input_header Header;
+    union {
+        win32_raw_mouse Mouse;
+        win32_raw_keyboard Keyboard;
+        win32_raw_hid HID;
+    };
+} win32_raw_input;
+
 
 
 
@@ -1056,6 +1134,7 @@ typedef struct win32_raw_input_device {
     IMPORT(Kernel32, win32_module,         GetModuleHandleA,        c08 *ModuleName) \
     IMPORT(Kernel32, fptr,                 GetProcAddress,          win32_module Module, c08 *Name) \
     IMPORT(User32,   vptr,                 GetPropA,                win32_window Window, c08 *Name) \
+    IMPORT(User32,   u32,                  GetRawInputData,         win32_raw_input_handle RawInputHandle, u32 Command, vptr Data, u32 *DataSize, u32 HeaderSize) \
     IMPORT(Gdi32,    win32_gdi_object,     GetStockObject,          s32 I) \
     IMPORT(User32,   win32_cursor,         LoadCursorA,             win32_instance Instance, c08 *CursorName) \
     IMPORT(User32,   win32_icon,           LoadIconA,               win32_instance Instance, c08 *IconName) \
@@ -1069,6 +1148,7 @@ typedef struct win32_raw_input_device {
     IMPORT(User32,   b32,                  ScreenToClient,          win32_window Window, v2s32 *Point) \
     IMPORT(User32,   s64,                  SendMessageA,            win32_window Window, u32 Message, s64 WParam, s64 LParam) \
     IMPORT(User32,   b32,                  SetCursor,               win32_cursor Cursor) \
+    IMPORT(User32,   b32,                  SetCursorPos,            s32 X, s32 Y) \
     IMPORT(Gdi32,    b08,                  SetPixelFormat,          win32_device_context DeviceContext, s32 Format, win32_pixel_format_descriptor *PixelFormatDescriptor) \
     IMPORT(User32,   b32,                  SetPropA,                win32_window Window, c08 *Name, vptr Data) \
     IMPORT(Gdi32,    b08,                  SwapBuffers,             win32_device_context DeviceContext) \

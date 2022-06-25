@@ -47,9 +47,17 @@ Game_Init(platform_state *Platform,
     
     Renderer_Init(Renderer, RendererHeap, Platform->WindowSize);
     
-    mesh_object Object = MakePCBlockObject(&Renderer->PCMesh, RendererHeap, (v4u08){127,0,0,255}, (v3r32){0,0,0});
-    mesh_object *Objects[] = { &Object };
-    Mesh_AddObjects(&Renderer->PCMesh, 1, Objects);
+    mesh_object Objects[25];
+    mesh_object *PObjects[25];
+    for(s32 I = 0; I < 5; I++) {
+        for(s32 J = 0; J < 5; J++) {
+            mesh_object Object = MakePCBlockObject(&Renderer->PCMesh, RendererHeap, (v4u08){127,0,0,255}, (v3r32){I-2,0,J-2});
+            Objects[I*5+J] = Object;
+            PObjects[I*5+J] = Objects+I*5+J;
+        }
+    }
+    Mesh_AddObjects(&Renderer->PCMesh, 25, PObjects);
+    
     Mesh_Update(&Renderer->PCMesh);
 }
 
@@ -62,41 +70,76 @@ Game_Update(platform_state *Platform,
         Renderer_Resize(Platform->WindowSize, &Renderer->PerspectiveMatrix);
     }
     
-    r32 Step = 0.01;
-    v3r32 PosDelta = {0};
-    if(Platform->Keys[ScanCode_A] != KEY_RELEASED)
-        PosDelta.X -= Step;
-    if(Platform->Keys[ScanCode_D] != KEY_RELEASED)
-        PosDelta.X += Step;
-    if(Platform->Keys[ScanCode_S] != KEY_RELEASED)
-        PosDelta.Z += Step;
-    if(Platform->Keys[ScanCode_W] != KEY_RELEASED)
-        PosDelta.Z -= Step;
-    if(Platform->Keys[ScanCode_Space] != KEY_RELEASED)
-        PosDelta.Y += Step;
-    if(Platform->Keys[ScanCode_ShiftLeft]  != KEY_RELEASED ||
-       Platform->Keys[ScanCode_ShiftRight] != KEY_RELEASED)
-        PosDelta.Y -= Step;
-    V3r32_Norm(PosDelta);
-    Renderer->Pos = V3r32_Add(Renderer->Pos, PosDelta);
-    
-    Step = 0.02;
+    b08 Moved = FALSE;
     v3r32 DirDelta = (v3r32){0};
-    if(Platform->Keys[ScanCode_X] != KEY_RELEASED)
-        DirDelta.Y += Step;
-    if(Platform->Keys[ScanCode_C] != KEY_RELEASED)
-        DirDelta.Y -= Step;
-    Renderer->Dir = V3r32_Add(Renderer->Dir, DirDelta);
+    
+    if(Platform->CursorIsDisabled) {
+        if(!Game->PostInitComplete) {
+            Game->PrevCursorPos = Platform->CursorPos;
+            Game->PostInitComplete = TRUE;
+        }
+        
+        v2s32 CursorDelta = V2s32_Sub(Platform->CursorPos, Game->PrevCursorPos);
+        Game->PrevCursorPos = Platform->CursorPos;
+        
+        DirDelta.X = CursorDelta.Y/120.0f;
+        DirDelta.Y = CursorDelta.X/120.0f;
+        Renderer->Dir = V3r32_Add(Renderer->Dir, DirDelta);
+        
+        v3r32 MoveDir = {0};
+        r32 Step = 0.04;
+        if(Platform->Keys[ScanCode_A] != RELEASED)
+            MoveDir.X--;
+        if(Platform->Keys[ScanCode_D] != RELEASED)
+            MoveDir.X++;
+        if(Platform->Keys[ScanCode_S] != RELEASED)
+            MoveDir.Z--;
+        if(Platform->Keys[ScanCode_W] != RELEASED)
+            MoveDir.Z++;
+        if(Platform->Keys[ScanCode_Space] != RELEASED)
+            MoveDir.Y++;
+        if(Platform->Keys[ScanCode_ShiftLeft]  != RELEASED ||
+           Platform->Keys[ScanCode_ShiftRight] != RELEASED)
+            MoveDir.Y--;
+        
+        r32 Len = V3r32_Len(MoveDir);
+        if(Len != 0) {
+            if(MoveDir.Y != 0 && MoveDir.Z != 0) {
+                NOP;
+            }
+            
+            MoveDir = V3r32_DivS(MoveDir, Len);
+            
+            if(MoveDir.X != 0 || MoveDir.Z != 0) {
+                r32 XZLen = R32_sqrt(MoveDir.X*MoveDir.X + MoveDir.Z*MoveDir.Z);
+                r32 Theta = R32_arccos(MoveDir.Z/XZLen);
+                Theta *= R32_Sign(MoveDir.X);
+                Theta += Renderer->Dir.Y;
+                
+                Renderer->Pos.X += Step*R32_sin(Theta);
+                Renderer->Pos.Z -= Step*R32_cos(Theta);
+            }
+            
+            Renderer->Pos.Y += Step*MoveDir.Y;
+            
+            Moved = TRUE;
+        }
+    }
     
     if((Platform->Updates & WINDOW_RESIZED) ||
-       !V3r32_IsEqual(PosDelta, (v3r32){0}) ||
+       Moved ||
        !V3r32_IsEqual(DirDelta, (v3r32){0}))
     {
-        r32 Yaw = Renderer->Dir.Y;
-        v3r32 Right = { R32_cos(Yaw), 0, R32_sin(Yaw)};
-        v3r32 Up    = { 0,            1, 0};
-        v3r32 Front = {-R32_sin(Yaw), 0, R32_cos(Yaw)};
-        v3r32 Pos   = {-Renderer->Pos.X, -Renderer->Pos.Y, Renderer->Pos.Z};
+        r32 Pitch = Renderer->Dir.X;
+        r32 Yaw   = Renderer->Dir.Y;
+        r32 CosYaw = R32_cos(Yaw);
+        r32 SinYaw = R32_sin(Yaw);
+        r32 CosPitch = R32_cos(Pitch);
+        r32 SinPitch = R32_sin(Pitch);
+        v3r32 Right = { CosYaw,           0,               -SinYaw};
+        v3r32 Up    = { SinYaw*SinPitch,  CosPitch,         CosYaw*SinPitch};
+        v3r32 Front = { SinYaw*CosPitch, -SinPitch,         CosYaw*CosPitch};
+        v3r32 Pos   = {-Renderer->Pos.X, -Renderer->Pos.Y,  Renderer->Pos.Z};
         
         Renderer->ViewMatrix = (m4x4r32){
             Right.X, Right.Y, Right.Z, V3r32_Dot(Right, Pos),
@@ -105,23 +148,22 @@ Game_Update(platform_state *Platform,
             0,       0,       0,       1
         };
         
-        v4r32 Vertex = { 1, 1, 1, 1};
-        m4x4r32 ModelMatrix = {
-            0.125, 0,     0,     0,
-            0,     0.125, 0,     0,
-            0,     0,     0.125, 0,
-            0,     0,     0,     1
-        };
-        
         m4x4r32 VPMatrix = M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
         OpenGL_UseProgram(Renderer->PCProgram);
         OpenGL_UniformMatrix4fv(Renderer->PCMesh.VPMatrix,  1, FALSE, VPMatrix);
         // OpenGL_UseProgram(Renderer->PTProgram);
         // OpenGL_UniformMatrix4fv(Renderer->UI.Mesh.VPMatrix, 1, FALSE, VPMatrix);
         
+        v4r32 Vector = {-1, -1, -1, 1};
+        m4x4r32 ModelMatrix = {
+            0.4, 0, 0, -1,
+            0, 0.4, 0, 0,
+            0, 0, 0.4, 0,
+            0, 0, 0, 1
+        };
         m4x4r32 MVPMatrix = M4x4r32_Mul(VPMatrix, ModelMatrix);
-        v4r32 ClipVertex = M4x4r32_MulMV(MVPMatrix, Vertex);
-        v4r32 NormVertex = {ClipVertex.X/ClipVertex.W, ClipVertex.Y/ClipVertex.W, ClipVertex.Z/ClipVertex.W, ClipVertex.W};
+        v4r32 C = M4x4r32_MulMV(MVPMatrix, Vector);
+        v4r32 N = {C.X/C.W, C.Y/C.W, C.Z/C.W, C.W};
         
         Platform->Updates &= ~WINDOW_RESIZED;
     }
