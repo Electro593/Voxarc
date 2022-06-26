@@ -11,7 +11,7 @@
 
 typedef vptr heap;
 typedef struct heap_handle {
-    u08 *Data;
+    vptr Data;
     u64 Index    : 16;
     u64 Offset   : 46;
     u64 Free     :  1;

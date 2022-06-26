@@ -202,7 +202,7 @@ Renderer_Init(renderer_state *Renderer,
     
     OpenGL_ClearColor(.2,.2,.2,1);
     
-    Renderer->Pos = (v3r32){0,1,3};
+    Renderer->Pos = (v3r32){0,1,-4};
     Renderer->Dir = (v3r32){0,0,0};
 }
 

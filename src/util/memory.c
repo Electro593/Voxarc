@@ -123,8 +123,8 @@ Heap_Defragment(heap *Heap)
         Block->Offset = 0;
         
         if(Offset) {
-            Mem_Cpy(Block->Data+Offset, Block->Data, Block->Size);
-            Block->Data += Offset;
+            Mem_Cpy((u08*)Block->Data+Offset, Block->Data, Block->Size);
+            (u08*)Block->Data += Offset;
         }
     } while(Block->Index);
 }
@@ -142,7 +142,7 @@ Heap_AllocateBlock(heap *Heap,
         Heap_Defragment(Heap);
         Assert(PrevBlock->Offset >= Size, "Not enough memory for new heap block");
     }
-    Handle->Data = PrevBlock->Data + PrevBlock->Size + PrevBlock->Offset - Size;
+    Handle->Data = (u08*)PrevBlock->Data + PrevBlock->Size + PrevBlock->Offset - Size;
     PrevBlock->Offset -= Size;
     Handle->PrevBlock = PrevBlock->Index;
     Handle->NextBlock = PrevBlock->NextBlock;
@@ -216,7 +216,7 @@ _Heap_Allocate(heap *Heap,
 }
 
 internal heap_handle *Heap_Allocate (heap *Heap, u64 Size) { return _Heap_Allocate(Heap, Size, FALSE); }
-internal vptr         Heap_AllocateA(heap *Heap, u64 Size) { return _Heap_Allocate(Heap, Size, TRUE)->Data + sizeof(heap_handle*); }
+internal vptr         Heap_AllocateA(heap *Heap, u64 Size) { return (u08*)_Heap_Allocate(Heap, Size, TRUE)->Data + sizeof(heap_handle*); }
 
 internal void
 Heap_Resize(heap_handle *Handle,

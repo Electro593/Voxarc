@@ -30,6 +30,7 @@
 #define LITERAL_CAST(OldType, Constant, NewType) (*(NewType*)&(OldType){Constant})
 #define OFFSET_OF(Type, Element) ((u64)&(((Type*)0)->Element))
 #define INDEX_2D(X, Y, MaxX) ((X) + ((Y) * (MaxX)))
+#define INDEX_3D(X, Y, Z, MaxX, MaxY) ((X) + ((Y) * (MaxX)) + ((Z) * (MaxX) * (MaxY)))
 #define SWAP(A, B, Type) do { Type _A = A; A = B; B = _A; } while(0)
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
 #define MAX(A, B) ((A) > (B) ? (A) : (B))

@@ -46,21 +46,22 @@ Game_Init(platform_state *Platform,
     
     Renderer_Init(Renderer, RendererHeap, Platform->WindowSize);
     
-    assetpack_tag *Tag = Assetpack_FindExactTag(Renderer->Assetpack, TAG_BLOCK_TEXTURE, BLOCK_TEST);
-    assetpack_asset *Asset = Tag->Assets[0];
-    u32 Bytes = (u64)((u08*)Asset - (u64)Renderer->Assetpack.Assets);
+    Stack_Push();
     
-    mesh_object Objects[25];
-    mesh_object *PObjects[25];
-    for(s32 I = 0; I < 5; I++) {
-        for(s32 J = 0; J < 5; J++) {
-            mesh_object Object = MakePTBlockObject(&Renderer->PTMesh, RendererHeap, (v3r32){I-2,0,J-2}, Bytes);
-            Objects[I*5+J] = Object;
-            PObjects[I*5+J] = Objects+I*5+J;
-        }
+    u32 *TextureBytes = Stack_Allocate(sizeof(u32) * BLOCK_Count);
+    for(u32 I = 1; I < BLOCK_Count; I++) {
+        assetpack_tag *Tag = Assetpack_FindExactTag(Renderer->Assetpack, TAG_BLOCK_TEXTURE, (vptr)(u64)I);
+        assetpack_asset *Asset = Tag->Assets[0];
+        TextureBytes[I] = (u64)((u08*)Asset - (u64)Renderer->Assetpack.Assets);
     }
-    Mesh_AddObjects(&Renderer->PTMesh, 25, PObjects);
+    
+    chunk Chunk = MakeChunk(RendererHeap, &Renderer->PTMesh, (v3s32){0,0,0}, TextureBytes);
+    mesh_object *Objects[] = {&Chunk.Object};
+    Mesh_AddObjects(&Renderer->PTMesh, 1, Objects);
+    
     Mesh_Update(&Renderer->PTMesh);
+    
+    Stack_Pop();
 }
 
 internal void
@@ -86,9 +87,11 @@ Game_Update(platform_state *Platform,
         DirDelta.X = CursorDelta.Y/120.0f;
         DirDelta.Y = CursorDelta.X/120.0f;
         Renderer->Dir = V3r32_Add(Renderer->Dir, DirDelta);
+        if(Renderer->Dir.X >  R32_PI/2) Renderer->Dir.X =  R32_PI/2;
+        if(Renderer->Dir.X < -R32_PI/2) Renderer->Dir.X = -R32_PI/2;
         
         v3r32 MoveDir = {0};
-        r32 Step = 0.04;
+        r32 Step = 0.1;
         if(Platform->Keys[ScanCode_A] != RELEASED)
             MoveDir.X--;
         if(Platform->Keys[ScanCode_D] != RELEASED)
@@ -105,10 +108,6 @@ Game_Update(platform_state *Platform,
         
         r32 Len = V3r32_Len(MoveDir);
         if(Len != 0) {
-            if(MoveDir.Y != 0 && MoveDir.Z != 0) {
-                NOP;
-            }
-            
             MoveDir = V3r32_DivS(MoveDir, Len);
             
             if(MoveDir.X != 0 || MoveDir.Z != 0) {
@@ -118,7 +117,7 @@ Game_Update(platform_state *Platform,
                 Theta += Renderer->Dir.Y;
                 
                 Renderer->Pos.X += Step*R32_sin(Theta);
-                Renderer->Pos.Z -= Step*R32_cos(Theta);
+                Renderer->Pos.Z += Step*R32_cos(Theta);
             }
             
             Renderer->Pos.Y += Step*MoveDir.Y;
@@ -137,10 +136,24 @@ Game_Update(platform_state *Platform,
         r32 SinYaw = R32_sin(Yaw);
         r32 CosPitch = R32_cos(Pitch);
         r32 SinPitch = R32_sin(Pitch);
+        
+        // Yaw rotation matrix
+        // v3r32 Right = { CosYaw,           0,               -SinYaw};
+        // v3r32 Up    = { 0,                1,                0};
+        // v3r32 Front = { SinYaw,           0,                CosYaw};
+        // v3r32 Pos   = {-Renderer->Pos.X, -Renderer->Pos.Y, -Renderer->Pos.Z};
+        
+        // Pitch rotation matrix
+        // v3r32 Right = { 1,                0,                0};
+        // v3r32 Up    = { 0,                CosPitch,        -SinPitch};
+        // v3r32 Front = { 0,                SinPitch,         CosPitch};
+        // v3r32 Pos   = {-Renderer->Pos.X, -Renderer->Pos.Y, -Renderer->Pos.Z};
+        
+        // Combined rotation matrix
         v3r32 Right = { CosYaw,           0,               -SinYaw};
-        v3r32 Up    = { SinYaw*SinPitch,  CosPitch,         CosYaw*SinPitch};
-        v3r32 Front = { SinYaw*CosPitch, -SinPitch,         CosYaw*CosPitch};
-        v3r32 Pos   = {-Renderer->Pos.X, -Renderer->Pos.Y,  Renderer->Pos.Z};
+        v3r32 Up    = {-SinYaw*SinPitch,  CosPitch,        -CosYaw*SinPitch};
+        v3r32 Front = { SinYaw*CosPitch,  SinPitch,         CosYaw*CosPitch};
+        v3r32 Pos   = {-Renderer->Pos.X, -Renderer->Pos.Y, -Renderer->Pos.Z};
         
         Renderer->ViewMatrix = (m4x4r32){
             Right.X, Right.Y, Right.Z, V3r32_Dot(Right, Pos),

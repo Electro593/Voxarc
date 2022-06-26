@@ -23,6 +23,8 @@ uniform mat4 VPMatrix;
 
 out vec2 TextureCoords;
 out uint AtlasIndex;
+out flat vec2 TexturePos;
+out flat vec2 TextureSize;
 
 void main()
 {
@@ -31,7 +33,9 @@ void main()
    
    uint Right = TextureData & 1;
    uint Up = (TextureData >> 1) & 1;
-   uint DWords = TextureData >> 2;
+   uint DWords = (TextureData >> 2) & 0x3FFFFF;
+   uint RepeatX = (TextureData >> 24) & 0xF;
+   uint RepeatY = (TextureData >> 28) & 0xF;
    
    texture_data Data;
    Data.Pos.x   = Assets[DWords+0];
@@ -40,9 +44,12 @@ void main()
    Data.Size.y  = Assets[DWords+3];
    Data.AtlasIndex = Assets[DWords+4];
    
-   float U = float(Data.Pos.x + Data.Size.x*Right) / float(AtlasSize.x);
-   float V = float(Data.Pos.y + Data.Size.y*Up) / float(AtlasSize.y);
-   TextureCoords = vec2(U, V);
+   // float U = float(Data.Pos.x + Data.Size.x*Right) / float(AtlasSize.x);
+   // float V = float(Data.Pos.y + Data.Size.y*Up) / float(AtlasSize.y);
+   TextureCoords = vec2(Right*(RepeatX+1), Up*(RepeatY+1));
+   
+   TexturePos = vec2(Data.Pos) / vec2(AtlasSize);
+   TextureSize = vec2(Data.Size) / vec2(AtlasSize);
    
    #if LITTLE_ENDIAN
       AtlasIndex = Data.AtlasIndex & 0xFFFF;

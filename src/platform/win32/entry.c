@@ -506,7 +506,7 @@ Platform_WindowCallback(win32_window Window,
             } else {
                 Platform->CursorPos = (v2s32){
                     Platform->CursorPos.X + Data->Mouse.LastX,
-                    Platform->CursorPos.Y + Data->Mouse.LastY
+                    Platform->CursorPos.Y - Data->Mouse.LastY
                 };
             }
             

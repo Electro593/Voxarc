@@ -149,8 +149,8 @@ Mesh_AddObjects(mesh *Mesh,
     u32 *VertexOffsets = (u32*)Mesh->VertexOffsets->Data + Mesh->ObjectCount;
     u32 *IndexOffsets = (u32*)Mesh->IndexOffsets->Data + Mesh->ObjectCount;
     for(u32 I = 0; I < ObjectCount; I++) {
-        Mem_Cpy(Mesh->Vertices->Data+VertexOffsets[I]*Mesh->VertexSize, (*Objects[I]).Vertices->Data, (*Objects[I]).Vertices->Size);
-        Mem_Cpy(Mesh->Indices->Data+IndexOffsets[I]*sizeof(u32), (*Objects[I]).Indices->Data, (*Objects[I]).Indices->Size);
+        Mem_Cpy((u08*)Mesh->Vertices->Data+VertexOffsets[I]*Mesh->VertexSize, (*Objects[I]).Vertices->Data, (*Objects[I]).Vertices->Size);
+        Mem_Cpy((u08*)Mesh->Indices->Data+IndexOffsets[I]*sizeof(u32), (*Objects[I]).Indices->Data, (*Objects[I]).Indices->Size);
         m4x4r32 ModelMatrix = M4x4r32_Mul(M4x4r32_Mul((*Objects[I]).TranslationMatrix, (*Objects[I]).RotationMatrix), (*Objects[I]).ScalingMatrix);
         ((m4x4r32*)Mesh->Matrices->Data)[Mesh->ObjectCount+I] = ModelMatrix;
         VertexOffsets[I+1] = VertexOffsets[I] + (*Objects[I]).Vertices->Size / Mesh->VertexSize;
@@ -179,12 +179,12 @@ Mesh_UpdateVertices(mesh *Mesh,
         Heap_FreeBlock(Heap, Mesh->Vertices);
         Heap_AllocateBlock(Heap, Mesh->Vertices, Mesh->Vertices->Size+DeltaSize);
         Mem_Cpy(Mesh->Vertices->Data, PrevData, CurrOffset);
-        Mem_Cpy(Mesh->Vertices->Data+CurrOffset+NewSize, PrevData+NextOffset, MaxOffset-NextOffset);
+        Mem_Cpy((u08*)Mesh->Vertices->Data+CurrOffset+NewSize, PrevData+NextOffset, MaxOffset-NextOffset);
     } else if(DeltaSize < 0) {
-        Mem_Cpy(Mesh->Vertices->Data+CurrOffset+NewSize, Mesh->Vertices->Data+NextOffset, MaxOffset-NextOffset);
+        Mem_Cpy((u08*)Mesh->Vertices->Data+CurrOffset+NewSize, (u08*)Mesh->Vertices->Data+NextOffset, MaxOffset-NextOffset);
         Heap_Resize(Mesh->Vertices, Mesh->Vertices->Size+DeltaSize);
     }
-    Mem_Cpy(Mesh->Vertices->Data+CurrOffset, Object->Vertices->Data, NewSize);
+    Mem_Cpy((u08*)Mesh->Vertices->Data+CurrOffset, Object->Vertices->Data, NewSize);
     if(DeltaSize != 0) {
         for(u32 I = ObjectIndex+1; I <= Mesh->ObjectCount; I++)
             ((u32*)Mesh->VertexOffsets->Data)[I] += DeltaSize/Mesh->VertexSize;
@@ -211,12 +211,12 @@ Mesh_UpdateIndices(mesh *Mesh,
         Heap_FreeBlock(Heap, Mesh->Indices);
         Heap_AllocateBlock(Heap, Mesh->Indices, Mesh->Indices->Size+DeltaSize);
         Mem_Cpy(Mesh->Indices->Data, PrevData, CurrOffset);
-        Mem_Cpy(Mesh->Indices->Data+CurrOffset+NewSize, PrevData+NextOffset, MaxOffset-NextOffset);
+        Mem_Cpy((u08*)Mesh->Indices->Data+CurrOffset+NewSize, PrevData+NextOffset, MaxOffset-NextOffset);
     } else if(DeltaSize < 0) {
-        Mem_Cpy(Mesh->Indices->Data+CurrOffset+NewSize, Mesh->Indices->Data+NextOffset, MaxOffset-NextOffset);
+        Mem_Cpy((u08*)Mesh->Indices->Data+CurrOffset+NewSize, (u08*)Mesh->Indices->Data+NextOffset, MaxOffset-NextOffset);
         Heap_Resize(Mesh->Indices, Mesh->Indices->Size+DeltaSize);
     }
-    Mem_Cpy(Mesh->Indices->Data+CurrOffset, Object->Indices->Data, NewSize);
+    Mem_Cpy((u08*)Mesh->Indices->Data+CurrOffset, Object->Indices->Data, NewSize);
     OpenGL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, Mesh->EBO);
     if(DeltaSize != 0) {
         for(u32 I = ObjectIndex+1; I <= Mesh->ObjectCount; I++)

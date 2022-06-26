@@ -87,6 +87,13 @@
         return Result; \
     }
 
+#define DEFINE_VECTOR_VOLUME(Type) \
+    internal Type \
+    V3##Type##_Volume(v3##Type V) \
+    { \
+        return V.X*V.Y*V.Z; \
+    }
+
 #define DEFINE_VECTOR_DOT(Count, Type) \
     internal Type \
     V##Count##Type##_Dot(v##Count##Type A, \
@@ -218,6 +225,8 @@ DEFINE_VECTOR_DOT(2, r32)
 DEFINE_VECTOR_DOT(2, s16)
 DEFINE_VECTOR_DOT(3, r32)
 DEFINE_VECTOR_DOT(4, r32)
+
+DEFINE_VECTOR_VOLUME(u32);
 
 DEFINE_VECTOR_CROSS(2, r32)
 DEFINE_VECTOR_CROSS(2, s16)
