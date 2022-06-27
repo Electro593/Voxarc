@@ -285,7 +285,7 @@ Renderer_Init(renderer_state *Renderer,
     
     ui_font Font = {0};
     Font.Assetpack = Renderer->Assetpack;
-    ui_string UIString = MakeUIString(Renderer->Heap, CString("Hello,\nHow are you today?"), &Font);
+    ui_string UIString = MakeUIString(Renderer->Heap, CString("Hello, aa\taaaaaaaaaa aaaaaaaaaaaaaaa\nHow are\tyou today?"), &Font);
     mesh_object Object = MakeUIStringObject(Renderer->Heap, UIString, (v2u32){20, 20}, WindowSize);
     
     // Heap_Free(UIString.Lines);
