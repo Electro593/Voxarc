@@ -131,45 +131,50 @@ Renderer_Init(renderer_state *Renderer,
     OpenGL_Enable(GL_BLEND);
     OpenGL_BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
+    assetpack_tag *Tag = Assetpack_FindFirstTag(Renderer->Assetpack, TAG_ATLAS_DESCRIPTOR);
+    Assert(Tag);
+    assetpack_atlas *Atlas = (assetpack_atlas*)Tag->ValueP;
+    
     //
     // PC Mesh
     //
     
-    // Renderer->PCProgram = Renderer_LoadShaders(SHADERS_DIR "pc.vert", SHADERS_DIR "pc.frag");
-    
-    // Platform_GetFileTime(SHADERS_DIR "pc.vert", 0, 0, Renderer->PCLastModified+0);
-    // Platform_GetFileTime(SHADERS_DIR "pc.frag", 0, 0, Renderer->PCLastModified+1);
-    
-    // Mesh_Init(&Renderer->PCMesh, Renderer->Heap, &Renderer->PCProgram, MESH_HAS_COLORS);
+    {
+        Renderer->PCProgram = Renderer_LoadShaders(SHADERS_DIR "pc.vert", SHADERS_DIR "pc.frag");
+        
+        Platform_GetFileTime(SHADERS_DIR "pc.vert", 0, 0, Renderer->PCLastModified+0);
+        Platform_GetFileTime(SHADERS_DIR "pc.frag", 0, 0, Renderer->PCLastModified+1);
+        
+        Mesh_Init(&Renderer->PCMesh, Renderer->Heap, &Renderer->PCProgram, MESH_HAS_COLORS);
+    }
     
     //
     // PT Mesh
     //
     
-    Renderer->PTProgram = Renderer_LoadShaders(SHADERS_DIR "pt.vert", SHADERS_DIR "pt.frag");
-    
-    Platform_GetFileTime(SHADERS_DIR "pt.vert", 0, 0, Renderer->PTLastModified+0);
-    Platform_GetFileTime(SHADERS_DIR "pt.frag", 0, 0, Renderer->PTLastModified+1);
-    
-    Mesh_Init(&Renderer->PTMesh, Renderer->Heap, &Renderer->PTProgram, MESH_HAS_TEXTURES);
-    
-    assetpack_tag *Tag = Assetpack_FindFirstTag(Renderer->Assetpack, TAG_ATLAS_DESCRIPTOR);
-    Assert(Tag);
-    assetpack_atlas *Atlas = (assetpack_atlas*)Tag->ValueP;
-    
-    OpenGL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    OpenGL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    OpenGL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    OpenGL_TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    OpenGL_TexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, Atlas->Size.X, Atlas->Size.Y, Atlas->Count, 0, GL_RGBA, GL_UNSIGNED_BYTE, Renderer->Assetpack.AssetData+Atlas->DataOffset);
-    
-    OpenGL_UseProgram(Renderer->PTProgram);
-    OpenGL_Uniform1i(Renderer->PTMesh.AtlasesSampler, 0);
-    OpenGL_Uniform2ui(Renderer->PTMesh.AtlasSize, Atlas->Size.X, Atlas->Size.Y);
-    
-    Heap_Resize(Renderer->PTMesh.Storage, Renderer->Assetpack.Header->AssetsSize);
-    Mem_Cpy(Renderer->PTMesh.Storage->Data, Renderer->Assetpack.Assets, Renderer->PTMesh.Storage->Size);
-    Renderer->PTMesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
+    {
+        Renderer->PTProgram = Renderer_LoadShaders(SHADERS_DIR "pt.vert", SHADERS_DIR "pt.frag");
+        
+        Platform_GetFileTime(SHADERS_DIR "pt.vert", 0, 0, Renderer->PTLastModified+0);
+        Platform_GetFileTime(SHADERS_DIR "pt.frag", 0, 0, Renderer->PTLastModified+1);
+        
+        Renderer->PTMesh.TextureIndex = 0;
+        Mesh_Init(&Renderer->PTMesh, Renderer->Heap, &Renderer->PTProgram, MESH_HAS_TEXTURES);
+        
+        OpenGL_SamplerParameteri(Renderer->PTMesh.SamplerObject, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        OpenGL_SamplerParameteri(Renderer->PTMesh.SamplerObject, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        OpenGL_SamplerParameteri(Renderer->PTMesh.SamplerObject, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        OpenGL_SamplerParameteri(Renderer->PTMesh.SamplerObject, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        OpenGL_TexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, Atlas->Size.X, Atlas->Size.Y, Atlas->Count, 0, GL_RGBA, GL_UNSIGNED_BYTE, Renderer->Assetpack.AssetData+Atlas->DataOffset);
+        OpenGL_BindSampler(0, Renderer->PTMesh.SamplerObject);
+        
+        OpenGL_Uniform1i(Renderer->PTMesh.AtlasesSampler, 0);
+        OpenGL_Uniform2ui(Renderer->PTMesh.AtlasSize, Atlas->Size.X, Atlas->Size.Y);
+        
+        Heap_Resize(Renderer->PTMesh.Storage, Renderer->Assetpack.Header->AssetsSize);
+        Mem_Cpy(Renderer->PTMesh.Storage->Data, Renderer->Assetpack.Assets, Renderer->PTMesh.Storage->Size);
+        Renderer->PTMesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
+    }
     
     // UI_Init(&Renderer->UI, Renderer->Heap, &Renderer->PTProgram, Renderer->Assetpack, WindowSize);
     // OpenGL_DeleteBuffers(1, &Renderer->UI.Mesh.TextureSSBO);
@@ -192,7 +197,69 @@ Renderer_Init(renderer_state *Renderer,
     // UI Mesh
     //
     
-    // Renderer->UIProgram = Renderer_LoadShaders(SHADERS_DIR "ui.vert", SHADERS_DIR "ui.frag");
+    {
+        Renderer->UIProgram = Renderer_LoadShaders(SHADERS_DIR "ui.vert", SHADERS_DIR "ui.frag");
+        
+        Platform_GetFileTime(SHADERS_DIR "ui.vert", 0, 0, Renderer->UILastModified+0);
+        Platform_GetFileTime(SHADERS_DIR "ui.frag", 0, 0, Renderer->UILastModified+1);
+        
+        Renderer->UIMesh.TextureIndex = 0;
+        Mesh_Init(&Renderer->UIMesh, Renderer->Heap, &Renderer->UIProgram, MESH_IS_FOR_UI|MESH_HAS_TEXTURES);
+        
+        // OpenGL_DeleteBuffers(1, &Renderer->UIMesh.TextureSSBO);
+        Renderer->UIMesh.TextureSSBO = Renderer->PTMesh.TextureSSBO;
+        OpenGL_DeleteTextures(1, &Renderer->UIMesh.Atlases);
+        Renderer->UIMesh.Atlases = Renderer->PTMesh.Atlases;
+        Heap_Free(Renderer->UIMesh.Storage);
+        Renderer->UIMesh.Storage = Renderer->PTMesh.Storage;
+        Renderer->UIMesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
+        
+        OpenGL_SamplerParameteri(Renderer->UIMesh.SamplerObject, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        OpenGL_SamplerParameteri(Renderer->UIMesh.SamplerObject, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        OpenGL_SamplerParameteri(Renderer->UIMesh.SamplerObject, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        OpenGL_SamplerParameteri(Renderer->UIMesh.SamplerObject, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        
+        OpenGL_Uniform1i(Renderer->UIMesh.AtlasesSampler, 0);
+        OpenGL_Uniform2ui(Renderer->UIMesh.AtlasSize, Atlas->Size.X, Atlas->Size.Y);
+        
+        // Heap_Resize(Renderer->UIMesh.Storage, Renderer->Assetpack.Header->AssetsSize);
+        // Mem_Cpy(Renderer->UIMesh.Storage->Data, Renderer->Assetpack.Assets, Renderer->UIMesh.Storage->Size);
+        // Renderer->UIMesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
+        
+        // Renderer->UIMesh.TextureSSBO = Renderer->PTMesh.TextureSSBO;
+        // Renderer->UIMesh.Atlases     = Renderer->PTMesh.Atlases;
+        // Renderer->UIMesh.Storage     = Renderer->PTMesh.Storage;
+        // Renderer->UIMesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
+        
+        c08 Codepoint = 'A';
+        Tag = Assetpack_FindExactTag(Renderer->Assetpack, TAG_CODEPOINT, (vptr)(u64)Codepoint);
+        u32 Bytes = (u64)Tag->Assets[0] - (u64)Renderer->Assetpack.Assets;
+        Assert((Bytes & 3) == 0);
+        
+        mesh_object Object;
+        Object.Vertices = Heap_Allocate(Renderer->Heap, 4*sizeof(ui_vertex));
+        Object.Indices = Heap_Allocate(Renderer->Heap, 6*sizeof(u32));
+        u32 *Index = Object.Indices->Data;
+        ui_vertex *Vertex = Object.Vertices->Data;
+        *Vertex++ = (ui_vertex){{-2048, -4096}, (0<<24) | Bytes | 0b00};
+        *Vertex++ = (ui_vertex){{ 2048, -4096}, (0<<24) | Bytes | 0b01};
+        *Vertex++ = (ui_vertex){{ 2048,  4096}, (0<<24) | Bytes | 0b11};
+        *Vertex++ = (ui_vertex){{-2048,  4096}, (0<<24) | Bytes | 0b10};
+        *Index++ = 0;
+        *Index++ = 1;
+        *Index++ = 2;
+        *Index++ = 0;
+        *Index++ = 2;
+        *Index++ = 3;
+        Object.TranslationMatrix = M4x4r32_I;
+        Object.ScalingMatrix = M4x4r32_I;
+        Object.RotationMatrix = M4x4r32_I;
+        mesh_object *Objects[] = {&Object};
+        Mesh_AddObjects(&Renderer->UIMesh, 1, Objects);
+        Mesh_FreeObject(Object);
+        
+        Mesh_Update(&Renderer->UIMesh);
+    }
     
     //
     // Other
@@ -210,27 +277,27 @@ internal void
 Renderer_Draw(renderer_state *Renderer)
 {
     // Hot-reload PC shaders
-    // {
-    //     datetime VertTime, FragTime;
-    //     Platform_GetFileTime(SHADERS_DIR "pc.vert", 0, 0, &VertTime);
-    //     Platform_GetFileTime(SHADERS_DIR "pc.frag", 0, 0, &FragTime);
-    //     if(Platform_CmpFileTime(Renderer->PCLastModified[0], VertTime) == LESS ||
-    //        Platform_CmpFileTime(Renderer->PCLastModified[1], FragTime) == LESS)
-    //     {
-    //         OpenGL_DeleteProgram(Renderer->PCProgram);
-    //         Renderer->PCProgram = Renderer_LoadShaders(SHADERS_DIR "pc.vert", SHADERS_DIR "pc.frag");
+    {
+        datetime VertTime, FragTime;
+        Platform_GetFileTime(SHADERS_DIR "pc.vert", 0, 0, &VertTime);
+        Platform_GetFileTime(SHADERS_DIR "pc.frag", 0, 0, &FragTime);
+        if(Platform_CmpFileTime(Renderer->PCLastModified[0], VertTime) == LESS ||
+           Platform_CmpFileTime(Renderer->PCLastModified[1], FragTime) == LESS)
+        {
+            OpenGL_DeleteProgram(Renderer->PCProgram);
+            Renderer->PCProgram = Renderer_LoadShaders(SHADERS_DIR "pc.vert", SHADERS_DIR "pc.frag");
             
-    //         Renderer->PCMesh.VPMatrix = OpenGL_GetUniformLocation(Renderer->PCProgram, "VPMatrix");
+            Renderer->PCMesh.VPMatrix = OpenGL_GetUniformLocation(Renderer->PCProgram, "VPMatrix");
             
-    //         m4x4r32 VPMatrix = M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
+            m4x4r32 VPMatrix = M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
             
-    //         OpenGL_UseProgram(Renderer->PCProgram);
-    //         OpenGL_UniformMatrix4fv(Renderer->PCMesh.VPMatrix, 1, FALSE, VPMatrix);
+            OpenGL_UseProgram(Renderer->PCProgram);
+            OpenGL_UniformMatrix4fv(Renderer->PCMesh.VPMatrix, 1, FALSE, VPMatrix);
             
-    //         Renderer->PCLastModified[0] = VertTime;
-    //         Renderer->PCLastModified[1] = FragTime;
-    //     }
-    // }
+            Renderer->PCLastModified[0] = VertTime;
+            Renderer->PCLastModified[1] = FragTime;
+        }
+    }
     
     // Hot-reload PT shaders
     {
@@ -262,13 +329,37 @@ Renderer_Draw(renderer_state *Renderer)
         }
     }
     
+    // Hot-reload UI shaders
+    {
+        datetime VertTime, FragTime;
+        Platform_GetFileTime(SHADERS_DIR "ui.vert", 0, 0, &VertTime);
+        Platform_GetFileTime(SHADERS_DIR "ui.frag", 0, 0, &FragTime);
+        if(Platform_CmpFileTime(Renderer->UILastModified[0], VertTime) == LESS ||
+           Platform_CmpFileTime(Renderer->UILastModified[1], FragTime) == LESS)
+        {
+            OpenGL_DeleteProgram(Renderer->UIProgram);
+            Renderer->UIProgram = Renderer_LoadShaders(SHADERS_DIR "ui.vert", SHADERS_DIR "ui.frag");
+            
+            assetpack_tag *Tag = Assetpack_FindFirstTag(Renderer->Assetpack, TAG_ATLAS_DESCRIPTOR);
+            assetpack_atlas *Atlas = (assetpack_atlas*)Tag->ValueP;
+            
+            Renderer->UIMesh.AtlasesSampler = OpenGL_GetUniformLocation(Renderer->UIProgram, "Atlases");
+            Renderer->UIMesh.AtlasSize      = OpenGL_GetUniformLocation(Renderer->UIProgram, "AtlasSize");
+            
+            OpenGL_UseProgram(Renderer->UIProgram);
+            OpenGL_Uniform1i(Renderer->UIMesh.AtlasesSampler, 0);
+            OpenGL_Uniform2ui(Renderer->UIMesh.AtlasSize, Atlas->Size.X, Atlas->Size.Y);
+            
+            Renderer->UILastModified[0] = VertTime;
+            Renderer->UILastModified[1] = FragTime;
+        }
+    }
+    
     OpenGL_Clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     
-    // Mesh_Draw(&Renderer->PCMesh);
-    
+    Mesh_Draw(&Renderer->PCMesh);
     Mesh_Draw(&Renderer->PTMesh);
-    
-    // UI_Draw(&Renderer->UI);
+    Mesh_Draw(&Renderer->UIMesh);
     
     Renderer->DEBUGCounter++;
 }

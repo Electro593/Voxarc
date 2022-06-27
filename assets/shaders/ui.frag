@@ -1,41 +1,27 @@
-#version 460
+#version 460 core
 
-in vec4 Color;
-in vec4 Position;
+in vec2 TextureCoords;
+in flat uint AtlasIndex;
 
-// uniform uvec2 ViewSize;
+// uniform vec3 BackgroundColor;
+// uniform vec3 ForegroundColor;
+uniform sampler2DArray Atlases;
 
 out vec4 FragColor;
 
-void curveCorner(vec2 Corner, float Radius, vec2 OuterDir) {
-   vec2 ViewSize = vec2(1424, 720);
-   
-   vec2 Pos1 = gl_FragCoord.xy;
-   vec2 Pos2 = (Corner+1)/2*ViewSize;
-   Pos2.x -= OuterDir.x*Radius;
-   Pos2.y -= OuterDir.y*Radius;
-   
-   vec2 Diff = Pos1 - Pos2;
-   float Len = length(Diff);
-   
-   uint IsOutside = 1;
-   if(OuterDir.x > 0)
-      IsOutside &= uint(Pos1.x > Pos2.x);
-   else
-      IsOutside &= uint(Pos1.x < Pos2.x);
-   if(OuterDir.y > 0)
-      IsOutside &= uint(Pos1.y > Pos2.y);
-   else
-      IsOutside &= uint(Pos1.y < Pos2.y);
-   if(Len > Radius && IsOutside==1) discard;
+float Median(float A, float B, float C)
+{
+   return max(min(A, B), min(max(A, B), C));
 }
 
-void main() {
-   float Radius = 80;
-   curveCorner(Position.xy, Radius, vec2(-1,1));
-   curveCorner(Position.xy+vec2(Position.z,0), Radius, vec2(1,1));
-   curveCorner(Position.xy+Position.zw, Radius, vec2(1,-1));
-   curveCorner(Position.xy+vec2(0,Position.w), Radius, vec2(-1,-1));
+void main()
+{
+   vec3 ForegroundColor = vec3(0,0,0);
+   vec3 BackgroundColor = vec3(.2,.2,.2);
    
-   FragColor = Color;
+   vec3 P = vec3(TextureCoords, AtlasIndex);
+   vec4 S = texture(Atlases, P);
+   float D = Median(S.r, S.g, S.b) - 0.5;
+   float W = clamp(D/fwidth(D) + 0.5, 0, 1);
+   FragColor = mix(vec4(BackgroundColor,0), vec4(ForegroundColor,1), W);
 }

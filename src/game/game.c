@@ -58,6 +58,7 @@ Game_Init(platform_state *Platform,
     chunk Chunk = MakeChunk(RendererHeap, &Renderer->PTMesh, (v3s32){0,0,0}, TextureBytes);
     mesh_object *Objects[] = {&Chunk.Object};
     Mesh_AddObjects(&Renderer->PTMesh, 1, Objects);
+    Mesh_FreeObject(Chunk.Object);
     
     Mesh_Update(&Renderer->PTMesh);
     
@@ -137,19 +138,6 @@ Game_Update(platform_state *Platform,
         r32 CosPitch = R32_cos(Pitch);
         r32 SinPitch = R32_sin(Pitch);
         
-        // Yaw rotation matrix
-        // v3r32 Right = { CosYaw,           0,               -SinYaw};
-        // v3r32 Up    = { 0,                1,                0};
-        // v3r32 Front = { SinYaw,           0,                CosYaw};
-        // v3r32 Pos   = {-Renderer->Pos.X, -Renderer->Pos.Y, -Renderer->Pos.Z};
-        
-        // Pitch rotation matrix
-        // v3r32 Right = { 1,                0,                0};
-        // v3r32 Up    = { 0,                CosPitch,        -SinPitch};
-        // v3r32 Front = { 0,                SinPitch,         CosPitch};
-        // v3r32 Pos   = {-Renderer->Pos.X, -Renderer->Pos.Y, -Renderer->Pos.Z};
-        
-        // Combined rotation matrix
         v3r32 Right = { CosYaw,           0,               -SinYaw};
         v3r32 Up    = {-SinYaw*SinPitch,  CosPitch,        -CosYaw*SinPitch};
         v3r32 Front = { SinYaw*CosPitch,  SinPitch,         CosYaw*CosPitch};
@@ -164,13 +152,11 @@ Game_Update(platform_state *Platform,
         
         m4x4r32 VPMatrix = M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
         
-        // OpenGL_UseProgram(Renderer->PCProgram);
-        // OpenGL_UniformMatrix4fv(Renderer->PCMesh.VPMatrix,  1, FALSE, VPMatrix);
+        OpenGL_UseProgram(Renderer->PCProgram);
+        OpenGL_UniformMatrix4fv(Renderer->PCMesh.VPMatrix,  1, FALSE, VPMatrix);
         
         OpenGL_UseProgram(Renderer->PTProgram);
         OpenGL_UniformMatrix4fv(Renderer->PTMesh.VPMatrix, 1, FALSE, VPMatrix);
-        
-        // OpenGL_UniformMatrix4fv(Renderer->UI.Mesh.VPMatrix, 1, FALSE, VPMatrix);
         
         Platform->Updates &= ~WINDOW_RESIZED;
     }

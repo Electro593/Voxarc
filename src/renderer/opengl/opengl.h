@@ -19,6 +19,7 @@
 #define GL_SCISSOR_TEST           0x0C11
 #define GL_DONT_CARE              0x1100
 #define GL_UNSIGNED_BYTE          0x1401
+#define GL_SHORT                  0x1402
 #define GL_UNSIGNED_SHORT         0x1403
 #define GL_UNSIGNED_INT           0x1405
 #define GL_FLOAT                  0x1406
@@ -89,6 +90,7 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
     IMPORT(void, AttachShader,                u32 Program, u32 Shader) \
     IMPORT(void, BindBuffer,                  u32 Target, u32 Buffer) \
     IMPORT(void, BindBufferBase,              u32 Target, u32 Index, u32 Buffer) \
+    IMPORT(void, BindSampler,                 u32 Unit, u32 Sampler) \
     IMPORT(void, BindVertexArray,             u32 ArrayID) \
     IMPORT(void, BufferData,                  u32 Target, s64 Size, vptr Data, u32 Usage) \
     IMPORT(void, BufferSubData,               u32 Target, s64 Offset, s64 Size, vptr Data) \
@@ -105,6 +107,7 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
     IMPORT(void, DrawElementsBaseVertex,      u32 Mode, s32 Count, u32 Type, vptr *Indices, s32 BaseVertex) \
     IMPORT(void, EnableVertexAttribArray,     u32 Index) \
     IMPORT(void, GenBuffers,                  s32 Count, u32 *BufferIDs) \
+    IMPORT(void, GenSamplers,                 s32 Count, u32 *SamplerIDs) \
     IMPORT(void, GenVertexArrays,             s32 Count, u32 *ArrayIDs) \
     IMPORT(void, GetProgramiv,                u32 Program, u32 ParamName, s32 *Param) \
     IMPORT(void, GetProgramInfoLog,           u32 Program, s32 BufferSize, s32 *Length, c08 *InfoLog) \
@@ -115,6 +118,7 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
     IMPORT(void, MultiDrawElementsBaseVertex, u32 Mode, s32 *Count, u32 Type, vptr *Indices, s32 PrimitiveCount, s32 *BaseVertex) \
     IMPORT(void, TexBuffer,                   u32 Target, u32 InternalFormat, u32 Buffer) \
     IMPORT(void, TexImage3D,                  u32 Target, s32 Level, s32 InternalFormat, s32 Width, s32 Height, s32 Depth, s32 Border, u32 Format, u32 Type, vptr Pixels) \
+    IMPORT(void, SamplerParameteri,           u32 Sampler, u32 Name, s32 Param) \
     IMPORT(void, ShaderSource,                u32 Shader, s32 Count, c08 **String, s32 *Length) \
     IMPORT(void, Uniform1f,                   s32 Location, r32 V0) \
     IMPORT(void, Uniform1i,                   s32 Location, s32 V0) \

@@ -22,7 +22,7 @@ uniform uvec2 AtlasSize;
 uniform mat4 VPMatrix;
 
 out vec2 TextureCoords;
-out uint AtlasIndex;
+out flat uint AtlasIndex;
 out flat vec2 TexturePos;
 out flat vec2 TextureSize;
 
@@ -38,10 +38,10 @@ void main()
    uint RepeatY = (TextureData >> 28) & 0xF;
    
    texture_data Data;
-   Data.Pos.x   = Assets[DWords+0];
-   Data.Pos.y   = Assets[DWords+1];
-   Data.Size.x  = Assets[DWords+2];
-   Data.Size.y  = Assets[DWords+3];
+   Data.Pos.x      = Assets[DWords+0];
+   Data.Pos.y      = Assets[DWords+1];
+   Data.Size.x     = Assets[DWords+2];
+   Data.Size.y     = Assets[DWords+3];
    Data.AtlasIndex = Assets[DWords+4];
    
    // float U = float(Data.Pos.x + Data.Size.x*Right) / float(AtlasSize.x);

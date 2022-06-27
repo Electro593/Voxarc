@@ -14,10 +14,11 @@ typedef struct renderer_state {
     
     u32 PCProgram;
     u32 PTProgram;
-    // u32 UIProgram;
+    u32 UIProgram;
     
     datetime PCLastModified[2];
     datetime PTLastModified[2];
+    datetime UILastModified[2];
     
     m4x4r32 PerspectiveMatrix, ViewMatrix;
     
@@ -30,6 +31,7 @@ typedef struct renderer_state {
     
     mesh PCMesh;
     mesh PTMesh;
+    mesh UIMesh;
     // mesh OtherUIMesh;
     
     // ui UI;

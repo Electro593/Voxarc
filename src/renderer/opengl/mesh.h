@@ -18,6 +18,9 @@ typedef enum mesh_flags {
     MESH_GROW_MATRIX_BUFFER  = 0x080,
     MESH_IS_FOR_UI           = 0x100,
     MESH_IS_FOR_OTHER_UI     = 0x200,
+    MESH_SHARED_TEXTURE_BUFFER = 0x400,
+    
+    MESH_IS_DIRTY = MESH_GROW_VERTEX_BUFFER|MESH_GROW_INDEX_BUFFER|MESH_GROW_TEXTURE_BUFFER|MESH_GROW_MATRIX_BUFFER
 } mesh_flags;
 
 typedef struct pc_vertex {
@@ -29,6 +32,11 @@ typedef struct pt_vertex {
     u32 Position;
     u32 Texture;
 } pt_vertex;
+
+typedef struct ui_vertex {
+    v2s16 Position;
+    u32 Texture;
+} ui_vertex;
 
 typedef struct mesh_object {
     heap_handle *Vertices;
@@ -47,6 +55,9 @@ typedef struct mesh {
     u32 EBO;
     u32 MatrixSSBO;
     u32 TextureSSBO;
+    
+    u32 TextureIndex;
+    u32 SamplerObject;
     
     u32 Atlases;
     u32 AtlasesSampler;
