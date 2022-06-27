@@ -23,11 +23,11 @@ GetGlyph(ui_font *Font, c08 Codepoint)
 }
 
 internal ui_string
-MakeUIString(heap *Heap, string String, ui_font *Font)
+MakeUIString(heap *Heap, string String, ui_style Style)
 {
     ui_string UIStr;
     UIStr.Size = (v2r32){0};
-    UIStr.Font = Font;
+    UIStr.Style = Style;
     UIStr.String = String;
     UIStr.LineCount = 1;
     UIStr.PrintableCount = 0;
@@ -37,18 +37,16 @@ MakeUIString(heap *Heap, string String, ui_font *Font)
     
     if(!String.Length) return UIStr;
     
+    ui_font *Font = Style.Font;
+    
     assetpack_tag *Tag = Assetpack_FindFirstTag(Font->Assetpack, TAG_FONT_DEF);
     Assert(Tag);
     assetpack_font *FontData = Tag->ValueP;
     
-    r32 TabSize = 80.0f;
-    r32 FontSize = 40.0f;
-    
-    v2u32 Size = {400, 400};
-    v2r32 P = {0, FontSize * (FontData->Ascent-FontData->Descent)};
+    v2r32 P = {0, Style.FontSize * (FontData->Ascent-FontData->Descent)};
     r32 MaxX = 0;
     
-    r32 AdvanceY = FontSize * (FontData->Ascent-FontData->Descent+FontData->LineGap);
+    r32 AdvanceY = Style.FontSize * (FontData->Ascent-FontData->Descent+FontData->LineGap);
     
     u32 LastWordBreakI = 0;
     u32 LastWordBreakX = 0;
@@ -61,22 +59,22 @@ MakeUIString(heap *Heap, string String, ui_font *Font)
         r32 AdvanceX = 0;
         
         if('!' <= C && C <= '~') {
-            assetpack_asset *Asset = GetGlyph(Font, C);
+            assetpack_asset *Asset = GetGlyph(Style.Font, C);
             Assert(Asset);
             
-            AdvanceX = FontSize*Asset->Glyph.AdvanceX;
+            AdvanceX = Style.FontSize * Asset->Glyph.AdvanceX;
             UIStr.PrintableCount++;
         } else if(C == ' ') {
-            assetpack_asset *Asset = GetGlyph(Font, ' ');
+            assetpack_asset *Asset = GetGlyph(Style.Font, ' ');
             Assert(Asset);
             
-            AdvanceX = FontSize*Asset->Glyph.AdvanceX;
+            AdvanceX = Style.FontSize * Asset->Glyph.AdvanceX;
         } else if(C == '\t') {
-            u32 NumTabStops = P.X / TabSize + 1;
-            r32 NextTabStop = TabSize * NumTabStops;
+            u32 NumTabStops = P.X / Style.TabSize + 1;
+            r32 NextTabStop = Style.TabSize * NumTabStops;
             AdvanceX = NextTabStop - P.X;
         } else if(C == '\n') {
-            if(P.Y + AdvanceY > Size.Y)
+            if(P.Y + AdvanceY > Style.Size.Y)
                 break;
             
             P.Y += AdvanceY;
@@ -96,8 +94,8 @@ MakeUIString(heap *Heap, string String, ui_font *Font)
             break;
         } else Assert(FALSE, "Unsupported character!");
         
-        if(P.X + AdvanceX > Size.X) {
-            if(P.Y + AdvanceY > Size.Y)
+        if(P.X + AdvanceX > Style.Size.X) {
+            if(P.Y + AdvanceY > Style.Size.Y)
                 break;
             
             if(BrokeOnCurrentLine) {
@@ -158,7 +156,9 @@ MakeUIStringObject(heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize)
         return Object;
     }
     
-    assetpack_tag *Tag = Assetpack_FindFirstTag(UIStr.Font->Assetpack, TAG_FONT_DEF);
+    ui_style Style = UIStr.Style;
+    
+    assetpack_tag *Tag = Assetpack_FindFirstTag(Style.Font->Assetpack, TAG_FONT_DEF);
     Assert(Tag);
     assetpack_font *FontData = Tag->ValueP;
     
@@ -167,12 +167,10 @@ MakeUIStringObject(heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize)
     
     u32 *Lines = UIStr.Lines->Data;
     
-    u32 PI = 0; // Printable character index
+    v2r32 P = {0, UIStr.Size.Y - Style.FontSize*FontData->Ascent};
+    r32 AdvanceY = Style.FontSize * (FontData->Ascent-FontData->Descent+FontData->LineGap);
     
-    r32 TabSize = 80.0f;
-    r32 FontSize = 40.0f;
-    v2r32 P = {0, UIStr.Size.Y - FontSize*FontData->Ascent};
-    r32 AdvanceY = FontSize * (FontData->Ascent-FontData->Descent+FontData->LineGap);
+    u32 PI = 0;
     
     for(u32 L = 0; L < UIStr.LineCount; L++) {
         P.X = 0;
@@ -181,24 +179,22 @@ MakeUIStringObject(heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize)
             c08 C = UIStr.String.Text[I];
             
             if('!' <= C && C <= '~') {
-                assetpack_asset *Asset = GetGlyph(UIStr.Font, C);
+                assetpack_asset *Asset = GetGlyph(Style.Font, C);
                 
-                u32 Bytes = (u64)Asset - (u64)UIStr.Font->Assetpack.Assets;
+                u32 Bytes = (u64)Asset - (u64)Style.Font->Assetpack.Assets;
                 
-                u32 Z = 0;
-                
-                v2r32 Q = V2r32_Add(P, V2r32_MulS(Asset->Glyph.Bearing, FontSize));
-                v2r32 S = V2r32_MulS(Asset->Glyph.SizeR, FontSize);
+                v2r32 Q = V2r32_Add(P, V2r32_MulS(Asset->Glyph.Bearing, Style.FontSize));
+                v2r32 S = V2r32_MulS(Asset->Glyph.SizeR, Style.FontSize);
                 
                 s16 PXL = ((Q.X    )*2/UIStr.Size.X - 1) * 0x7FFF;
                 s16 PXR = ((Q.X+S.X)*2/UIStr.Size.X - 1) * 0x7FFF;
                 s16 PYB = ((Q.Y    )*2/UIStr.Size.Y - 1) * 0x7FFF;
                 s16 PYT = ((Q.Y+S.Y)*2/UIStr.Size.Y - 1) * 0x7FFF;
                 
-                *Vertex++ = (glyph_vertex){{PXL, PYB}, (Z<<24) | Bytes | 0b00};
-                *Vertex++ = (glyph_vertex){{PXR, PYB}, (Z<<24) | Bytes | 0b01};
-                *Vertex++ = (glyph_vertex){{PXR, PYT}, (Z<<24) | Bytes | 0b11};
-                *Vertex++ = (glyph_vertex){{PXL, PYT}, (Z<<24) | Bytes | 0b10};
+                *Vertex++ = (glyph_vertex){{PXL, PYB}, (Style.ZIndex<<24) | Bytes | 0b00};
+                *Vertex++ = (glyph_vertex){{PXR, PYB}, (Style.ZIndex<<24) | Bytes | 0b01};
+                *Vertex++ = (glyph_vertex){{PXR, PYT}, (Style.ZIndex<<24) | Bytes | 0b11};
+                *Vertex++ = (glyph_vertex){{PXL, PYT}, (Style.ZIndex<<24) | Bytes | 0b10};
                 
                 *Index++ = 4*PI + 0;
                 *Index++ = 4*PI + 1;
@@ -207,16 +203,16 @@ MakeUIStringObject(heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize)
                 *Index++ = 4*PI + 2;
                 *Index++ = 4*PI + 3;
                 
-                P.X += FontSize * Asset->Glyph.AdvanceX;
+                P.X += Style.FontSize * Asset->Glyph.AdvanceX;
                 
                 PI++;
             } else if(C == ' ') {
-                assetpack_asset *Asset = GetGlyph(UIStr.Font, ' ');
+                assetpack_asset *Asset = GetGlyph(Style.Font, ' ');
                 
-                P.X += FontSize * Asset->Glyph.AdvanceX;
+                P.X += Style.FontSize * Asset->Glyph.AdvanceX;
             } else if(C == '\t') {
-                u32 NumTabStops = P.X / TabSize + 1;
-                r32 NextTabStop = TabSize * NumTabStops;
+                u32 NumTabStops = P.X / Style.TabSize + 1;
+                r32 NextTabStop = Style.TabSize * NumTabStops;
                 P.X = NextTabStop;
             }
         }
@@ -224,10 +220,16 @@ MakeUIStringObject(heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize)
         P.Y -= AdvanceY;
     }
     
-    P.Y -= -FontData->Descent * FontSize;
+    P.Y -= -FontData->Descent * Style.FontSize;
     
-    Object.TranslationMatrix = M4x4r32_Translation(-1 + (Pos.X + UIStr.Size.X)/ViewSize.X, 1 - (Pos.Y + UIStr.Size.Y)/ViewSize.Y, 0);
-    Object.ScalingMatrix     = M4x4r32_Scaling(UIStr.Size.X/ViewSize.X, UIStr.Size.Y/ViewSize.Y, 1);
+    Object.TranslationMatrix = M4x4r32_Translation(
+        -1 + (Style.StringOffset.X + Pos.X + UIStr.Size.X)/ViewSize.X,
+         1 - (Style.StringOffset.Y + Pos.Y + UIStr.Size.Y)/ViewSize.Y,
+         0);
+    Object.ScalingMatrix = M4x4r32_Scaling(
+        UIStr.Size.X/ViewSize.X,
+        UIStr.Size.Y/ViewSize.Y,
+        1);
     
     return Object;
 }

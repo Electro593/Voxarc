@@ -7,22 +7,23 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-typedef struct ui_style {
-    v2u32 Size;
-    u32 ZIndex;
-    r32 FontSize;
-    v3u08 Color;
-    v3u08 BackgroundColor;
-} ui_style;
-
 typedef struct ui_font {
     assetpack_asset *CharCache[95];
     
     assetpack Assetpack;
 } ui_font;
 
-typedef struct ui_string {
+typedef struct ui_style {
+    v2u32 Size;
+    v2u32 StringOffset;
+    u32 ZIndex;
+    r32 FontSize;
+    r32 TabSize;
     ui_font *Font;
+} ui_style;
+
+typedef struct ui_string {
+    ui_style Style;
     
     string String;
     HEAP(u32) Lines;
