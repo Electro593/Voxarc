@@ -69,7 +69,7 @@ Mesh_Init(mesh *Mesh,
     Mesh->Indices = Heap_Allocate(Heap, 0);
     Mesh->Matrices = Heap_Allocate(Heap, 0);
     
-    // if(!(Flags & MESH_SHARED_TEXTURE_BUFFER))
+    if(!(Flags & MESH_SHARED_TEXTURE_BUFFER))
         Mesh->Storage = Heap_Allocate(Heap, 0);
     
     Mesh->VertexOffsets = Heap_Allocate(Heap, sizeof(u32));
@@ -80,7 +80,7 @@ Mesh_Init(mesh *Mesh,
     OpenGL_GenVertexArrays(1, &Mesh->VAO);
     
     OpenGL_GenBuffers(3, &Mesh->VBO); // VBO, EBO, MatrixSSBO
-    // if((Flags & MESH_HAS_TEXTURES) && !(Flags & MESH_SHARED_TEXTURE_BUFFER))
+    if((Flags & MESH_HAS_TEXTURES) && !(Flags & MESH_SHARED_TEXTURE_BUFFER))
         OpenGL_GenBuffers(1, &Mesh->TextureSSBO);
     
     Mesh->VPMatrix = OpenGL_GetUniformLocation(*Mesh->Program, "VPMatrix");
@@ -116,9 +116,6 @@ Mesh_Init(mesh *Mesh,
     if(Mesh->Flags & MESH_IS_FOR_UI) {
         OpenGL_VertexAttribPointer(0, 2, GL_SHORT, TRUE, Stride, (vptr)Offset);
         Offset += sizeof(u32);
-    // } else if(Mesh->Flags & MESH_IS_FOR_OTHER_UI) {
-    //     OpenGL_VertexAttribPointer(0, 4, GL_FLOAT, TRUE, Stride, (vptr)Offset);
-    //     Offset += 4*sizeof(r32);
     } else {
         OpenGL_VertexAttribPointer(0, 4, GL_INT_2_10_10_10_REV, TRUE, Stride, (vptr)Offset);
         Offset += sizeof(u32);

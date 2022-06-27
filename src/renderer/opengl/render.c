@@ -176,23 +176,6 @@ Renderer_Init(renderer_state *Renderer,
         Renderer->PTMesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
     }
     
-    // UI_Init(&Renderer->UI, Renderer->Heap, &Renderer->PTProgram, Renderer->Assetpack, WindowSize);
-    // OpenGL_DeleteBuffers(1, &Renderer->UI.Mesh.TextureSSBO);
-    // Renderer->UI.Mesh.TextureSSBO = Renderer->Mesh.TextureSSBO;
-    // OpenGL_DeleteTextures(1, &Renderer->UI.Mesh.Atlases);
-    // Renderer->UI.Mesh.Atlases = Renderer->Mesh.Atlases;
-    // Heap_Free(Renderer->UI.Mesh.Storage);
-    // Renderer->UI.Mesh.Storage = Renderer->Mesh.Storage;
-    // Renderer->UI.Mesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
-    
-    // ui_node_style Style;
-    // Style.BackgroundColor = (v3u08){128,128,0};
-    // Style.ZIndex = 1;
-    // Style.FontSize = 200.f;
-    // Style.Size = (v2u32){WindowSize.X/2, WindowSize.Y/2};
-    // UI_CreateNode(&Renderer->UI, CString("a"), Style);
-    // UI_Update(&Renderer->UI);
-    
     //
     // UI Mesh
     //
@@ -204,13 +187,10 @@ Renderer_Init(renderer_state *Renderer,
         Platform_GetFileTime(SHADERS_DIR "ui.frag", 0, 0, Renderer->UILastModified+1);
         
         Renderer->UIMesh.TextureIndex = 0;
-        Mesh_Init(&Renderer->UIMesh, Renderer->Heap, &Renderer->UIProgram, MESH_IS_FOR_UI|MESH_HAS_TEXTURES);
+        Mesh_Init(&Renderer->UIMesh, Renderer->Heap, &Renderer->UIProgram, MESH_IS_FOR_UI|MESH_HAS_TEXTURES|MESH_SHARED_TEXTURE_BUFFER);
         
-        // OpenGL_DeleteBuffers(1, &Renderer->UIMesh.TextureSSBO);
         Renderer->UIMesh.TextureSSBO = Renderer->PTMesh.TextureSSBO;
-        OpenGL_DeleteTextures(1, &Renderer->UIMesh.Atlases);
         Renderer->UIMesh.Atlases = Renderer->PTMesh.Atlases;
-        Heap_Free(Renderer->UIMesh.Storage);
         Renderer->UIMesh.Storage = Renderer->PTMesh.Storage;
         Renderer->UIMesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
         
@@ -221,15 +201,6 @@ Renderer_Init(renderer_state *Renderer,
         
         OpenGL_Uniform1i(Renderer->UIMesh.AtlasesSampler, 0);
         OpenGL_Uniform2ui(Renderer->UIMesh.AtlasSize, Atlas->Size.X, Atlas->Size.Y);
-        
-        // Heap_Resize(Renderer->UIMesh.Storage, Renderer->Assetpack.Header->AssetsSize);
-        // Mem_Cpy(Renderer->UIMesh.Storage->Data, Renderer->Assetpack.Assets, Renderer->UIMesh.Storage->Size);
-        // Renderer->UIMesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
-        
-        // Renderer->UIMesh.TextureSSBO = Renderer->PTMesh.TextureSSBO;
-        // Renderer->UIMesh.Atlases     = Renderer->PTMesh.Atlases;
-        // Renderer->UIMesh.Storage     = Renderer->PTMesh.Storage;
-        // Renderer->UIMesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
         
         c08 Codepoint = 'A';
         Tag = Assetpack_FindExactTag(Renderer->Assetpack, TAG_CODEPOINT, (vptr)(u64)Codepoint);
