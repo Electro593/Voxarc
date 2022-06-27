@@ -310,7 +310,8 @@ MakeChunk(heap *Heap, mesh *Mesh, v3s32 ChunkPos, u32 *TextureBytes)
                P2.E[J] = MaxPos.E[J];
                P3.E[J] = MinPos.E[J];
                
-               // Maps the Face index to the UV ordering.
+               // Maps the Face index to the UV ordering. Not sure what
+               // the pattern is for this, but it works.
                u32 K[] = {0, 1, 2, 1, 1, 0};
                u32 R[] = {0b00, 0b01, 0b11, 0b10, 0b00, 0b01, 0b11};
                

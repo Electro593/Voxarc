@@ -32,10 +32,10 @@ typedef struct pt_vertex {
     u32 Texture;
 } pt_vertex;
 
-typedef struct ui_vertex {
+typedef struct glyph_vertex {
     v2s16 Position;
     u32 Texture;
-} ui_vertex;
+} glyph_vertex;
 
 typedef struct mesh_object {
     heap_handle *Vertices;

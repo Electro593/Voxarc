@@ -78,32 +78,22 @@ Mesh_Init(mesh *Mesh,
     ((u32*)Mesh->IndexOffsets->Data)[0] = 0;
     
     OpenGL_GenVertexArrays(1, &Mesh->VAO);
-    
     OpenGL_GenBuffers(3, &Mesh->VBO); // VBO, EBO, MatrixSSBO
-    if((Flags & MESH_HAS_TEXTURES) && !(Flags & MESH_SHARED_TEXTURE_BUFFER))
-        OpenGL_GenBuffers(1, &Mesh->TextureSSBO);
     
-    Mesh->VPMatrix = OpenGL_GetUniformLocation(*Mesh->Program, "VPMatrix");
-    if(Mesh->Flags & MESH_HAS_TEXTURES) {
+    if(Flags & MESH_HAS_TEXTURES) {
         OpenGL_ActiveTexture(GL_TEXTURE0 + Mesh->TextureIndex);
-        
-        if(!(Mesh->Flags & MESH_SHARED_TEXTURE_BUFFER))
-            OpenGL_GenTextures(1, &Mesh->Atlases);
-        
         OpenGL_GenSamplers(1, &Mesh->SamplerObject);
         
-        Mesh->AtlasesSampler = OpenGL_GetUniformLocation(*Mesh->Program, "Atlases");
-        Mesh->AtlasSize = OpenGL_GetUniformLocation(*Mesh->Program, "AtlasSize");
+        if(!(Flags & MESH_SHARED_TEXTURE_BUFFER)) {
+            OpenGL_GenBuffers(1, &Mesh->TextureSSBO);
+            OpenGL_GenTextures(1, &Mesh->Atlases);
+        }
     }
     
     Mesh_Bind(Mesh);
     
-    u32 Stride;
     u64 Offset = 0;
-    if(Mesh->Flags & MESH_IS_FOR_OTHER_UI)
-        Stride = 4*sizeof(r32);
-    else
-        Stride = sizeof(u32);
+    u32 Stride = sizeof(u32);
     if(Mesh->Flags & MESH_HAS_NORMALS)
         Stride += sizeof(u32);
     if(Mesh->Flags & MESH_HAS_TEXTURES)

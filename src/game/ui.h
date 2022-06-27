@@ -30,9 +30,27 @@ typedef struct ui_node_style {
     v3u08 BackgroundColor;
 } ui_node_style;
 
-typedef struct ui_node_string {
+typedef struct ui_font {
+    assetpack_asset *CharCache[95];
+    
+    assetpack Assetpack;
+} ui_font;
+
+typedef struct ui_string {
+    ui_font *Font;
+    
     string String;
+    HEAP(u32) Lines;
+    
+    u32 PrintableCount;
+    u32 LineCount;
+    
+    v2r32 Size;
+} ui_string;
+
+typedef struct ui_node_string {
     v2u32 Size;
+    string String;
     HEAP(u32*) Lines;
     u32 LineCount;
     u32 PrintableCount;
