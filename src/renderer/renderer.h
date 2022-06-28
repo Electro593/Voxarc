@@ -12,7 +12,7 @@
 #endif
 
 #define RENDERER_FUNCS \
-    EXPORT(void, Renderer, Init,        renderer_state *Renderer, heap *Heap, v2u32 WindowSize) \
-    EXPORT(void, Renderer, Draw,        renderer_state *Renderer) \
-    INTERN(u32,  OpenGL,   LoadShaders, c08 *VertFileName, c08 *FragFileName) \
-    INTERN(void API_ENTRY, OpenGL, DebugCallback, u32 Source, u32 Type, u32 ID, u32 Severity, s32 Length, c08 *Message, vptr UserParam) \
+    // EXPORT(void, Renderer, Init,        renderer_state *Renderer, heap *Heap, v2u32 WindowSize) \
+    // EXPORT(void, Renderer, Draw,        renderer_state *Renderer) \
+    // INTERN(u32,  OpenGL,   LoadShaders, c08 *VertFileName, c08 *FragFileName) \
+    // INTERN(void API_ENTRY, OpenGL, DebugCallback, u32 Source, u32 Type, u32 ID, u32 Severity, s32 Length, c08 *Message, vptr UserParam) \

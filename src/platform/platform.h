@@ -279,4 +279,6 @@ struct platform_state {
     platform_updates Updates;
     u08 Buttons[5];
     u08 Keys[256];
+    
+    r32 FPS;
 };

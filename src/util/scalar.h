@@ -12,12 +12,19 @@
 #define R32_INF LITERAL_CAST(u32, 0x7F800000, r32)
 #define R32_PI  3.14159265359f
 
+#define S08_MIN 0x80
+#define S08_MAX 0x7F
 #define S16_MIN 0x8000
 #define S16_MAX 0x7FFF
+#define S32_MIN 0x80000000
 #define S32_MAX 0x7FFFFFFF
+#define S64_MIN 0x8000000000000000
+#define S64_MAX 0x7FFFFFFFFFFFFFFF
 
+#define U08_MAX 0xFF
 #define U16_MAX 0xFFFF
 #define U32_MAX 0xFFFFFFFF
+#define U64_MAX 0xFFFFFFFFFFFFFFFF
 
 internal r32 R32_Floor(r32 N);
 internal r32 R32_Ceil(r32 N);

@@ -167,15 +167,18 @@ Mesh_AddObjects(mesh *Mesh,
 
 internal void
 Mesh_UpdateVertices(mesh *Mesh,
-                    mesh_object *Object)
+                    mesh_object Object)
 {
-    u32 ObjectIndex = Object->Index;
+    u32 ObjectIndex = Object.Index;
+    
     u32 CurrOffset = ((u32*)Mesh->VertexOffsets->Data)[ObjectIndex]*Mesh->VertexSize;
     u32 NextOffset = ((u32*)Mesh->VertexOffsets->Data)[ObjectIndex+1]*Mesh->VertexSize;
     u32 MaxOffset  = ((u32*)Mesh->VertexOffsets->Data)[Mesh->ObjectCount]*Mesh->VertexSize;
+    
     u32 OldSize = NextOffset - CurrOffset;
-    u32 NewSize = Object->Vertices->Size;
+    u32 NewSize = Object.Vertices->Size;
     s32 DeltaSize = NewSize - OldSize;
+    
     if(DeltaSize > 0) {
         u08 *PrevData = Mesh->Vertices->Data;
         heap *Heap = Heap_GetHeap(Mesh->Vertices);
@@ -187,26 +190,30 @@ Mesh_UpdateVertices(mesh *Mesh,
         Mem_Cpy((u08*)Mesh->Vertices->Data+CurrOffset+NewSize, (u08*)Mesh->Vertices->Data+NextOffset, MaxOffset-NextOffset);
         Heap_Resize(Mesh->Vertices, Mesh->Vertices->Size+DeltaSize);
     }
-    Mem_Cpy((u08*)Mesh->Vertices->Data+CurrOffset, Object->Vertices->Data, NewSize);
+    
+    Mem_Cpy((u08*)Mesh->Vertices->Data+CurrOffset, Object.Vertices->Data, NewSize);
     if(DeltaSize != 0) {
         for(u32 I = ObjectIndex+1; I <= Mesh->ObjectCount; I++)
             ((u32*)Mesh->VertexOffsets->Data)[I] += DeltaSize/Mesh->VertexSize;
         OpenGL_BufferData(GL_ARRAY_BUFFER, Mesh->Vertices->Size, Mesh->Vertices->Data,
                           (Mesh->Flags & MESH_IS_DYNAMIC) ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
-    } else
-        OpenGL_BufferSubData(GL_ARRAY_BUFFER, CurrOffset, NewSize, Object->Vertices->Data);
+    } else {
+        s32 Size;
+        OpenGL_GetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &Size);
+        OpenGL_BufferSubData(GL_ARRAY_BUFFER, CurrOffset, NewSize, (u08*)Mesh->Vertices->Data+CurrOffset);
+    }
 }
 
 internal void
 Mesh_UpdateIndices(mesh *Mesh,
-                   mesh_object *Object)
+                   mesh_object Object)
 {
-    u32 ObjectIndex = Object->Index;
+    u32 ObjectIndex = Object.Index;
     u32 CurrOffset = ((u32*)Mesh->IndexOffsets->Data)[ObjectIndex]*sizeof(u32);
     u32 NextOffset = ((u32*)Mesh->IndexOffsets->Data)[ObjectIndex+1]*sizeof(u32);
     u32 MaxOffset  = ((u32*)Mesh->IndexOffsets->Data)[Mesh->ObjectCount]*sizeof(u32);
     u32 OldSize = NextOffset - CurrOffset;
-    u32 NewSize = Object->Indices->Size;
+    u32 NewSize = Object.Indices->Size;
     s32 DeltaSize = NewSize - OldSize;
     if(DeltaSize > 0) {
         u08 *PrevData = Mesh->Indices->Data;
@@ -219,7 +226,7 @@ Mesh_UpdateIndices(mesh *Mesh,
         Mem_Cpy((u08*)Mesh->Indices->Data+CurrOffset+NewSize, (u08*)Mesh->Indices->Data+NextOffset, MaxOffset-NextOffset);
         Heap_Resize(Mesh->Indices, Mesh->Indices->Size+DeltaSize);
     }
-    Mem_Cpy((u08*)Mesh->Indices->Data+CurrOffset, Object->Indices->Data, NewSize);
+    Mem_Cpy((u08*)Mesh->Indices->Data+CurrOffset, Object.Indices->Data, NewSize);
     OpenGL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, Mesh->EBO);
     if(DeltaSize != 0) {
         for(u32 I = ObjectIndex+1; I <= Mesh->ObjectCount; I++)
@@ -227,14 +234,14 @@ Mesh_UpdateIndices(mesh *Mesh,
         OpenGL_BufferData(GL_ELEMENT_ARRAY_BUFFER, Mesh->Indices->Size, Mesh->Indices->Data,
                           (Mesh->Flags & MESH_IS_DYNAMIC) ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
     } else
-        OpenGL_BufferSubData(GL_ELEMENT_ARRAY_BUFFER, CurrOffset, NewSize, Object->Indices->Data);
+        OpenGL_BufferSubData(GL_ELEMENT_ARRAY_BUFFER, CurrOffset, NewSize, Object.Indices->Data);
 }
 
 internal void
 Mesh_UpdateMatrix(mesh *Mesh,
-                  m4x4r32 Matrix,
                   mesh_object Object)
 {
+    m4x4r32 Matrix = M4x4r32_Mul(M4x4r32_Mul(Object.TranslationMatrix, Object.RotationMatrix), Object.ScalingMatrix);
     ((m4x4r32*)Mesh->Matrices->Data)[Object.Index] = Matrix;
     OpenGL_BindBuffer(GL_SHADER_STORAGE_BUFFER, Mesh->MatrixSSBO);
     OpenGL_BufferSubData(GL_SHADER_STORAGE_BUFFER, Object.Index*sizeof(m4x4r32), sizeof(m4x4r32), Matrix.E);

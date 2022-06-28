@@ -38,6 +38,7 @@
 #define GL_DEBUG_TYPE_PERFORMANCE 0x8250
 #define GL_DEBUG_TYPE_OTHER       0x8251
 #define GL_TEXTURE0               0x84C0
+#define GL_BUFFER_SIZE            0x8764
 #define GL_ARRAY_BUFFER           0x8892
 #define GL_ELEMENT_ARRAY_BUFFER   0x8893
 #define GL_STATIC_DRAW            0x88E4
@@ -109,6 +110,7 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
     IMPORT(void, GenBuffers,                  s32 Count, u32 *BufferIDs) \
     IMPORT(void, GenSamplers,                 s32 Count, u32 *SamplerIDs) \
     IMPORT(void, GenVertexArrays,             s32 Count, u32 *ArrayIDs) \
+    IMPORT(void, GetBufferParameteriv,        u32 Target, u32 Value, s32 *Data) \
     IMPORT(void, GetProgramiv,                u32 Program, u32 ParamName, s32 *Param) \
     IMPORT(void, GetProgramInfoLog,           u32 Program, s32 BufferSize, s32 *Length, c08 *InfoLog) \
     IMPORT(void, GetShaderiv,                 u32 Shader, u32 ParamName, s32 *Param) \

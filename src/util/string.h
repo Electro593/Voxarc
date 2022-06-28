@@ -16,7 +16,6 @@ typedef struct string {
     c08 *Text;
 } string;
 
-internal void String_Free(string String);
 internal string U64_ToString(u64 N, u08 Radix);
 internal string U32_ToString(u32 N, u08 Radix);
 internal string U16_ToString(u16 N, u08 Radix);

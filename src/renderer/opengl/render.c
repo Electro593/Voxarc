@@ -24,6 +24,8 @@ internal u32
 Renderer_LoadShaders(c08 *VertFileName,
                      c08 *FragFileName)
 {
+    Stack_Push();
+    
     s32 Result=FALSE, InfoLogLength;
     u32 Vert=0, Frag=0;
     c08 *ProgramErrorMessage;
@@ -36,7 +38,6 @@ Renderer_LoadShaders(c08 *VertFileName,
         VertCode = File_Read(VertFileName, 0, 0);
         OpenGL_ShaderSource(Vert, 1, &VertCode.Text, NULL);
         OpenGL_CompileShader(Vert);
-        String_Free(VertCode);
         OpenGL_AttachShader(Program, Vert);
     }
     
@@ -45,7 +46,6 @@ Renderer_LoadShaders(c08 *VertFileName,
         FragCode = File_Read(FragFileName, 0, 0);
         OpenGL_ShaderSource(Frag, 1, &FragCode.Text, NULL);
         OpenGL_CompileShader(Frag);
-        String_Free(FragCode);
         OpenGL_AttachShader(Program, Frag);
     }
     
@@ -64,6 +64,8 @@ Renderer_LoadShaders(c08 *VertFileName,
         OpenGL_DetachShader(Program, Frag);
         OpenGL_DeleteShader(Frag);
     }
+    
+    Stack_Pop();
     
     return Program;
 }
@@ -274,6 +276,7 @@ Renderer_Init(renderer_state *Renderer,
     Renderer->Dir = (v3r32){0,0,0};
     Renderer->ViewMatrix = M4x4r32_I;
     Renderer->PerspectiveMatrix = M4x4r32_I;
+    Renderer->WindowSize = WindowSize;
     
     assetpack_tag *Tag = Assetpack_FindFirstTag(Renderer->Assetpack, TAG_ATLAS_DESCRIPTOR);
     Assert(Tag);
@@ -283,66 +286,83 @@ Renderer_Init(renderer_state *Renderer,
     Renderer_LoadPTProgram(Renderer, TRUE);
     Renderer_LoadGlyphProgram(Renderer, TRUE);
     
-    ui_font Font = {0};
-    Font.Assetpack = Renderer->Assetpack;
+    Mem_Set(&Renderer->Font, 0, sizeof(ui_font));
+    Renderer->Font.Assetpack = Renderer->Assetpack;
     
     ui_style Style;
-    Style.Font = &Font;
+    Style.Font = &Renderer->Font;
     Style.ZIndex = 0;
     Style.TabSize = 80.0f;
-    Style.FontSize = 40.0f;
-    Style.Size = (v2u32){400, 400};
+    Style.FontSize = 30.0f;
+    Style.Size = (v2u32){800, 400};
     Style.StringOffset = (v2u32){20, 20};
     
-    ui_string UIString = MakeUIString(Renderer->Heap, CString("Hello, aa\taaaaaaaaaa aaaaaaaaaaaaaaa\nHow are\tyou today?"), Style);
+    Renderer->Style = Style;
+    
+    ui_string UIString = MakeUIString(Renderer->Heap, CString("Position (X,Y,Z): "), Style);
     mesh_object Object = MakeUIStringObject(Renderer->Heap, UIString, (v2u32){10, 0}, WindowSize);
     
-    // Heap_Free(UIString.Lines);
-    
-    
-    // c08 Codepoint = 'A';
-    // Tag = Assetpack_FindExactTag(Renderer->Assetpack, TAG_CODEPOINT, (vptr)(u64)Codepoint);
-    // u32 Bytes = (u64)Tag->Assets[0] - (u64)Renderer->Assetpack.Assets;
-    // Assert((Bytes & 3) == 0);
-    
-    // mesh_object Object;
-    // Object.Vertices = Heap_Allocate(Renderer->Heap, 4*sizeof(glyph_vertex));
-    // Object.Indices = Heap_Allocate(Renderer->Heap, 6*sizeof(u32));
-    // u32 *Index = Object.Indices->Data;
-    // glyph_vertex *Vertex = Object.Vertices->Data;
-    // *Vertex++ = (glyph_vertex){{-0x7FFF, -4096}, (0<<24) | Bytes | 0b00};
-    // *Vertex++ = (glyph_vertex){{ 0x7FFF, -4096}, (0<<24) | Bytes | 0b01};
-    // *Vertex++ = (glyph_vertex){{ 0x7FFF,  4096}, (0<<24) | Bytes | 0b11};
-    // *Vertex++ = (glyph_vertex){{-0x7FFF,  4096}, (0<<24) | Bytes | 0b10};
-    // *Index++ = 0;
-    // *Index++ = 1;
-    // *Index++ = 2;
-    // *Index++ = 0;
-    // *Index++ = 2;
-    // *Index++ = 3;
-    // Object.TranslationMatrix = M4x4r32_I;
-    // Object.ScalingMatrix = M4x4r32_I;
-    // Object.RotationMatrix = M4x4r32_I;
     mesh_object *Objects[] = {&Object};
     Mesh_AddObjects(&Renderer->GlyphMesh, 1, Objects);
-    Mesh_FreeObject(Object);
     
     Mesh_Update(&Renderer->GlyphMesh);
+    
+    Renderer->ObjectIndex = Object.Index;
 }
 
 internal void
-Renderer_Draw(renderer_state *Renderer)
+Renderer_Draw(renderer_state *Renderer, r32 FPS)
 {
     // Hot-reload the shaders
     Renderer_LoadPC3Program(Renderer, FALSE);
     Renderer_LoadPTProgram(Renderer, FALSE);
     Renderer_LoadGlyphProgram(Renderer, FALSE);
     
+    
+    
+    Stack_Push();
+    
+    string String = CString("Position (X, Y, Z): ");
+    String = String_Cat(String, R32_ToString(Renderer->Pos.X, 4));
+    String = String_Cat(String, CString(", "));
+    String = String_Cat(String, R32_ToString(Renderer->Pos.Y, 4));
+    String = String_Cat(String, CString(", "));
+    String = String_Cat(String, R32_ToString(Renderer->Pos.Z, 4));
+    String = String_Cat(String, CString("\n"));
+    
+    String = String_Cat(String, CString("Direction (Pitch, Yaw): "));
+    String = String_Cat(String, R32_ToString(Renderer->Dir.X, 4));
+    String = String_Cat(String, CString(", "));
+    String = String_Cat(String, R32_ToString(Renderer->Dir.Y, 4));
+    String = String_Cat(String, CString("\n"));
+    
+    String = String_Cat(String, CString("FPS: "));
+    String = String_Cat(String, R32_ToString(FPS, 1));
+    String = String_Cat(String, CString("\n"));
+    
+    ui_string UIString = MakeUIString(Renderer->Heap, String, Renderer->Style);
+    mesh_object Object = MakeUIStringObject(Renderer->Heap, UIString, (v2u32){10, 0}, Renderer->WindowSize);
+    Object.Index = Renderer->ObjectIndex;
+    
+    Mesh_Bind(&Renderer->GlyphMesh);
+    
+    Mesh_UpdateVertices(&Renderer->GlyphMesh, Object);
+    Mesh_UpdateIndices(&Renderer->GlyphMesh, Object);
+    Mesh_UpdateMatrix(&Renderer->GlyphMesh, Object);
+    
+    Mesh_FreeObject(Object);
+    
+    // Mesh_Update(&Renderer->GlyphMesh);
+    
+    
+    
     OpenGL_Clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     
     Mesh_Draw(&Renderer->PCMesh);
     Mesh_Draw(&Renderer->PTMesh);
     Mesh_Draw(&Renderer->GlyphMesh);
+    
+    Stack_Pop();
     
     Renderer->DEBUGCounter++;
 }

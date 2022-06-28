@@ -615,9 +615,14 @@ Platform_Entry(void)
     Platform_LoadGame(&GameModule, &GameState, &PlatformExports, &OpenGLFuncs);
     Game_Init(Platform, &GameState, &Renderer);
     
+    s64 CountsPerSecond;
+    Win32_QueryPerformanceFrequency(&CountsPerSecond);
+    
+    s64 StartTime;
+    Win32_QueryPerformanceCounter(&StartTime);
+    
     Platform->ExecutionState = EXECUTION_RUNNING;
-    while(Platform->ExecutionState == EXECUTION_RUNNING)
-    {
+    while(Platform->ExecutionState == EXECUTION_RUNNING) {
         // Will reload the game if necessary
         Platform_LoadGame(&GameModule, &GameState, &PlatformExports, &OpenGLFuncs);
         
@@ -651,6 +656,14 @@ Platform_Entry(void)
         Game_Update(Platform, &GameState, &Renderer);
         
         Win32_SwapBuffers(DeviceContext);
+        
+        s64 EndTime;
+        Win32_QueryPerformanceCounter(&EndTime);
+        
+        s64 ElapsedTime = EndTime - StartTime;
+        StartTime = EndTime;
+        
+        Platform->FPS = CountsPerSecond / (r64)ElapsedTime;
     }
     
     Win32_ExitProcess(0);

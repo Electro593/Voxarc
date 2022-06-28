@@ -72,6 +72,7 @@ Game_Update(platform_state *Platform,
 {
     if(Platform->Updates & WINDOW_RESIZED) {
         Renderer_Resize(Platform->WindowSize, &Renderer->PerspectiveMatrix);
+        Renderer->WindowSize = Platform->WindowSize;
     }
     if(Platform->Updates & CURSOR_DISABLED) {
         Game->PrevCursorPos = Platform->CursorPos;
@@ -161,7 +162,7 @@ Game_Update(platform_state *Platform,
         Platform->Updates &= ~WINDOW_RESIZED;
     }
     
-    Renderer_Draw(Renderer);
+    Renderer_Draw(Renderer, Platform->FPS);
 }
 
 external void API_EXPORT

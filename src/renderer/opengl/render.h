@@ -27,14 +27,17 @@ typedef struct renderer_state {
     v3r32 Pos;
     v3r32 Dir;
     
+    v2u32 WindowSize;
+    
     heap *Heap;
     
     mesh PCMesh;
     mesh PTMesh;
     mesh GlyphMesh;
-    // mesh OtherGlyphMesh;
-    
-    // ui UI;
     
     assetpack Assetpack;
+    
+    ui_font Font;
+    ui_style Style;
+    u32 ObjectIndex;
 } renderer_state;
