@@ -22,11 +22,6 @@ typedef struct renderer_state {
     
     m4x4r32 PerspectiveMatrix, ViewMatrix;
     
-    u32 DEBUGCounter;
-    
-    v3r32 Pos;
-    v3r32 Dir;
-    
     v2u32 WindowSize;
     
     heap *Heap;

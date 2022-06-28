@@ -534,8 +534,8 @@ Platform_WindowCallback(win32_window Window,
             b08 IsUp        = (LParam >> 31) & 0x01;
             
             key_state KeyState;
-            if(IsUp == TRUE && WasDown == TRUE) KeyState = RELEASED;
-            else if(IsUp == FALSE && WasDown == FALSE) KeyState = PRESSED;
+            if(IsUp == TRUE) KeyState = RELEASED;
+            else if(WasDown == FALSE) KeyState = PRESSED;
             else KeyState = HELD;
             
             if(IsExtended)
@@ -553,6 +553,10 @@ Platform_WindowCallback(win32_window Window,
                 else if(ScanCode == 0x54)
                     ScanCode = 0x80 | 0x37;
             }
+            
+            if(IsUp == TRUE) KeyState = RELEASED;
+            else if(Platform->Keys[ScanCode] == RELEASED) KeyState = PRESSED;
+            // else if(Platform->Keys) KeyState = PRESSED;
             
             Platform->Keys[ScanCode] = KeyState;
         } return 0;

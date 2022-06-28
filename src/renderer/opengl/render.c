@@ -271,9 +271,6 @@ Renderer_Init(renderer_state *Renderer,
     
     OpenGL_ClearColor(.2,.2,.2,1);
     
-    Renderer->DEBUGCounter = 0;
-    Renderer->Pos = (v3r32){0,1,-4};
-    Renderer->Dir = (v3r32){0,0,0};
     Renderer->ViewMatrix = M4x4r32_I;
     Renderer->PerspectiveMatrix = M4x4r32_I;
     Renderer->WindowSize = WindowSize;
@@ -294,7 +291,7 @@ Renderer_Init(renderer_state *Renderer,
     Style.ZIndex = 0;
     Style.TabSize = 80.0f;
     Style.FontSize = 30.0f;
-    Style.Size = (v2u32){800, 400};
+    Style.Size = (v2u32){800, 800};
     Style.StringOffset = (v2u32){20, 20};
     
     Renderer->Style = Style;
@@ -311,7 +308,7 @@ Renderer_Init(renderer_state *Renderer,
 }
 
 internal void
-Renderer_Draw(renderer_state *Renderer, r32 FPS)
+Renderer_Draw(game_state *Game, renderer_state *Renderer, r32 FPS)
 {
     // Hot-reload the shaders
     Renderer_LoadPC3Program(Renderer, FALSE);
@@ -323,17 +320,35 @@ Renderer_Draw(renderer_state *Renderer, r32 FPS)
     Stack_Push();
     
     string String = CString("Position (X, Y, Z): ");
-    String = String_Cat(String, R32_ToString(Renderer->Pos.X, 4));
+    String = String_Cat(String, R32_ToString(Game->Pos.X, 4));
     String = String_Cat(String, CString(", "));
-    String = String_Cat(String, R32_ToString(Renderer->Pos.Y, 4));
+    String = String_Cat(String, R32_ToString(Game->Pos.Y, 4));
     String = String_Cat(String, CString(", "));
-    String = String_Cat(String, R32_ToString(Renderer->Pos.Z, 4));
+    String = String_Cat(String, R32_ToString(Game->Pos.Z, 4));
+    String = String_Cat(String, CString("\n"));
+    
+    String = String_Cat(String, CString("Velocity (X, Y, Z): "));
+    String = String_Cat(String, R32_ToString(Game->Velocity.X, 4));
+    String = String_Cat(String, CString(", "));
+    String = String_Cat(String, R32_ToString(Game->Velocity.Y, 4));
+    String = String_Cat(String, CString(", "));
+    String = String_Cat(String, R32_ToString(Game->Velocity.Z, 4));
+    String = String_Cat(String, CString("\n"));
+    
+    String = String_Cat(String, CString("WalkStep (X, Z): "));
+    String = String_Cat(String, S32_ToString(Game->WalkStep.X));
+    String = String_Cat(String, CString(", "));
+    String = String_Cat(String, S32_ToString(Game->WalkStep.Z));
+    String = String_Cat(String, CString("\n"));
+    
+    String = String_Cat(String, CString("Jump Charge: "));
+    String = String_Cat(String, R32_ToString(Game->JumpCharge, 2));
     String = String_Cat(String, CString("\n"));
     
     String = String_Cat(String, CString("Direction (Pitch, Yaw): "));
-    String = String_Cat(String, R32_ToString(Renderer->Dir.X, 4));
+    String = String_Cat(String, R32_ToString(Game->Dir.X, 4));
     String = String_Cat(String, CString(", "));
-    String = String_Cat(String, R32_ToString(Renderer->Dir.Y, 4));
+    String = String_Cat(String, R32_ToString(Game->Dir.Y, 4));
     String = String_Cat(String, CString("\n"));
     
     String = String_Cat(String, CString("FPS: "));
@@ -352,8 +367,6 @@ Renderer_Draw(renderer_state *Renderer, r32 FPS)
     
     Mesh_FreeObject(Object);
     
-    // Mesh_Update(&Renderer->GlyphMesh);
-    
     
     
     OpenGL_Clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
@@ -363,8 +376,6 @@ Renderer_Draw(renderer_state *Renderer, r32 FPS)
     Mesh_Draw(&Renderer->GlyphMesh);
     
     Stack_Pop();
-    
-    Renderer->DEBUGCounter++;
 }
 
 internal void

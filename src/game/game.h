@@ -12,7 +12,20 @@ typedef struct global_state {
 } global_state;
 
 struct game_state {
-    u32 DebugCounter;
+    b08 Key1WasDown;
+    b08 KeySpaceWasDown;
+    v3s32 WalkStep;
+    r32 JumpTime;
+    r32 JumpCharge;
+    
+    v3r32 Dir;
+    v3r32 Pos;
+    v3r32 Velocity;
+    v3r32 Acceleration;
+    r32 Mass;
+    r32 Gravity;
+    
+    b08 Flying;
     v2s32 PrevCursorPos;
     
     global_state GlobalState;

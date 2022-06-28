@@ -281,6 +281,18 @@ R32_SolveCubic(r32 C3, r32 C2, r32 C1, r32 C0,
     
 // }
 
+internal s32
+S32_Sign(s32 N)
+{
+    return 1 + 2*(N >> 31);
+}
+
+internal s32
+S32_Abs(s32 N)
+{
+    return N * S32_Sign(N);
+}
+
 internal u08
 U08_Max(u08 A, u08 B)
 {
