@@ -14,9 +14,12 @@ typedef struct global_state {
 struct game_state {
     b08 Key1WasDown;
     b08 KeySpaceWasDown;
+    b08 TouchingGround;
     v3s32 WalkStep;
     r32 JumpTime;
     r32 JumpCharge;
+    
+    chunk Chunk;
     
     v3r32 Dir;
     v3r32 Pos;

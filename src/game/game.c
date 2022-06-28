@@ -46,7 +46,7 @@ Game_Init(platform_state *Platform,
    
    Game->Flying = TRUE;
    Game->Dir = (v3r32){0,0,0};
-   Game->Pos = (v3r32){0,1,0};
+   Game->Pos = (v3r32){0,0,0};
    Game->Velocity = (v3r32){0,0,0};
    
    Renderer_Init(Renderer, RendererHeap, Platform->WindowSize);
@@ -60,10 +60,10 @@ Game_Init(platform_state *Platform,
       TextureBytes[I] = (u64)((u08*)Asset - (u64)Renderer->Assetpack.Assets);
    }
    
-   chunk Chunk = MakeChunk(RendererHeap, &Renderer->PTMesh, (v3s32){0,0,0}, TextureBytes);
-   mesh_object *Objects[] = {&Chunk.Object};
+   Game->Chunk = MakeChunk(RendererHeap, &Renderer->PTMesh, (v3s32){0,0,0}, TextureBytes);
+   mesh_object *Objects[] = {&Game->Chunk.Object};
    Mesh_AddObjects(&Renderer->PTMesh, 1, Objects);
-   Mesh_FreeObject(Chunk.Object);
+   Mesh_FreeObject(Game->Chunk.Object);
    
    Mesh_Update(&Renderer->PTMesh);
    
@@ -168,14 +168,15 @@ Game_Update(platform_state *Platform,
       r32 JumpVelocity = 5;// realistic: 2.9;
       
       r32 ForceY = Game->Gravity * Game->Mass;
-      if(Game->Pos.Y == 0) {
-         if(Platform->Keys[ScanCode_Space] != RELEASED) {
-            Game->KeySpaceWasDown = TRUE;
-            
-            if(Game->JumpCharge < MaxCharge)
-               Game->JumpCharge++;
-         }
+      
+      if(Platform->Keys[ScanCode_Space] != RELEASED) {
+         Game->KeySpaceWasDown = TRUE;
          
+         if(Game->JumpCharge < (MaxCharge/2) * (Game->TouchingGround+1))
+            Game->JumpCharge++;
+      }
+      
+      if(Game->TouchingGround) {
          if(Platform->Keys[ScanCode_Space] == RELEASED) {
             if(Game->KeySpaceWasDown) {
                Game->JumpTime = Game->JumpCharge;
@@ -184,10 +185,10 @@ Game_Update(platform_state *Platform,
             
             if(Game->JumpTime > 0) {
                Game->JumpTime -= MaxCharge / ReleaseTicks;
-               // Change camera pos here
+               //TODO: Change camera pos here
                
                if(Game->JumpTime <= 0) {
-                  Game->Velocity.Y = (Game->JumpCharge / MaxCharge) * JumpVelocity / TicksPerSecond;
+                  Game->Velocity.Y = (0.8*Game->JumpCharge/MaxCharge + 0.2) * JumpVelocity / TicksPerSecond;
                   Game->JumpCharge = 0;
                } else
                   ForceY += Game->Gravity * Game->Mass;
@@ -195,6 +196,8 @@ Game_Update(platform_state *Platform,
          } else
             ForceY += Game->Gravity * Game->Mass;
       }
+      
+      //TODO: Terminal velocity
       
       Game->Acceleration.Y = ForceY / Game->Mass / (TicksPerSecond*TicksPerSecond);
       Game->Velocity.Y += Game->Acceleration.Y;
@@ -205,11 +208,23 @@ Game_Update(platform_state *Platform,
          Game->Pos.Y += Game->Velocity.Y;
          
          Moved = TRUE;
-      }
-      
-      if(Game->Pos.Y < 0) {
-         Game->Pos.Y = 0;
-         Game->Velocity.Y = 0;
+         
+         Game->TouchingGround = FALSE;
+         v3r32 PlayerSize = {.6,1.8,.6};
+         v3r32 PosInChunk = V3r32_Add(V3r32_Sub(Game->Pos, V3r32_Mul(V3s32_ToV3r32(Game->Chunk.Pos), V3u32_ToV3r32(ChunkDims))), V3r32_DivS(V3u32_ToV3r32(ChunkDims), 2));
+         for(u32 X = (u32)PosInChunk.X; X <= (u32)(PosInChunk.X + PlayerSize.X); X++) {
+            for(u32 Z = (u32)PosInChunk.Z; Z <= (u32)(PosInChunk.Z + PlayerSize.Z); Z++) {
+               b08 R = CollidesWithBlock(Game->Chunk, (v3u32){X, (u32)PosInChunk.Y, Z}, Game->Pos, PlayerSize);
+               Game->TouchingGround |= R;
+            }
+         }
+         
+         if(Game->TouchingGround) {
+            if(PosInChunk.Y > (s32)PosInChunk.Y)
+               Game->Pos.Y = (r32)((s32)PosInChunk.Y+1) + Game->Chunk.Pos.Y*ChunkDims.Y - ChunkDims.Y/2;
+            
+            Game->Velocity.Y = 0;
+         }
       }
    }
    
@@ -230,7 +245,7 @@ Game_Update(platform_state *Platform,
       // v3r32 Right = { SinYaw,           0,           -CosYaw         };
       // v3r32 Up    = {-CosYaw*SinPitch,  CosPitch,    -SinYaw*SinPitch};
       // v3r32 Front = { CosYaw*CosPitch,  SinPitch,     SinYaw*CosPitch};
-      v3r32 Pos   = {-Game->Pos.X,     -Game->Pos.Y, -Game->Pos.Z    };
+      v3r32 Pos   = {-Game->Pos.X,     -(Game->Pos.Y + 1.5), -Game->Pos.Z    };
       
       Renderer->ViewMatrix = (m4x4r32){
          Right.X, Right.Y, Right.Z, V3r32_Dot(Right, Pos),

@@ -47,6 +47,16 @@
         return Result; \
     }
 
+#define DEFINE_VECTOR_SUBS(Count, Type)                                              \
+    internal v##Count##Type                                                          \
+    V##Count##Type##_SubS(v##Count##Type V,                                          \
+                          Type S)                                                    \
+    {                                                                                \
+        v##Count##Type Result;                                                       \
+        MAC_FOR(-, Count, MAC_FOR_OP_SEP_REV, MAC_FOR_FUNC_VS_OP, MAC_FOR_ARGS_VEC); \
+        return Result;                                                               \
+    }
+
 #define DEFINE_VECTOR_MUL(Count, Type) \
     internal v##Count##Type \
     V##Count##Type##_Mul(v##Count##Type A, \
@@ -202,12 +212,15 @@ DEFINE_VECTOR_ADDS(3, r32)
 DEFINE_VECTOR_ADDS(4, r32)
 
 DEFINE_VECTOR_SUB(2, r32)
+DEFINE_VECTOR_SUB(3, r32)
 DEFINE_VECTOR_SUB(2, s16)
 DEFINE_VECTOR_SUB(2, s32)
 DEFINE_VECTOR_SUB(2, u32)
-DEFINE_VECTOR_SUB(3, r32)
+
+DEFINE_VECTOR_SUBS(3, r32)
 
 DEFINE_VECTOR_MUL(2, r32)
+DEFINE_VECTOR_MUL(3, r32)
 
 DEFINE_VECTOR_MULS(2, r32)
 DEFINE_VECTOR_MULS(3, r32)
@@ -220,6 +233,7 @@ DEFINE_VECTOR_DIV(3, r32)
 DEFINE_VECTOR_DIVS(2, r32)
 DEFINE_VECTOR_DIVS(3, r32)
 DEFINE_VECTOR_DIVS(4, r32)
+DEFINE_VECTOR_DIVS(3, u32)
 
 DEFINE_VECTOR_DOT(2, r32)
 DEFINE_VECTOR_DOT(2, s16)
@@ -231,8 +245,11 @@ DEFINE_VECTOR_VOLUME(u32);
 DEFINE_VECTOR_CROSS(2, r32)
 DEFINE_VECTOR_CROSS(2, s16)
 
-DEFINE_VECTOR_CAST(2, s16, r32)
 DEFINE_VECTOR_CAST(3, r32, s32)
+DEFINE_VECTOR_CAST(3, r32, u32)
+DEFINE_VECTOR_CAST(2, s16, r32)
+DEFINE_VECTOR_CAST(3, s32, r32)
+DEFINE_VECTOR_CAST(3, u32, r32)
 
 DEFINE_VECTOR_NOCAST(2, r32)
 DEFINE_VECTOR_NOCAST(3, r32)

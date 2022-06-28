@@ -131,7 +131,7 @@ typedef struct datetime datetime;
 #include <game/ui.h>
 #include <platform/platform.h>
 #include <renderer/renderer.h>
-#include <game/game.h>
 #include <game/world.h>
+#include <game/game.h>
 
 s32 _fltused;

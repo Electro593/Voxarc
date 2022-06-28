@@ -32,6 +32,8 @@ global u32 CubePositions[] = {
    0b01011111111101111111111000000001
 };
 
+global v3u32 ChunkDims = {16, 16, 16};
+
 internal mesh_object
 MakePCBlockObject(mesh *Mesh, heap *Heap, v3r32 Pos, v4u08 Color)
 {
@@ -137,7 +139,6 @@ internal chunk
 MakeChunk(heap *Heap, mesh *Mesh, v3s32 ChunkPos, u32 *TextureBytes)
 {
    // NOTE: Must be <= the 'repeat' max in the pt shaders
-   v3u32 ChunkDims = {16, 16, 16};
    
    chunk Chunk;
    Chunk.Pos = ChunkPos;
@@ -343,6 +344,29 @@ MakeChunk(heap *Heap, mesh *Mesh, v3s32 ChunkPos, u32 *TextureBytes)
    Chunk.Object.RotationMatrix = M4x4r32_I;
    
    return Chunk;
+}
+
+internal b08
+CollidesWithBlock(chunk Chunk, v3u32 BlockPos, v3r32 PlayerPos, v3r32 PlayerSize)
+{
+   v3r32 PosInChunk;
+   PosInChunk.X = PlayerPos.X - Chunk.Pos.X * ChunkDims.X + ChunkDims.X/2;
+   PosInChunk.Y = PlayerPos.Y - Chunk.Pos.Y * ChunkDims.Y + ChunkDims.Y/2;
+   PosInChunk.Z = PlayerPos.Z - Chunk.Pos.Z * ChunkDims.Z + ChunkDims.Z/2;
+   
+   if(PosInChunk.X + PlayerSize.X <= BlockPos.X) return FALSE;
+   if(PosInChunk.Y + PlayerSize.Y <  BlockPos.Y) return FALSE;
+   if(PosInChunk.Z + PlayerSize.Z <= BlockPos.Z) return FALSE;
+   if(PosInChunk.X >= BlockPos.X+1) return FALSE;
+   if(PosInChunk.Y >  BlockPos.Y+1) return FALSE;
+   if(PosInChunk.Z >= BlockPos.Z+1) return FALSE;
+   
+   block_type *Blocks = Chunk.Blocks->Data;
+   block_type Type = Blocks[INDEX_3D(BlockPos.X, BlockPos.Y, BlockPos.Z, ChunkDims.X, ChunkDims.Y)];
+   
+   if(Type == BLOCK_NONE) return FALSE;
+   
+   return TRUE;
 }
 
 //TODO:
