@@ -154,7 +154,10 @@ MakeChunk(heap *Heap, mesh *Mesh, v3s32 ChunkPos, u32 *TextureBytes)
       
       for(u32 Z = 0; Z < ChunkDims.Z; Z++) {
          for(u32 X = 0; X < ChunkDims.X; X++) {
-            Blocks[INDEX_3D(X, Y, Z, ChunkDims.X, ChunkDims.Y)] = Type;
+            if(Y == 3 && Z == 0 && X == 0)
+               Blocks[INDEX_3D(X, Y, Z, ChunkDims.X, ChunkDims.Y)] = BLOCK_TEST;
+            else
+               Blocks[INDEX_3D(X, Y, Z, ChunkDims.X, ChunkDims.Y)] = Type;
          }
       }
    }

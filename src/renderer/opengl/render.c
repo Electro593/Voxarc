@@ -129,7 +129,7 @@ Renderer_LoadPTProgram(renderer_state *Renderer, b08 FirstTime)
         
         if(FirstTime) {
             Renderer->PTMesh.TextureIndex = 0;
-            Mesh_Init(&Renderer->PTMesh, Renderer->Heap, &Renderer->PTProgram, MESH_HAS_TEXTURES);
+            Mesh_Init(&Renderer->PTMesh, Renderer->Heap, &Renderer->PTProgram, MESH_HAS_ELEMENTS|MESH_HAS_TEXTURES);
             
             OpenGL_SamplerParameteri(Renderer->PTMesh.SamplerObject, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             OpenGL_SamplerParameteri(Renderer->PTMesh.SamplerObject, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -178,7 +178,7 @@ Renderer_LoadGlyphProgram(renderer_state *Renderer, b08 FirstTime)
         
         if(FirstTime) {
             Renderer->GlyphMesh.TextureIndex = 0;
-            Mesh_Init(&Renderer->GlyphMesh, Renderer->Heap, &Renderer->GlyphProgram, MESH_IS_FOR_UI|MESH_HAS_TEXTURES|MESH_SHARED_TEXTURE_BUFFER);
+            Mesh_Init(&Renderer->GlyphMesh, Renderer->Heap, &Renderer->GlyphProgram, MESH_IS_FOR_UI|MESH_HAS_ELEMENTS|MESH_HAS_TEXTURES|MESH_SHARED_TEXTURE_BUFFER);
             
             Renderer->GlyphMesh.TextureSSBO = Renderer->PTMesh.TextureSSBO;
             Renderer->GlyphMesh.Atlases = Renderer->PTMesh.Atlases;
@@ -264,8 +264,10 @@ Renderer_Init(renderer_state *Renderer,
     
     OpenGL_Enable(GL_DEPTH_TEST);
     OpenGL_Enable(GL_SCISSOR_TEST);
+    
     OpenGL_Enable(GL_CULL_FACE);
     OpenGL_CullFace(GL_BACK);
+    
     OpenGL_Enable(GL_BLEND);
     OpenGL_BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
@@ -345,6 +347,18 @@ Renderer_Draw(game_state *Game, renderer_state *Renderer, r32 FPS)
     String = String_Cat(String, R32_ToString(Game->JumpCharge, 2));
     String = String_Cat(String, CString("\n"));
     
+        String = String_Cat(String, CString("Looking At: "));
+    if(Game->AimBlockValid) {
+        String = String_Cat(String, S32_ToString(Game->AimBlock.X));
+        String = String_Cat(String, CString(", "));
+        String = String_Cat(String, S32_ToString(Game->AimBlock.Y));
+        String = String_Cat(String, CString(", "));
+        String = String_Cat(String, S32_ToString(Game->AimBlock.Z));
+        String = String_Cat(String, CString("\n"));
+    } else {
+        String = String_Cat(String, CString("None\n"));
+    }
+    
     String = String_Cat(String, CString("Direction (Pitch, Yaw): "));
     String = String_Cat(String, R32_ToString(Game->Dir.X, 4));
     String = String_Cat(String, CString(", "));
@@ -371,9 +385,12 @@ Renderer_Draw(game_state *Game, renderer_state *Renderer, r32 FPS)
     
     OpenGL_Clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     
-    Mesh_Draw(&Renderer->PCMesh);
-    Mesh_Draw(&Renderer->PTMesh);
-    Mesh_Draw(&Renderer->GlyphMesh);
+    Mesh_Draw(&Renderer->PTMesh, GL_TRIANGLES);
+    
+    if(Game->AimBlockValid)
+        Mesh_DrawPartial(&Renderer->PCMesh, GL_LINES, Game->AimBlockObjectIndex, 1);
+    
+    Mesh_Draw(&Renderer->GlyphMesh, GL_TRIANGLES);
     
     Stack_Pop();
 }

@@ -7,6 +7,11 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+// typedef struct collision_pole {
+//     u32 IntersectionCount;
+//     r32 *Intersections;
+// } collision_pole;
+
 typedef struct global_state {
     stack *Stack;
 } global_state;
@@ -23,6 +28,9 @@ struct game_state {
     
     v3r32 Dir;
     v3r32 Pos;
+    v3s32 AimBlock;
+    b08 AimBlockValid;
+    u32 AimBlockObjectIndex;
     v3r32 Velocity;
     v3r32 Acceleration;
     r32 Mass;

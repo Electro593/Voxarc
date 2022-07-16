@@ -7,12 +7,16 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#define GL_LINES                  0x0001
+#define GL_LINE_LOOP              0x0002
 #define GL_TRIANGLES              0x0004
 #define GL_SRC_ALPHA              0x0302
 #define GL_ONE_MINUS_SRC_ALPHA    0x0303
 #define GL_FRONT                  0x0404
 #define GL_BACK                   0x0405
 #define GL_FRONT_AND_BACK         0x0408
+#define GL_LINE_SMOOTH            0x0B20
+#define GL_SMOOTH_LINE_WIDTH_RANGE 0x0B22
 #define GL_CULL_FACE              0x0B44
 #define GL_DEPTH_TEST             0x0B71
 #define GL_BLEND                  0x0BE2
@@ -37,6 +41,7 @@
 #define GL_DEBUG_SOURCE_API       0x8246
 #define GL_DEBUG_TYPE_PERFORMANCE 0x8250
 #define GL_DEBUG_TYPE_OTHER       0x8251
+#define GL_ALIASED_LINE_WIDTH_RANGE 0x846E
 #define GL_TEXTURE0               0x84C0
 #define GL_BUFFER_SIZE            0x8764
 #define GL_ARRAY_BUFFER           0x8892
@@ -80,7 +85,9 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
     IMPORT(void, DrawArrays,    u32 Mode, s32 First, s32 Count) \
     IMPORT(void, DrawElements,  u32 Mode, s32 Count, u32 Type, vptr Indices) \
     IMPORT(void, Enable,        u32 Capability) \
+    IMPORT(void, GetFloatv,     u32 Name, r32 *Data) \
     IMPORT(void, GenTextures,   s32 Count, u32 *Textures) \
+    IMPORT(void, LineWidth,     r32 Width) \
     IMPORT(void, PolygonMode,   u32 Face, u32 Mode) \
     IMPORT(void, Scissor,       s32 X, s32 Y, s32 Width, s32 Height) \
     IMPORT(void, TexParameteri, u32 Target, u32 Name, s32 Param) \
@@ -117,6 +124,7 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
     IMPORT(void, GetShaderInfoLog,            u32 Shader, s32 BufferSize, s32 *Length, c08 *InfoLog) \
     IMPORT(s32,  GetUniformLocation,          u32 Program, c08 *Name) \
     IMPORT(void, LinkProgram,                 u32 Program) \
+    IMPORT(void, MultiDrawArrays,             u32 Mode, s32 *First, s32 *Count, s32 PrimitiveCount) \
     IMPORT(void, MultiDrawElementsBaseVertex, u32 Mode, s32 *Count, u32 Type, vptr *Indices, s32 PrimitiveCount, s32 *BaseVertex) \
     IMPORT(void, TexBuffer,                   u32 Target, u32 InternalFormat, u32 Buffer) \
     IMPORT(void, TexImage3D,                  u32 Target, s32 Level, s32 InternalFormat, s32 Width, s32 Height, s32 Depth, s32 Border, u32 Format, u32 Type, vptr Pixels) \
