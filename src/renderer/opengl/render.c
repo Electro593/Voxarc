@@ -297,7 +297,6 @@ Renderer_Resize(v2u32 NewSize, m4x4r32 *OrthographicMatrix, m4x4r32 *Perspective
     
     r32 AspectRatio = (r32)NewSize.X / (r32)NewSize.Y;
     r32 FOV = R32_PI/2;
-    //TODO: Implement a tan function
     r32 CotHalfFOV = R32_cos(FOV/2) / R32_sin(FOV/2);
     r32 NearZ = 0.1f;
     r32 FarZ = 256;

@@ -256,6 +256,7 @@ DEFINE_VECTOR_NOCAST(3, r32)
 
 DEFINE_VECTOR_CLAMP(3, r32, R32)
 DEFINE_VECTOR_CLAMP(4, r32, R32)
+DEFINE_VECTOR_CLAMP(3, s32, S32)
 
 DEFINE_VECTOR_LERP(4, u08, U08)
 
@@ -376,4 +377,52 @@ M4x4r32_Mul(m4x4r32 A,
     Result.V[3].E[2] = V4r32_Dot(A.V[3], B.V[2]);
     Result.V[3].E[3] = V4r32_Dot(A.V[3], B.V[3]);
     return Result;
+}
+
+
+
+
+
+
+
+internal b08
+RayPlaneIntersection(v3r32 PlanePoint, v3r32 PlaneNormal,
+                     v3r32 RayPoint, v3r32 RayDir,
+                     r32 *T)
+{
+    v3r32 P0 = PlanePoint;
+    v3r32 N = PlaneNormal;
+    
+    v3r32 L0 = RayPoint;
+    v3r32 L = RayDir;
+    
+    *T = V3r32_Dot(V3r32_Sub(P0, L0), N) / V3r32_Dot(L, N);
+    
+    return TRUE;
+}
+
+internal b08
+RayRectIntersectionA(v3r32 RectStart, v3r32 RectEnd, v3r32 RectNormal,
+                     v3r32 RayPoint, v3r32 RayDir,
+                     r32 *T, v3r32 *Intersection)
+{
+    v3r32 P0 = RectStart;
+    v3r32 N = RectNormal;
+    
+    v3r32 L0 = RayPoint;
+    v3r32 L = RayDir;
+    
+    r32 t = V3r32_Dot(V3r32_Sub(P0, L0), N) / V3r32_Dot(L, N);
+    if(T) *T = t;
+    
+    v3r32 I = V3r32_Add(L0, V3r32_MulS(L, t));
+    if(Intersection) *Intersection = I;
+    
+    r32 Epsilon = 0.000001;
+    if(R32_Within(I.X, RectStart.X, RectEnd.X, Epsilon) &&
+       R32_Within(I.Y, RectStart.Y, RectEnd.Y, Epsilon) &&
+       R32_Within(I.Z, RectStart.Z, RectEnd.Z, Epsilon))
+        return TRUE;
+    
+    return FALSE;
 }

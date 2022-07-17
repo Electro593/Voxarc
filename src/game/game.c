@@ -397,8 +397,89 @@ Game_Update(platform_state *Platform,
       block_type *Blocks = Game->Chunk.Blocks->Data;
       Game->AimBlockValid = FALSE;
       
-      // TODO: Rasterize the ray. Basically, instead of incrementing by blocks,
-      // we need to 'line draw' to not miss any blocks at corners.
+      // TODO: Consider an incremental approach, using the face the ray
+      // exists to determine the text block to test. It would reduce
+      // the search cost when radius gets larger.
+      {
+         v3s32 Min, Max;
+         
+         if(AimDir.X < 0) {
+            Min.X = AimBase.X - AimRange;
+            Max.X = AimBase.X;
+         } else {
+            Min.X = AimBase.X;
+            Max.X = AimBase.X + AimRange;
+         }
+         if(Min.X < 0) Min.X = 0;
+         if(Max.X > ChunkDims.X-1) Max.X = ChunkDims.X-1;
+         
+         if(AimDir.Y < 0) {
+            Min.Y = AimBase.Y - AimRange;
+            Max.Y = AimBase.Y;
+         } else {
+            Min.Y = AimBase.Y;
+            Max.Y = AimBase.Y + AimRange;
+         }
+         if(Min.Y < 0) Min.Y = 0;
+         if(Max.Y > ChunkDims.Y-1) Max.Y = ChunkDims.Y-1;
+         
+         if(AimDir.Z < 0) {
+            Min.Z = AimBase.Z - AimRange;
+            Max.Z = AimBase.Z;
+         } else {
+            Min.Z = AimBase.Z;
+            Max.Z = AimBase.Z + AimRange;
+         }
+         if(Min.Z < 0) Min.Z = 0;
+         if(Max.Z > ChunkDims.Z-1) Max.Z = ChunkDims.Z-1;
+         
+         r32 MinT = R32_MAX;
+         for(u32 X = Min.X; X <= Max.X; X++) {
+            for(u32 Y = Min.Y; Y <= Max.Y; Y++) {
+               for(u32 Z = Min.Z; Z <= Max.Z; Z++) {
+                  u32 I = INDEX_3D(X, Y, Z, ChunkDims.X, ChunkDims.Y);
+                  if(Blocks[I] == BLOCK_NONE) continue;
+                  
+                  if(X == 0 && Y == 3 && Z == 15)
+                     NOP;
+                  
+                  r32 TX, TY, TZ;
+                  b08 IX, IY, IZ;
+                  
+                  if(AimDir.X < 0)
+                     IX = RayRectIntersectionA((v3r32){X+1, Y,   Z  }, (v3r32){X+1, Y+1, Z+1}, (v3r32){ 1, 0, 0}, AimBase, AimDir, &TX, NULL);
+                  else
+                     IX = RayRectIntersectionA((v3r32){X,   Y,   Z  }, (v3r32){X,   Y+1, Z+1}, (v3r32){-1, 0, 0}, AimBase, AimDir, &TX, NULL);
+                  
+                  if(AimDir.Y < 0)
+                     IY = RayRectIntersectionA((v3r32){X,   Y+1, Z  }, (v3r32){X+1, Y+1, Z+1}, (v3r32){ 0, 1, 0}, AimBase, AimDir, &TY, NULL);
+                  else
+                     IY = RayRectIntersectionA((v3r32){X,   Y,   Z  }, (v3r32){X+1, Y,   Z+1}, (v3r32){ 0,-1, 0}, AimBase, AimDir, &TY, NULL);
+                  
+                  if(AimDir.Z < 0)
+                     IZ = RayRectIntersectionA((v3r32){X,   Y,   Z+1}, (v3r32){X+1, Y+1, Z+1}, (v3r32){ 0, 0, 1}, AimBase, AimDir, &TZ, NULL);
+                  else
+                     IZ = RayRectIntersectionA((v3r32){X,   Y,   Z  }, (v3r32){X+1, Y+1, Z  }, (v3r32){ 0, 0,-1}, AimBase, AimDir, &TZ, NULL);
+                  
+                  r32 T = R32_MAX;
+                  
+                  if(IX && TX >= 0 && TX < T) T = TX;
+                  if(IY && TY >= 0 && TY < T) T = TY;
+                  if(IZ && TZ >= 0 && TZ < T) T = TZ;
+                  
+                  if(T < MinT) {
+                     MinT = T;
+                     Game->AimBlock = (v3s32){X, Y, Z};
+                  }
+               }
+            }
+         }
+         
+         if(MinT != R32_MAX) {
+            #define TEST_THING 0
+#if TEST_THING
+         }
+      }
       
       for(u32 R = 0; R <= AimRange; R++) {
          v3r32 AimVector = V3r32_Add(AimBase, V3r32_MulS(AimDir, R));
@@ -409,14 +490,14 @@ Game_Update(platform_state *Platform,
             BlockPos.X < ChunkDims.X && BlockPos.Y < ChunkDims.Y && BlockPos.Z < ChunkDims.Z &&
             Blocks[I] != BLOCK_NONE) {
             Game->AimBlock = BlockPos;
+#endif
             Game->AimBlockValid = TRUE;
-            
-            v4u08 C = {255, 255, 255, 255};
-            v3s32 B = BlockPos;
-            v3u32 D = ChunkDims;
             
             p_vertex *Vertex = Mesh_GetVertices(&Renderer->PMesh, Game->AimBlockObjectIndex);
             
+            #if 1
+            v3s32 B = Game->AimBlock;
+            v3u32 D = ChunkDims;
             v3r32 P = {(B.X-8)/8.0f, (B.Y-8)/8.0f, (B.Z-8)/8.0f};
             r32 S = 1/8.0f;
             
@@ -447,15 +528,55 @@ Game_Update(platform_state *Platform,
             *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+0})};
             *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+S})};
             
+            r32 Factor = 0;
             m4x4r32 Translation = M4x4r32_Translation(ChunkPos.X*16, ChunkPos.Y*16, ChunkPos.Z*16);
-            m4x4r32 Scaling     = M4x4r32_Scaling(8, 8, 8);
+            m4x4r32 Scaling     = M4x4r32_Scaling(8+Factor, 8+Factor, 8+Factor);
             m4x4r32 Rotation    = M4x4r32_I;
+            #else
+            v3s32 B = Game->AimBlock;
+            v3u32 D = ChunkDims;
+            v3r32 P = {(B.X-8), (B.Y-8), (B.Z-8)};
+            r32 S = 2;
+            
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+0, -1+0, -1+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+0, -1+S, -1+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+S, -1+0, -1+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+S, -1+S, -1+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+0, -1+0, -1+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+0, -1+S, -1+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+S, -1+0, -1+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+S, -1+S, -1+S})};
+            
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+0, -1+0, -1+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+S, -1+0, -1+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+0, -1+0, -1+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+S, -1+0, -1+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+0, -1+0, -1+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+0, -1+0, -1+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+S, -1+0, -1+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+S, -1+0, -1+S})};
+            
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+0, -1+S, -1+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+S, -1+S, -1+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+0, -1+S, -1+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+S, -1+S, -1+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+0, -1+S, -1+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+0, -1+S, -1+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+S, -1+S, -1+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+S, -1+S, -1+S})};
+            
+            r32 Factor = 0;
+            m4x4r32 Translation = M4x4r32_Translation(ChunkPos.X*16 - 7.5 + B.X - Factor/2, ChunkPos.Y*16 - 7.5 + B.Y - Factor/2, ChunkPos.Z*16 - 7.5 + B.Z - Factor/2);
+            m4x4r32 Scaling     = M4x4r32_Scaling(0.5+Factor, 0.5+Factor, 0.5+Factor);
+            m4x4r32 Rotation    = M4x4r32_I;
+            #endif
             
             m4x4r32 *Matrix = Mesh_GetMatrix(&Renderer->PMesh, Game->AimBlockObjectIndex);
             *Matrix = M4x4r32_Mul(M4x4r32_Mul(Translation, Rotation), Scaling);
             Mesh_Update(&Renderer->PMesh);
-            
+#if TEST_THING
             break;
+#endif
          }
       }
    }

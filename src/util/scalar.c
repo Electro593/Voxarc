@@ -81,6 +81,12 @@ R32_Lerp(r32 S, r32 E, r32 t)
     return S + t*(E-S);
 }
 
+internal b08
+R32_Within(r32 Num, r32 Start, r32 End, r32 Epsilon)
+{
+    return (Start-Epsilon < Num && Num < End+Epsilon);
+}
+
 internal r32
 R32_Clamp(r32 N, r32 S, r32 E)
 {
@@ -180,6 +186,13 @@ R32_cos(r32 R)
 }
 
 internal r32
+R32_tan(r32 R)
+{
+    //TODO: Make this use a lookup table
+    return R32_sin(R) / R32_cos(R);
+}
+
+internal r32
 R32_arccos(r32 N)
 {
     if(N > 1) return R32_INF;
@@ -274,13 +287,6 @@ R32_SolveCubic(r32 C3, r32 C2, r32 C1, r32 C0,
     return 3;
 }
 
-// internal u32
-// R32_SolveQuintic(r32 C5, r32 C4, r32 C3, r32 C2, r32 C1, r32 C0,
-//                  r32 *Roots)
-// {
-    
-// }
-
 internal s32
 S32_Sign(s32 N)
 {
@@ -291,6 +297,14 @@ internal s32
 S32_Abs(s32 N)
 {
     return N * S32_Sign(N);
+}
+
+internal s32
+S32_Clamp(s32 N, s32 S, s32 E)
+{
+    if(N < S) return S;
+    if(N > E) return E;
+    return N;
 }
 
 internal u08
