@@ -89,6 +89,7 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
     IMPORT(void, Clear,         u32 Mask) \
     IMPORT(void, ClearColor,    r32 Red, r32 Green, r32 Blue, r32 Alpha) \
     IMPORT(void, CullFace,      u32 Mode) \
+    IMPORT(void, Disable,       u32 Capability) \
     IMPORT(void, DrawArrays,    u32 Mode, s32 First, s32 Count) \
     IMPORT(void, DrawElements,  u32 Mode, s32 Count, u32 Type, vptr Indices) \
     IMPORT(void, Enable,        u32 Capability) \

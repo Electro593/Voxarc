@@ -60,11 +60,18 @@ Game_Init(platform_state *Platform,
       TextureBytes[I] = (u64)((u08*)Asset - (u64)Renderer->Assetpack.Assets);
    }
    
-   Game->Chunk = MakeChunk(RendererHeap, &Renderer->PTMesh, (v3s32){0,0,0}, TextureBytes);
-   mesh_object *Objects[] = {&Game->Chunk.Object};
-   Mesh_AddObjects(&Renderer->PTMesh, 1, Objects);
-   Mesh_FreeObject(Game->Chunk.Object);
+   u32 ChunkCount = 1;
+   Game->Chunks = Heap_Allocate(RendererHeap, ChunkCount * sizeof(chunk));
+   chunk *Chunks = Game->Chunks->Data;
    
+   Chunks[0] = MakeChunk(RendererHeap, &Renderer->PTMesh, (v3s32){0,0,0}, TextureBytes);
+   // Chunks[1] = MakeChunk(RendererHeap, &Renderer->PTMesh, (v3s32){1,0,0}, TextureBytes);
+   // mesh_object *Objects[] = {&Chunks[0].Object, &Chunks[1].Object};
+   mesh_object *Objects[] = {&Chunks[0].Object};
+   
+   Mesh_AddObjects(&Renderer->PTMesh, ChunkCount, Objects);
+   for(u32 I = 0; I < ChunkCount; I++)
+      Mesh_FreeObject(Chunks[I].Object);
    Mesh_Update(&Renderer->PTMesh);
    
    Game->AimBlockObjectIndex = Mesh_ReserveObject(&Renderer->PMesh, 24, 0);
@@ -321,18 +328,30 @@ Game_Update(platform_state *Platform,
             Moved = TRUE;
             
             Game->TouchingGround = FALSE;
+            chunk *Chunks = Game->Chunks->Data;
             v3r32 PlayerSize = {.6,1.8,.6};
-            v3r32 PosInChunk = V3r32_Add(V3r32_Sub(Game->Pos, V3r32_Mul(V3s32_ToV3r32(Game->Chunk.Pos), V3u32_ToV3r32(ChunkDims))), V3r32_DivS(V3u32_ToV3r32(ChunkDims), 2));
+            v3s32 ChunkPos = {
+               Game->Pos.X / ChunkDims.X,
+               Game->Pos.Y / ChunkDims.Y,
+               Game->Pos.Z / ChunkDims.Z
+            };
+            v3r32 PosInChunk = {
+               Game->Pos.X - ChunkPos.X*ChunkDims.X,
+               Game->Pos.Y - ChunkPos.Y*ChunkDims.Y,
+               Game->Pos.Z - ChunkPos.Z*ChunkDims.Z
+            };
+            chunk Chunk = Chunks[0];
+            //TODO: Fix this for multiple chunks
             for(s32 X = (s32)PosInChunk.X; X <= (s32)(PosInChunk.X + PlayerSize.X); X++) {
                for(s32 Z = (s32)PosInChunk.Z; Z <= (s32)(PosInChunk.Z + PlayerSize.Z); Z++) {
-                  b08 R = CollidesWithBlock(Game->Chunk, (v3u32){X, (u32)PosInChunk.Y, Z}, Game->Pos, PlayerSize);
+                  b08 R = CollidesWithBlock(Chunk, (v3u32){X, (u32)PosInChunk.Y, Z}, Game->Pos, PlayerSize);
                   Game->TouchingGround |= R;
                }
             }
             
             if(Game->TouchingGround) {
                if(PosInChunk.Y > (s32)PosInChunk.Y)
-                  Game->Pos.Y = (r32)((s32)PosInChunk.Y+1) + Game->Chunk.Pos.Y*ChunkDims.Y - ChunkDims.Y/2;
+                  Game->Pos.Y = (r32)((s32)PosInChunk.Y+1) + Chunk.Pos.Y*ChunkDims.Y - ChunkDims.Y/2;
                
                Game->Velocity.Y = 0;
             }
@@ -391,15 +410,26 @@ Game_Update(platform_state *Platform,
       v4r32 AimDir4 = M4x4r32_MulMV(ViewRotation, (v4r32){0, 0, 1, 1});
       v3r32 AimDir = {AimDir4.X, AimDir4.Y, AimDir4.Z};
       
-      v3s32 ChunkPos = {(s32)((Game->Pos.Z+ChunkDims.Z/2.0f)/ChunkDims.Z), (s32)((Game->Pos.Y+EyeHeight+ChunkDims.Y/2.0f)/ChunkDims.Y), (s32)((Game->Pos.Z+ChunkDims.Z/2.0f)/ChunkDims.Z)};
-      v3r32 PosInChunk = V3r32_Add(V3r32_Sub(Game->Pos, V3r32_Mul(V3s32_ToV3r32(Game->Chunk.Pos), V3u32_ToV3r32(ChunkDims))), V3r32_DivS(V3u32_ToV3r32(ChunkDims), 2));
+      v3s32 ChunkPos = {
+         (Game->Pos.X + ChunkDims.X/2.0f) / ChunkDims.X,
+         (Game->Pos.Y + ChunkDims.Y/2.0f) / ChunkDims.Y,
+         (Game->Pos.Z + ChunkDims.Z/2.0f) / ChunkDims.Z
+      };
+      v3r32 PosInChunk = {
+         Game->Pos.X + ChunkDims.X/2.0f - ChunkPos.X*ChunkDims.X,
+         Game->Pos.Y + ChunkDims.Y/2.0f - ChunkPos.Y*ChunkDims.Y,
+         Game->Pos.Z + ChunkDims.Z/2.0f - ChunkPos.Z*ChunkDims.Z
+      };
+      chunk *Chunks = Game->Chunks->Data;
       v3r32 AimBase = {PosInChunk.X, PosInChunk.Y+EyeHeight, PosInChunk.Z};
-      block_type *Blocks = Game->Chunk.Blocks->Data;
+      block_type *Blocks = Chunks[0].Blocks->Data;
       Game->AimBlockValid = FALSE;
       
       // TODO: Consider an incremental approach, using the face the ray
       // exists to determine the text block to test. It would reduce
       // the search cost when radius gets larger.
+      
+      // TODO: Make this work for multiple chunks
       {
          v3s32 Min, Max;
          
@@ -439,9 +469,6 @@ Game_Update(platform_state *Platform,
                for(u32 Z = Min.Z; Z <= Max.Z; Z++) {
                   u32 I = INDEX_3D(X, Y, Z, ChunkDims.X, ChunkDims.Y);
                   if(Blocks[I] == BLOCK_NONE) continue;
-                  
-                  if(X == 0 && Y == 3 && Z == 15)
-                     NOP;
                   
                   r32 TX, TY, TZ;
                   b08 IX, IY, IZ;
@@ -498,39 +525,46 @@ Game_Update(platform_state *Platform,
             #if 1
             v3s32 B = Game->AimBlock;
             v3u32 D = ChunkDims;
-            v3r32 P = {(B.X-8)/8.0f, (B.Y-8)/8.0f, (B.Z-8)/8.0f};
-            r32 S = 1/8.0f;
+            v3r32 P = {
+               (B.X-ChunkDims.X/2.0f)*2/ChunkDims.X,
+               (B.Y-ChunkDims.Y/2.0f)*2/ChunkDims.Y,
+               (B.Z-ChunkDims.Z/2.0f)*2/ChunkDims.Z
+            };
+            v3r32 S = {
+               2.0f/ChunkDims.X,
+               2.0f/ChunkDims.Y,
+               2.0f/ChunkDims.Z
+            };
             
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+0, P.Z+0})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+S, P.Z+0})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+0, P.Z+0})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+0})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+0, P.Z+S})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+S, P.Z+S})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+0, P.Z+S})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X,     P.Y,     P.Z    })};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X,     P.Y+S.Y, P.Z    })};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S.X, P.Y,     P.Z    })};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S.X, P.Y+S.Y, P.Z    })};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X,     P.Y,     P.Z+S.Z})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X,     P.Y+S.Y, P.Z+S.Z})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S.X, P.Y,     P.Z+S.Z})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S.X, P.Y+S.Y, P.Z+S.Z})};
             
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+0, P.Z+0})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+0, P.Z+0})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+0, P.Z+S})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+0, P.Z+S})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+0, P.Z+0})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+0, P.Z+S})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+0, P.Z+0})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+0, P.Z+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X,     P.Y,     P.Z    })};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S.X, P.Y,     P.Z    })};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X,     P.Y,     P.Z+S.Z})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S.X, P.Y,     P.Z+S.Z})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X,     P.Y,     P.Z    })};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X,     P.Y,     P.Z+S.Z})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S.X, P.Y,     P.Z    })};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S.X, P.Y,     P.Z+S.Z})};
             
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+S, P.Z+0})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+0})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+S, P.Z+S})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+S})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+S, P.Z+0})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+S, P.Z+S})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+0})};
-            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X,     P.Y+S.Y, P.Z    })};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S.X, P.Y+S.Y, P.Z    })};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X,     P.Y+S.Y, P.Z+S.Z})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S.X, P.Y+S.Y, P.Z+S.Z})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X,     P.Y+S.Y, P.Z    })};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X,     P.Y+S.Y, P.Z+S.Z})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S.X, P.Y+S.Y, P.Z    })};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S.X, P.Y+S.Y, P.Z+S.Z})};
             
-            r32 Factor = 0;
-            m4x4r32 Translation = M4x4r32_Translation(ChunkPos.X*16, ChunkPos.Y*16, ChunkPos.Z*16);
-            m4x4r32 Scaling     = M4x4r32_Scaling(8+Factor, 8+Factor, 8+Factor);
+            m4x4r32 Translation = M4x4r32_Translation(ChunkPos.X*ChunkDims.X, ChunkPos.Y*ChunkDims.Y, ChunkPos.Z*ChunkDims.Z);
+            m4x4r32 Scaling     = M4x4r32_Scaling(ChunkDims.X/2.0f, ChunkDims.Y/2.0f, ChunkDims.Z/2.0f);
             m4x4r32 Rotation    = M4x4r32_I;
             #else
             v3s32 B = Game->AimBlock;
@@ -573,6 +607,10 @@ Game_Update(platform_state *Platform,
             
             m4x4r32 *Matrix = Mesh_GetMatrix(&Renderer->PMesh, Game->AimBlockObjectIndex);
             *Matrix = M4x4r32_Mul(M4x4r32_Mul(Translation, Rotation), Scaling);
+            
+            s32 *VertexCount = (s32*)Renderer->PMesh.VertexCounts->Data + Game->AimBlockObjectIndex;
+            *VertexCount = 24;
+            
             Mesh_Update(&Renderer->PMesh);
 #if TEST_THING
             break;

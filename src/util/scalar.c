@@ -81,6 +81,12 @@ R32_Lerp(r32 S, r32 E, r32 t)
     return S + t*(E-S);
 }
 
+internal r32
+R32_Remainder(r32 Dividend, r32 Divisor)
+{
+    return Dividend - ((s32)(Dividend/Divisor)*Divisor);
+}
+
 internal b08
 R32_Within(r32 Num, r32 Start, r32 End, r32 Epsilon)
 {

@@ -469,8 +469,11 @@ Renderer_Draw(platform_state *Platform,
     
     Mesh_Draw(&Renderer->PTMesh, GL_TRIANGLES);
     
-    if(Game->AimBlockValid)
+    if(Game->AimBlockValid) {
+        OpenGL_Disable(GL_DEPTH_TEST);
         Mesh_DrawPartial(&Renderer->PMesh, GL_LINES, Game->AimBlockObjectIndex, 1);
+        OpenGL_Enable(GL_DEPTH_TEST);
+    }
     
     if(Platform->CursorIsDisabled)
         Mesh_DrawPartial(&Renderer->PC2Mesh, GL_TRIANGLES, Game->CrosshairObjectIndex, 1);

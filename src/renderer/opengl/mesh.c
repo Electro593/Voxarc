@@ -68,6 +68,7 @@ Mesh_Init(mesh *Mesh,
     OpenGL_GenBuffers(2, &Mesh->VBO); // VBO, MatrixSSBO
     
     Mesh->Vertices = Heap_Allocate(Heap, 0);
+    Mesh->VertexCounts = Heap_Allocate(Heap, 0);
     Mesh->VertexOffsets = Heap_Allocate(Heap, sizeof(u32));
     ((u32*)Mesh->VertexOffsets->Data)[0] = 0;
     
@@ -75,6 +76,7 @@ Mesh_Init(mesh *Mesh,
         OpenGL_GenBuffers(1, &Mesh->EBO);
         
         Mesh->Indices = Heap_Allocate(Heap, 0);
+        Mesh->IndexCounts = Heap_Allocate(Heap, 0);
         Mesh->IndexOffsets = Heap_Allocate(Heap, sizeof(u32));
         ((u32*)Mesh->IndexOffsets->Data)[0] = 0;
     }
@@ -162,13 +164,17 @@ Mesh_ReserveObject(mesh *Mesh, u32 VertexCount, u32 IndexCount)
     Heap_Resize(Mesh->Matrices, Mesh->Matrices->Size + sizeof(m4x4r32));
     
     Heap_Resize(Mesh->Vertices, Mesh->Vertices->Size + VertexCount*Mesh->VertexSize);
+    Heap_Resize(Mesh->VertexCounts, Mesh->VertexCounts->Size + sizeof(u32));
     Heap_Resize(Mesh->VertexOffsets, Mesh->VertexOffsets->Size + sizeof(u32));
+    ((u32*)Mesh->VertexCounts->Data)[Mesh->ObjectCount] = 0;
     u32 *VertexOffsets = (u32*)Mesh->VertexOffsets->Data + Mesh->ObjectCount;
     VertexOffsets[1] = VertexOffsets[0] + VertexCount;
     
     if(Mesh->Flags & MESH_HAS_ELEMENTS) {
         Heap_Resize(Mesh->Indices, Mesh->Indices->Size + IndexCount*sizeof(u32));
+        Heap_Resize(Mesh->IndexCounts, Mesh->IndexCounts->Size + sizeof(u32));
         Heap_Resize(Mesh->IndexOffsets, Mesh->IndexOffsets->Size + sizeof(u32));
+        ((u32*)Mesh->IndexCounts->Data)[Mesh->ObjectCount] = 0;
         u32 *IndexOffsets = (u32*)Mesh->IndexOffsets->Data + Mesh->ObjectCount;
         IndexOffsets[1] = IndexOffsets[0] + IndexCount;
     }
@@ -195,15 +201,19 @@ Mesh_AddObjects(mesh *Mesh,
     }
     
     Heap_Resize(Mesh->Vertices, Mesh->Vertices->Size + AddedVerticesSize);
+    Heap_Resize(Mesh->VertexCounts, Mesh->VertexCounts->Size + ObjectCount*sizeof(u32));
     Heap_Resize(Mesh->VertexOffsets, Mesh->VertexOffsets->Size + ObjectCount*sizeof(u32));
     Heap_Resize(Mesh->Matrices, Mesh->Matrices->Size + ObjectCount*sizeof(m4x4r32));
     if(Mesh->Flags & MESH_HAS_ELEMENTS) {
         Heap_Resize(Mesh->Indices, Mesh->Indices->Size + AddedIndicesSize);
+        Heap_Resize(Mesh->IndexCounts, Mesh->IndexCounts->Size + ObjectCount*sizeof(u32));
         Heap_Resize(Mesh->IndexOffsets, Mesh->IndexOffsets->Size + ObjectCount*sizeof(u32));
     }
     
     u32 *VertexOffsets = (u32*)Mesh->VertexOffsets->Data + Mesh->ObjectCount;
-    u32 *IndexOffsets = (u32*)Mesh->IndexOffsets->Data + Mesh->ObjectCount;
+    u32 *VertexCounts  = (u32*)Mesh->VertexCounts->Data  + Mesh->ObjectCount;
+    u32 *IndexOffsets  = (u32*)Mesh->IndexOffsets->Data  + Mesh->ObjectCount;
+    u32 *IndexCounts   = (u32*)Mesh->IndexCounts->Data   + Mesh->ObjectCount;
     
     for(u32 I = 0; I < ObjectCount; I++) {
         Mem_Cpy((u08*)Mesh->Vertices->Data+VertexOffsets[I]*Mesh->VertexSize, (*Objects[I]).Vertices->Data, (*Objects[I]).Vertices->Size);
@@ -213,9 +223,12 @@ Mesh_AddObjects(mesh *Mesh,
         m4x4r32 ModelMatrix = M4x4r32_Mul(M4x4r32_Mul((*Objects[I]).TranslationMatrix, (*Objects[I]).RotationMatrix), (*Objects[I]).ScalingMatrix);
         ((m4x4r32*)Mesh->Matrices->Data)[Mesh->ObjectCount+I] = ModelMatrix;
         
-        VertexOffsets[I+1] = VertexOffsets[I] + (*Objects[I]).Vertices->Size / Mesh->VertexSize;
-        if(Mesh->Flags & MESH_HAS_ELEMENTS)
-            IndexOffsets[I+1] = IndexOffsets[I] + (*Objects[I]).Indices->Size / sizeof(u32);
+        VertexCounts[I] = (*Objects[I]).Vertices->Size / Mesh->VertexSize;
+        VertexOffsets[I+1] = VertexOffsets[I] + VertexCounts[I];
+        if(Mesh->Flags & MESH_HAS_ELEMENTS) {
+            IndexCounts[I] = (*Objects[I]).Indices->Size / sizeof(u32);
+            IndexOffsets[I+1] = IndexOffsets[I] + IndexCounts[I];
+        }
         
         (*Objects[I]).Index = Mesh->ObjectCount + I;
     }
@@ -231,15 +244,25 @@ internal void
 Mesh_UpdateVertices(mesh *Mesh,
                     mesh_object Object)
 {
+    // TODO: This doesn't correctly work with VertexCounts. It just maintains
+    // any extra space, instead of consuming it.
+    
     u32 ObjectIndex = Object.Index;
     
-    u32 CurrOffset = ((u32*)Mesh->VertexOffsets->Data)[ObjectIndex]*Mesh->VertexSize;
-    u32 NextOffset = ((u32*)Mesh->VertexOffsets->Data)[ObjectIndex+1]*Mesh->VertexSize;
-    u32 MaxOffset  = ((u32*)Mesh->VertexOffsets->Data)[Mesh->ObjectCount]*Mesh->VertexSize;
     
-    u32 OldSize = NextOffset - CurrOffset;
-    u32 NewSize = Object.Vertices->Size;
+    s32 CurrVertexOffset = ((s32*)Mesh->VertexOffsets->Data)[ObjectIndex];
+    s32 NextVertexOffset = ((s32*)Mesh->VertexOffsets->Data)[ObjectIndex+1];
+    s32 MaxVertexOffset  = ((s32*)Mesh->VertexOffsets->Data)[Mesh->ObjectCount];
+    
+    s32 CurrOffset = CurrVertexOffset * Mesh->VertexSize;
+    s32 NextOffset = NextVertexOffset * Mesh->VertexSize;
+    s32 MaxOffset  = MaxVertexOffset  * Mesh->VertexSize;
+    
+    s32 OldSize = NextOffset - CurrOffset;
+    s32 NewSize = Object.Vertices->Size;
     s32 DeltaSize = NewSize - OldSize;
+    
+    s32 NewCount = NewSize / Mesh->VertexSize;
     
     if(DeltaSize > 0) {
         u08 *PrevData = Mesh->Vertices->Data;
@@ -255,8 +278,9 @@ Mesh_UpdateVertices(mesh *Mesh,
     
     Mem_Cpy((u08*)Mesh->Vertices->Data+CurrOffset, Object.Vertices->Data, NewSize);
     if(DeltaSize != 0) {
+        ((s32*)Mesh->VertexCounts->Data)[ObjectIndex] = NewCount;
         for(u32 I = ObjectIndex+1; I <= Mesh->ObjectCount; I++)
-            ((u32*)Mesh->VertexOffsets->Data)[I] += DeltaSize/Mesh->VertexSize;
+            ((s32*)Mesh->VertexOffsets->Data)[I] += DeltaSize/Mesh->VertexSize;
         OpenGL_BufferData(GL_ARRAY_BUFFER, Mesh->Vertices->Size, Mesh->Vertices->Data,
                           (Mesh->Flags & MESH_IS_DYNAMIC) ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
     } else {
@@ -273,11 +297,11 @@ Mesh_UpdateIndices(mesh *Mesh,
     Assert(Mesh->Flags & MESH_HAS_ELEMENTS);
     
     u32 ObjectIndex = Object.Index;
-    u32 CurrOffset = ((u32*)Mesh->IndexOffsets->Data)[ObjectIndex]*sizeof(u32);
-    u32 NextOffset = ((u32*)Mesh->IndexOffsets->Data)[ObjectIndex+1]*sizeof(u32);
-    u32 MaxOffset  = ((u32*)Mesh->IndexOffsets->Data)[Mesh->ObjectCount]*sizeof(u32);
-    u32 OldSize = NextOffset - CurrOffset;
-    u32 NewSize = Object.Indices->Size;
+    s32 CurrOffset = ((s32*)Mesh->IndexOffsets->Data)[ObjectIndex]*sizeof(u32);
+    s32 NextOffset = ((s32*)Mesh->IndexOffsets->Data)[ObjectIndex+1]*sizeof(u32);
+    s32 MaxOffset  = ((s32*)Mesh->IndexOffsets->Data)[Mesh->ObjectCount]*sizeof(u32);
+    s32 OldSize = NextOffset - CurrOffset;
+    s32 NewSize = Object.Indices->Size;
     s32 DeltaSize = NewSize - OldSize;
     if(DeltaSize > 0) {
         u08 *PrevData = Mesh->Indices->Data;
@@ -293,8 +317,9 @@ Mesh_UpdateIndices(mesh *Mesh,
     Mem_Cpy((u08*)Mesh->Indices->Data+CurrOffset, Object.Indices->Data, NewSize);
     OpenGL_BindBuffer(GL_ELEMENT_ARRAY_BUFFER, Mesh->EBO);
     if(DeltaSize != 0) {
+        ((s32*)Mesh->IndexCounts->Data)[ObjectIndex] = NewSize / sizeof(u32);
         for(u32 I = ObjectIndex+1; I <= Mesh->ObjectCount; I++)
-            ((u32*)Mesh->IndexOffsets->Data)[I] += DeltaSize/sizeof(u32);
+            ((s32*)Mesh->IndexOffsets->Data)[I] += DeltaSize/sizeof(u32);
         OpenGL_BufferData(GL_ELEMENT_ARRAY_BUFFER, Mesh->Indices->Size, Mesh->Indices->Data,
                           (Mesh->Flags & MESH_IS_DYNAMIC) ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
     } else
@@ -366,25 +391,28 @@ Mesh_DrawPartial(mesh *Mesh, u32 DrawMode, u32 ObjectOffset, u32 ObjectCount)
     
     Mesh_Bind(Mesh);
     
-    s32 *VertexOffsets = Mesh->VertexOffsets->Data;
-    VertexOffsets += ObjectOffset;
+    s32 *VertexCounts = (s32*)Mesh->VertexCounts->Data + ObjectOffset;
+    s32 *VertexOffsets = (s32*)Mesh->VertexOffsets->Data + ObjectOffset;
     
     if(Mesh->Flags & MESH_HAS_ELEMENTS) {
         Stack_Push();
         
-        s32 *IndexOffsets = Mesh->IndexOffsets->Data;
-        IndexOffsets += ObjectOffset;
+        s32 *IndexCounts = (s32*)Mesh->IndexCounts->Data + ObjectOffset;
+        s32 *IndexOffsets = (s32*)Mesh->IndexOffsets->Data + ObjectOffset;
         
         vptr *IndexOffsetPointers = Stack_Allocate(ObjectCount * sizeof(vptr));
         for(u32 I = 0; I < ObjectCount; ++I)
             IndexOffsetPointers[I] = (vptr)(u64)(IndexOffsets[I] * sizeof(u32));
         
-        OpenGL_MultiDrawElementsBaseVertex(DrawMode, IndexOffsets+1, GL_UNSIGNED_INT,
+        //TODO: Isn't this a bug? IndexOffsets accumulates, but it's put into
+        // the 'count' section.
+        OpenGL_MultiDrawElementsBaseVertex(DrawMode, IndexCounts, GL_UNSIGNED_INT,
                                            IndexOffsetPointers, ObjectCount, VertexOffsets);
         
         Stack_Pop();
     } else {
-        OpenGL_MultiDrawArrays(DrawMode, VertexOffsets, VertexOffsets+1, ObjectCount);
+        // OpenGL_MultiDrawArrays(DrawMode, VertexOffsets, VertexOffsets+1, ObjectCount);
+        OpenGL_MultiDrawArrays(DrawMode, VertexOffsets, VertexCounts, ObjectCount);
     }
 }
 
@@ -398,7 +426,9 @@ internal void
 Mesh_Free(mesh *Mesh)
 {
     Heap_Free(Mesh->VertexOffsets);
+    Heap_Free(Mesh->VertexCounts);
     Heap_Free(Mesh->IndexOffsets);
+    Heap_Free(Mesh->IndexCounts);
     Heap_Free(Mesh->Storage);
     Heap_Free(Mesh->Indices);
     Heap_Free(Mesh->Vertices);

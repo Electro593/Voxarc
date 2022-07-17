@@ -96,8 +96,10 @@ typedef struct mesh {
     u32 VertexSize;
     
     u32 ObjectCount;
-    heap_handle *VertexOffsets;
-    heap_handle *IndexOffsets;
+    HEAP(s32) VertexOffsets;
+    HEAP(s32) VertexCounts;
+    HEAP(s32) IndexOffsets;
+    HEAP(s32) IndexCounts;
     
     heap_handle *Vertices;
     heap_handle *Indices;
