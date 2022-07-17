@@ -7,11 +7,15 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#define GL_ZERO                   0x0000
 #define GL_LINES                  0x0001
 #define GL_LINE_LOOP              0x0002
 #define GL_TRIANGLES              0x0004
+#define GL_SRC_COLOR              0x0300
 #define GL_SRC_ALPHA              0x0302
 #define GL_ONE_MINUS_SRC_ALPHA    0x0303
+#define GL_DST_COLOR              0x0306
+#define GL_ONE_MINUS_DST_COLOR    0x0307
 #define GL_FRONT                  0x0404
 #define GL_BACK                   0x0405
 #define GL_FRONT_AND_BACK         0x0408
@@ -20,6 +24,7 @@
 #define GL_CULL_FACE              0x0B44
 #define GL_DEPTH_TEST             0x0B71
 #define GL_BLEND                  0x0BE2
+#define GL_COLOR_LOGIC_OP         0x0BF2
 #define GL_SCISSOR_TEST           0x0C11
 #define GL_DONT_CARE              0x1100
 #define GL_UNSIGNED_BYTE          0x1401
@@ -27,6 +32,8 @@
 #define GL_UNSIGNED_SHORT         0x1403
 #define GL_UNSIGNED_INT           0x1405
 #define GL_FLOAT                  0x1406
+#define GL_COPY                   0x1503
+#define GL_INVERT                 0x150A
 #define GL_RGBA                   0x1908
 #define GL_LINE                   0x1B01
 #define GL_NEAREST                0x2600
@@ -88,6 +95,7 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
     IMPORT(void, GetFloatv,     u32 Name, r32 *Data) \
     IMPORT(void, GenTextures,   s32 Count, u32 *Textures) \
     IMPORT(void, LineWidth,     r32 Width) \
+    IMPORT(void, LogicOp,       u32 OpCode) \
     IMPORT(void, PolygonMode,   u32 Face, u32 Mode) \
     IMPORT(void, Scissor,       s32 X, s32 Y, s32 Width, s32 Height) \
     IMPORT(void, TexParameteri, u32 Target, u32 Name, s32 Param) \
@@ -133,6 +141,7 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
     IMPORT(void, Uniform1f,                   s32 Location, r32 V0) \
     IMPORT(void, Uniform1i,                   s32 Location, s32 V0) \
     IMPORT(void, Uniform2ui,                  s32 Location, u32 V0, u32 V1) \
+    IMPORT(void, Uniform4f,                   s32 Location, r32 V0, r32 V1, r32 V2, r32 V3) \
     IMPORT(void, UniformMatrix4fv,            s32 Location, u32 Count, b08 Transpose, m4x4r32 Matrix) \
     IMPORT(void, UseProgram,                  u32 Program) \
     IMPORT(void, VertexAttribPointer,         u32 Index, s32 Size, u32 Type, b08 Normalized, s32 Stride, vptr Offset) \

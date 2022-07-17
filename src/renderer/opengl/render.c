@@ -71,6 +71,74 @@ Renderer_LoadShaders(c08 *VertFileName,
 }
 
 internal void
+Renderer_LoadPProgram(renderer_state *Renderer, b08 FirstTime)
+{
+    c08 *VertName = SHADERS_DIR "p.vert";
+    c08 *FragName = SHADERS_DIR "p.frag";
+    
+    datetime VertTime, FragTime;
+    Platform_GetFileTime(VertName, 0, 0, &VertTime);
+    Platform_GetFileTime(FragName, 0, 0, &FragTime);
+    
+    if(FirstTime ||
+       Platform_CmpFileTime(Renderer->PLastModified[0], VertTime) == LESS ||
+       Platform_CmpFileTime(Renderer->PLastModified[1], FragTime) == LESS)
+    {
+        if(!FirstTime)
+            OpenGL_DeleteProgram(Renderer->PProgram);
+        
+        Renderer->PProgram = Renderer_LoadShaders(VertName, FragName);
+        
+        if(FirstTime)
+            Mesh_Init(&Renderer->PMesh, Renderer->Heap, &Renderer->PProgram, 0);
+        
+        Renderer->PMesh.P.VPMatrix = OpenGL_GetUniformLocation(Renderer->PProgram, "VPMatrix");
+        Renderer->PMesh.P.Color    = OpenGL_GetUniformLocation(Renderer->PProgram, "Color");
+        
+        m4x4r32 VPMatrix = M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
+        
+        OpenGL_UseProgram(Renderer->PProgram);
+        OpenGL_UniformMatrix4fv(Renderer->PMesh.P.VPMatrix, 1, FALSE, VPMatrix);
+        OpenGL_Uniform4f(Renderer->PMesh.P.Color, 1, 1, 1, 1);
+        
+        Renderer->PLastModified[0] = VertTime;
+        Renderer->PLastModified[1] = FragTime;
+    }
+}
+
+internal void
+Renderer_LoadPC2Program(renderer_state *Renderer, b08 FirstTime)
+{
+    c08 *VertName = SHADERS_DIR "pc2.vert";
+    c08 *FragName = SHADERS_DIR "pc2.frag";
+    
+    datetime VertTime, FragTime;
+    Platform_GetFileTime(VertName, 0, 0, &VertTime);
+    Platform_GetFileTime(FragName, 0, 0, &FragTime);
+    
+    if(FirstTime ||
+       Platform_CmpFileTime(Renderer->PC2LastModified[0], VertTime) == LESS ||
+       Platform_CmpFileTime(Renderer->PC2LastModified[1], FragTime) == LESS)
+    {
+        if(!FirstTime)
+            OpenGL_DeleteProgram(Renderer->PC2Program);
+        
+        Renderer->PC2Program = Renderer_LoadShaders(VertName, FragName);
+        
+        if(FirstTime)
+            Mesh_Init(&Renderer->PC2Mesh, Renderer->Heap, &Renderer->PC2Program, MESH_HAS_ELEMENTS|MESH_HAS_COLORS);
+        
+        Renderer->PC2Mesh.VPMatrix = OpenGL_GetUniformLocation(Renderer->PC2Program, "VPMatrix");
+        
+        OpenGL_UseProgram(Renderer->PC2Program);
+        OpenGL_UniformMatrix4fv(Renderer->PC2Mesh.VPMatrix, 1, FALSE, Renderer->OrthographicMatrix);
+        
+        Renderer->PC2LastModified[0] = VertTime;
+        Renderer->PC2LastModified[1] = FragTime;
+    }
+}
+
+internal void
 Renderer_LoadPC3Program(renderer_state *Renderer, b08 FirstTime)
 {
     c08 *VertName = SHADERS_DIR "pc3.vert";
@@ -81,26 +149,26 @@ Renderer_LoadPC3Program(renderer_state *Renderer, b08 FirstTime)
     Platform_GetFileTime(FragName, 0, 0, &FragTime);
     
     if(FirstTime ||
-       Platform_CmpFileTime(Renderer->PCLastModified[0], VertTime) == LESS ||
-       Platform_CmpFileTime(Renderer->PCLastModified[1], FragTime) == LESS)
+       Platform_CmpFileTime(Renderer->PC3LastModified[0], VertTime) == LESS ||
+       Platform_CmpFileTime(Renderer->PC3LastModified[1], FragTime) == LESS)
     {
         if(!FirstTime)
-            OpenGL_DeleteProgram(Renderer->PCProgram);
+            OpenGL_DeleteProgram(Renderer->PC3Program);
         
-        Renderer->PCProgram = Renderer_LoadShaders(VertName, FragName);
+        Renderer->PC3Program = Renderer_LoadShaders(VertName, FragName);
         
         if(FirstTime)
-            Mesh_Init(&Renderer->PCMesh, Renderer->Heap, &Renderer->PCProgram, MESH_HAS_COLORS);
+            Mesh_Init(&Renderer->PC3Mesh, Renderer->Heap, &Renderer->PC3Program, MESH_HAS_ELEMENTS|MESH_HAS_COLORS);
         
-        Renderer->PCMesh.VPMatrix = OpenGL_GetUniformLocation(Renderer->PCProgram, "VPMatrix");
+        Renderer->PC3Mesh.VPMatrix = OpenGL_GetUniformLocation(Renderer->PC3Program, "VPMatrix");
         
         m4x4r32 VPMatrix = M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
         
-        OpenGL_UseProgram(Renderer->PCProgram);
-        OpenGL_UniformMatrix4fv(Renderer->PCMesh.VPMatrix, 1, FALSE, VPMatrix);
+        OpenGL_UseProgram(Renderer->PC3Program);
+        OpenGL_UniformMatrix4fv(Renderer->PC3Mesh.VPMatrix, 1, FALSE, VPMatrix);
         
-        Renderer->PCLastModified[0] = VertTime;
-        Renderer->PCLastModified[1] = FragTime;
+        Renderer->PC3LastModified[0] = VertTime;
+        Renderer->PC3LastModified[1] = FragTime;
     }
 }
 
@@ -207,7 +275,7 @@ Renderer_LoadGlyphProgram(renderer_state *Renderer, b08 FirstTime)
 }
 
 internal void
-Renderer_Resize(v2u32 NewSize, m4x4r32 *PerspectiveMatrix)
+Renderer_Resize(v2u32 NewSize, m4x4r32 *OrthographicMatrix, m4x4r32 *PerspectiveMatrix)
 {
     v2u32 Pos;
     v2u32 Size;
@@ -242,6 +310,13 @@ Renderer_Resize(v2u32 NewSize, m4x4r32 *PerspectiveMatrix)
         0, 0, 1, 0
     };
     
+    *OrthographicMatrix = (m4x4r32){
+        1/AspectRatio, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    };
+    
     OpenGL_Viewport(Pos.X, Pos.Y, Size.X, Size.Y);
     OpenGL_Scissor(Pos.X, Pos.Y, Size.X, Size.Y);
 }
@@ -273,14 +348,17 @@ Renderer_Init(renderer_state *Renderer,
     
     OpenGL_ClearColor(.2,.2,.2,1);
     
-    Renderer->ViewMatrix = M4x4r32_I;
+    Renderer->OrthographicMatrix = M4x4r32_I;
     Renderer->PerspectiveMatrix = M4x4r32_I;
+    Renderer->ViewMatrix = M4x4r32_I;
     Renderer->WindowSize = WindowSize;
     
     assetpack_tag *Tag = Assetpack_FindFirstTag(Renderer->Assetpack, TAG_ATLAS_DESCRIPTOR);
     Assert(Tag);
     assetpack_atlas *Atlas = (assetpack_atlas*)Tag->ValueP;
     
+    Renderer_LoadPProgram(Renderer, TRUE);
+    Renderer_LoadPC2Program(Renderer, TRUE);
     Renderer_LoadPC3Program(Renderer, TRUE);
     Renderer_LoadPTProgram(Renderer, TRUE);
     Renderer_LoadGlyphProgram(Renderer, TRUE);
@@ -310,9 +388,14 @@ Renderer_Init(renderer_state *Renderer,
 }
 
 internal void
-Renderer_Draw(game_state *Game, renderer_state *Renderer, r32 FPS)
+Renderer_Draw(platform_state *Platform,
+              game_state *Game,
+              renderer_state *Renderer,
+              r32 FPS)
 {
     // Hot-reload the shaders
+    Renderer_LoadPProgram(Renderer, FALSE);
+    Renderer_LoadPC2Program(Renderer, FALSE);
     Renderer_LoadPC3Program(Renderer, FALSE);
     Renderer_LoadPTProgram(Renderer, FALSE);
     Renderer_LoadGlyphProgram(Renderer, FALSE);
@@ -388,7 +471,10 @@ Renderer_Draw(game_state *Game, renderer_state *Renderer, r32 FPS)
     Mesh_Draw(&Renderer->PTMesh, GL_TRIANGLES);
     
     if(Game->AimBlockValid)
-        Mesh_DrawPartial(&Renderer->PCMesh, GL_LINES, Game->AimBlockObjectIndex, 1);
+        Mesh_DrawPartial(&Renderer->PMesh, GL_LINES, Game->AimBlockObjectIndex, 1);
+    
+    if(Platform->CursorIsDisabled)
+        Mesh_DrawPartial(&Renderer->PC2Mesh, GL_TRIANGLES, Game->CrosshairObjectIndex, 1);
     
     Mesh_Draw(&Renderer->GlyphMesh, GL_TRIANGLES);
     

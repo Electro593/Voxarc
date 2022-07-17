@@ -67,38 +67,33 @@ Game_Init(platform_state *Platform,
    
    Mesh_Update(&Renderer->PTMesh);
    
-   Game->AimBlockObjectIndex = Mesh_ReserveObject(&Renderer->PCMesh, 24, 0);
-   // Game->AimBlockObjectIndex = Mesh_ReserveObject(&Renderer->PCMesh, 4, 4);
-   // Game->AimBlockObjectIndex = Mesh_ReserveObject(&Renderer->PCMesh, 4, 0);
-   // Mesh_Update(&Renderer->PCMesh);
+   Game->AimBlockObjectIndex = Mesh_ReserveObject(&Renderer->PMesh, 24, 0);
    
-   // mesh_object Object;
-   // Object.Vertices = Heap_Allocate(RendererHeap, 4 * sizeof(pc_vertex));
-   // // Object.Indices = Heap_Allocate(RendererHeap,  6 * sizeof(u32));
-   // Object.Indices = Heap_Allocate(RendererHeap,  4 * sizeof(u32));
-   // // ((pc_vertex*)Object.Vertices->Data)[0] = (pc_vertex){Mesh_EncodePosition((v3r32){-0.5, -0.5, 0}), {0, 255, 0, 255}};
-   // // ((pc_vertex*)Object.Vertices->Data)[1] = (pc_vertex){Mesh_EncodePosition((v3r32){ 0.5, -0.5, 0}), {0, 255, 0, 255}};
-   // // ((pc_vertex*)Object.Vertices->Data)[2] = (pc_vertex){Mesh_EncodePosition((v3r32){ 0.5,  0.5, 0}), {0, 255, 0, 255}};
-   // // ((pc_vertex*)Object.Vertices->Data)[3] = (pc_vertex){Mesh_EncodePosition((v3r32){-0.5,  0.5, 0}), {0, 255, 0, 255}};
-   // ((pc_vertex*)Object.Vertices->Data)[0] = (pc_vertex){Mesh_EncodePosition((v3r32){-0.5, -0.5, 0}), {0, 255, 0, 255}};
-   // ((pc_vertex*)Object.Vertices->Data)[1] = (pc_vertex){Mesh_EncodePosition((v3r32){-0.5,  0.5, 0}), {0, 255, 0, 255}};
-   // ((pc_vertex*)Object.Vertices->Data)[2] = (pc_vertex){Mesh_EncodePosition((v3r32){ 0.5, -0.5, 0}), {0, 255, 0, 255}};
-   // ((pc_vertex*)Object.Vertices->Data)[3] = (pc_vertex){Mesh_EncodePosition((v3r32){ 0.5,  0.5, 0}), {0, 255, 0, 255}};
-   // ((u32*)Object.Indices->Data)[0] = 0;
-   // ((u32*)Object.Indices->Data)[1] = 1;
-   // ((u32*)Object.Indices->Data)[2] = 2;
-   // ((u32*)Object.Indices->Data)[3] = 3;
-   // // ((u32*)Object.Indices->Data)[3] = 0;
-   // // ((u32*)Object.Indices->Data)[4] = 2;
-   // // ((u32*)Object.Indices->Data)[5] = 3;
-   // Object.TranslationMatrix = M4x4r32_I;
-   // Object.ScalingMatrix     = M4x4r32_I;
-   // Object.RotationMatrix    = M4x4r32_I;
-   // Objects[0] = &Object;
-   // Mesh_AddObjects(&Renderer->PCMesh, 1, Objects);
-   // Mesh_Update(&Renderer->PCMesh);
-   // Game->AimBlockObjectIndex = Object.Index;
-   // Mesh_FreeObject(Object);
+   mesh_object Object;
+   Object.Vertices = Heap_Allocate(RendererHeap,  8*sizeof(pc_vertex));
+   Object.Indices  = Heap_Allocate(RendererHeap, 12*sizeof(u32));
+   v4u08 C = {127, 127, 127, 255};
+   u32 Indices[] = {0,1,2,  0,2,3,  4,5,6,  4,6,7};
+   Mem_Cpy(Object.Indices->Data, Indices, sizeof(Indices));
+   pc_vertex *Vertex = Object.Vertices->Data;
+   r32 Width = 0.15;
+   *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){-1, -Width, 0}), C};
+   *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){ 1, -Width, 0}), C};
+   *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){ 1,  Width, 0}), C};
+   *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){-1,  Width, 0}), C};
+   *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){-Width, -1, 0}), C};
+   *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){ Width, -1, 0}), C};
+   *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){ Width,  1, 0}), C};
+   *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){-Width,  1, 0}), C};
+   r32 Scale = 0.02;
+   Object.TranslationMatrix = M4x4r32_I;
+   Object.ScalingMatrix     = M4x4r32_Scaling(Scale, Scale, 1);
+   Object.RotationMatrix    = M4x4r32_I;
+   Objects[0] = &Object;
+   Mesh_AddObjects(&Renderer->PC2Mesh, 1, Objects);
+   Game->CrosshairObjectIndex = Object.Index;
+   Mesh_Update(&Renderer->PC2Mesh);
+   Mesh_FreeObject(Object);
    
    Stack_Pop();
 }
@@ -109,7 +104,11 @@ Game_Update(platform_state *Platform,
             renderer_state *Renderer)
 {
    if(Platform->Updates & WINDOW_RESIZED) {
-      Renderer_Resize(Platform->WindowSize, &Renderer->PerspectiveMatrix);
+      Renderer_Resize(Platform->WindowSize, &Renderer->OrthographicMatrix, &Renderer->PerspectiveMatrix);
+      
+      OpenGL_UseProgram(Renderer->PC2Program);
+      OpenGL_UniformMatrix4fv(Renderer->PC2Mesh.VPMatrix,  1, FALSE, Renderer->OrthographicMatrix);
+      
       Renderer->WindowSize = Platform->WindowSize;
    }
    if(Platform->Updates & CURSOR_DISABLED) {
@@ -367,8 +366,11 @@ Game_Update(platform_state *Platform,
       
       m4x4r32 VPMatrix = M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
       
-      OpenGL_UseProgram(Renderer->PCProgram);
-      OpenGL_UniformMatrix4fv(Renderer->PCMesh.VPMatrix,  1, FALSE, VPMatrix);
+      OpenGL_UseProgram(Renderer->PProgram);
+      OpenGL_UniformMatrix4fv(Renderer->PMesh.VPMatrix,  1, FALSE, VPMatrix);
+      
+      OpenGL_UseProgram(Renderer->PC3Program);
+      OpenGL_UniformMatrix4fv(Renderer->PC3Mesh.VPMatrix,  1, FALSE, VPMatrix);
       
       OpenGL_UseProgram(Renderer->PTProgram);
       OpenGL_UniformMatrix4fv(Renderer->PTMesh.VPMatrix, 1, FALSE, VPMatrix);
@@ -394,6 +396,10 @@ Game_Update(platform_state *Platform,
       v3r32 AimBase = {PosInChunk.X, PosInChunk.Y+EyeHeight, PosInChunk.Z};
       block_type *Blocks = Game->Chunk.Blocks->Data;
       Game->AimBlockValid = FALSE;
+      
+      // TODO: Rasterize the ray. Basically, instead of incrementing by blocks,
+      // we need to 'line draw' to not miss any blocks at corners.
+      
       for(u32 R = 0; R <= AimRange; R++) {
          v3r32 AimVector = V3r32_Add(AimBase, V3r32_MulS(AimDir, R));
          v3s32 BlockPos = {R32_Floor(AimVector.X), R32_Floor(AimVector.Y), R32_Floor(AimVector.Z)};
@@ -405,56 +411,56 @@ Game_Update(platform_state *Platform,
             Game->AimBlock = BlockPos;
             Game->AimBlockValid = TRUE;
             
-            v4u08 C = {127, 127, 127, 255};
+            v4u08 C = {255, 255, 255, 255};
             v3s32 B = BlockPos;
             v3u32 D = ChunkDims;
             
-            pc_vertex *Vertex = Mesh_GetVertices(&Renderer->PCMesh, Game->AimBlockObjectIndex);
+            p_vertex *Vertex = Mesh_GetVertices(&Renderer->PMesh, Game->AimBlockObjectIndex);
             
             v3r32 P = {(B.X-8)/8.0f, (B.Y-8)/8.0f, (B.Z-8)/8.0f};
             r32 S = 1/8.0f;
             
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+0, P.Z+0}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+S, P.Z+0}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+0, P.Z+0}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+0}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+0, P.Z+S}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+S, P.Z+S}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+0, P.Z+S}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+S}), C};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+0, P.Z+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+S, P.Z+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+0, P.Z+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+0, P.Z+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+S, P.Z+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+0, P.Z+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+S})};
             
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+0, P.Z+0}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+0, P.Z+0}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+0, P.Z+S}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+0, P.Z+S}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+0, P.Z+0}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+0, P.Z+S}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+0, P.Z+0}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+0, P.Z+S}), C};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+0, P.Z+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+0, P.Z+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+0, P.Z+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+0, P.Z+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+0, P.Z+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+0, P.Z+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+0, P.Z+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+0, P.Z+S})};
             
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+S, P.Z+0}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+0}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+S, P.Z+S}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+S}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+S, P.Z+0}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+S, P.Z+S}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+0}), C};
-            *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+S}), C};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+S, P.Z+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+S, P.Z+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+S, P.Z+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+0, P.Y+S, P.Z+S})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+0})};
+            *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S, P.Y+S, P.Z+S})};
             
             m4x4r32 Translation = M4x4r32_Translation(ChunkPos.X*16, ChunkPos.Y*16, ChunkPos.Z*16);
             m4x4r32 Scaling     = M4x4r32_Scaling(8, 8, 8);
             m4x4r32 Rotation    = M4x4r32_I;
             
-            m4x4r32 *Matrix = Mesh_GetMatrix(&Renderer->PCMesh, Game->AimBlockObjectIndex);
+            m4x4r32 *Matrix = Mesh_GetMatrix(&Renderer->PMesh, Game->AimBlockObjectIndex);
             *Matrix = M4x4r32_Mul(M4x4r32_Mul(Translation, Rotation), Scaling);
-            Mesh_Update(&Renderer->PCMesh);
+            Mesh_Update(&Renderer->PMesh);
             
             break;
          }
       }
    }
    
-   Renderer_Draw(Game, Renderer, Platform->FPS);
+   Renderer_Draw(Platform, Game, Renderer, Platform->FPS);
 }
 
 external void API_EXPORT

@@ -25,6 +25,10 @@ typedef enum mesh_flags {
     MESH_IS_DIRTY = MESH_GROW_VERTEX_BUFFER|MESH_GROW_INDEX_BUFFER|MESH_GROW_TEXTURE_BUFFER|MESH_GROW_MATRIX_BUFFER
 } mesh_flags;
 
+typedef struct p_vertex {
+    u32 Position;
+} p_vertex;
+
 typedef struct pc_vertex {
     u32 Position;
     v4u08 Color;
@@ -62,10 +66,31 @@ typedef struct mesh {
     u32 TextureIndex;
     u32 SamplerObject;
     
-    u32 Atlases;
-    u32 AtlasesSampler;
-    u32 AtlasSize;
-    u32 VPMatrix;
+    union {
+        struct {
+            u32 VPMatrix;
+            u32 Atlases;
+            u32 AtlasesSampler;
+            u32 AtlasSize;
+            u32 Color;
+        };
+        
+        struct {
+            u32 VPMatrix;
+            u32 Color;
+        } P;
+        
+        struct {
+            u32 VPMatrix;
+        } PC3;
+        
+        struct {
+            u32 VPMatrix;
+            u32 Atlases;
+            u32 AtlasesSampler;
+            u32 AtlasSize;
+        } PT;
+    };
     
     mesh_flags Flags;
     u32 VertexSize;

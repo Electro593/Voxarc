@@ -31,6 +31,7 @@ struct game_state {
     v3s32 AimBlock;
     b08 AimBlockValid;
     u32 AimBlockObjectIndex;
+    u32 CrosshairObjectIndex;
     v3r32 Velocity;
     v3r32 Acceleration;
     r32 Mass;

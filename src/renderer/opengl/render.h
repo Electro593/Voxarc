@@ -12,21 +12,29 @@ typedef struct renderer_state {
     u32 VBO;
     u32 EBO;
     
-    u32 PCProgram;
+    u32 PProgram;
+    u32 PC2Program;
+    u32 PC3Program;
     u32 PTProgram;
     u32 GlyphProgram;
     
-    datetime PCLastModified[2];
+    datetime PLastModified[2];
+    datetime PC2LastModified[2];
+    datetime PC3LastModified[2];
     datetime PTLastModified[2];
     datetime UILastModified[2];
     
-    m4x4r32 PerspectiveMatrix, ViewMatrix;
+    m4x4r32 OrthographicMatrix;
+    m4x4r32 PerspectiveMatrix;
+    m4x4r32 ViewMatrix;
     
     v2u32 WindowSize;
     
     heap *Heap;
     
-    mesh PCMesh;
+    mesh PMesh;
+    mesh PC2Mesh;
+    mesh PC3Mesh;
     mesh PTMesh;
     mesh GlyphMesh;
     
