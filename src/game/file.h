@@ -63,6 +63,8 @@ typedef struct bitmap_header {
     u32 ImportantColors;
 } bitmap_header;
 
+// TODO: TagDataOffset can probably be removed, since tags are constant
+// size now
 typedef struct assetpack_header {
     u32 RegistryCount;
     u32 TagCount;
@@ -129,8 +131,20 @@ typedef struct assetpack {
     assetpack_asset *Assets;
     u08 *AssetData;
     
+    // The heap handle for the actual file in memory
     heap_handle *FileDataHandle;
 } assetpack;
+
+typedef struct assetpack_gen {
+    assetpack_header Header;
+    HEAP(assetpack_registry) Registries;
+    HEAP(assetpack_tag) Tags;
+    HEAP(u08) TagData;
+    HEAP(assetpack_asset) Assets;
+    HEAP(u08) AssetData;
+    
+    u16 CurrRegistry;
+} assetpack_gen;
 #pragma pack(pop)
 
 typedef struct asset_node {

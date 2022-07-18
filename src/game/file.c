@@ -587,3 +587,187 @@ File_CreateAssetpack(c08 *FileName,
     
     Stack_Pop();
 }
+
+internal void
+BeginAssetpack(assetpack_gen *Assetpack, heap *Heap)
+{
+    Assetpack->Header = (assetpack_header){0};
+    Assetpack->Registries = Heap_Allocate(Heap, 0);
+    Assetpack->Tags = Heap_Allocate(Heap, 0);
+    Assetpack->TagData = Heap_Allocate(Heap, 0);
+    Assetpack->Assets = Heap_Allocate(Heap, 0);
+    Assetpack->AssetData = Heap_Allocate(Heap, 0);
+}
+
+internal void
+EndAssetpack(assetpack_gen *Assetpack, c08 *FileName)
+{
+    file_handle FileHandle;
+    Platform_OpenFile(&FileHandle, FileName, FILE_WRITE);
+    {
+        u64 Offset = sizeof(assetpack_header);
+        
+        Platform_WriteFile(FileHandle, Assetpack->Registries->Data, Assetpack->Registries->Size, Offset);
+        Offset += Assetpack->Registries->Size;
+        
+        Platform_WriteFile(FileHandle, Assetpack->Tags->Data, Assetpack->Tags->Size, Offset);
+        Offset += Assetpack->Tags->Size;
+        
+        Assetpack->Header.TagDataOffset = Offset;
+        Platform_WriteFile(FileHandle, Assetpack->TagData->Data, Assetpack->TagData->Size, Offset);
+        Offset += Assetpack->TagData->Size;
+        
+        Platform_WriteFile(FileHandle, Assetpack->Assets->Data, Assetpack->Assets->Size, Offset);
+        Offset += Assetpack->Assets->Size;
+        
+        Assetpack->Header.AssetDataOffset = Offset;
+        Assetpack->Header.AssetDataSize = Assetpack->AssetData->Size;
+        Platform_WriteFile(FileHandle, Assetpack->AssetData->Data, Assetpack->AssetData->Size, Offset);
+        
+        Platform_WriteFile(FileHandle, &Assetpack->Header, sizeof(assetpack_header), 0);
+    }
+    Platform_CloseFile(FileHandle);
+    
+    Heap_Free(Assetpack->Registries);
+    Heap_Free(Assetpack->Tags);
+    Heap_Free(Assetpack->TagData);
+    Heap_Free(Assetpack->Assets);
+    Heap_Free(Assetpack->AssetData);
+}
+
+internal void
+BeginRegistry(assetpack_gen *Assetpack,
+              assetpack_tag_id ID, type Type)
+{
+    Heap_Resize(Assetpack->Registries, Assetpack->Registries->Size + sizeof(assetpack_registry));
+    
+    assetpack_registry *Registries = Assetpack->Registries->Data;
+    
+    u32 Count = Assetpack->Header.RegistryCount;
+    u32 I = Count;
+    while(I > 0 && Registries[I-1].ID >= ID) {
+        I--;
+    }
+    
+    Assert(Registries[I].ID != ID);
+    Mem_Cpy(Registries+I+1, Registries+I, (Count-I)*sizeof(assetpack_registry));
+    
+    Registries[I].ID = ID;
+    Registries[I].Type = Type;
+    Registries[I].TagCount = 0;
+    Registries[I].Tags = (vptr)(Assetpack->Header.TagCount*sizeof(assetpack_tag));
+    
+    Assetpack->Header.RegistryCount++;
+    
+    Assetpack->CurrRegistry = I;
+}
+
+#define AddTagData(Assetpack, Size, DataOut) _AddTagData(Assetpack, Size, (vptr*)DataOut)
+internal void
+_AddTagData(assetpack_gen *Assetpack, u32 Size, vptr *DataOut)
+{
+    Heap_Resize(Assetpack->TagData, Assetpack->TagData->Size + Size);
+    
+    u08 *Data = (u08*)Assetpack->TagData->Data + Assetpack->Header.TagDataSize;
+    Assetpack->Header.TagDataSize += Size;
+    
+    *DataOut = Data;
+}
+
+#define AddTag(Assetpack, Value) _AddTag(Assetpack, *(vptr*)&Value)
+internal void
+_AddTag(assetpack_gen *Assetpack, vptr Value)
+{
+    Heap_Resize(Assetpack->Tags, Assetpack->Tags->Size + sizeof(assetpack_tag));
+    
+    Assert(Assetpack->CurrRegistry != U16_MAX);
+    assetpack_registry *Registries = Assetpack->Registries->Data;
+    assetpack_registry *Registry = Registries + Assetpack->CurrRegistry;
+    
+    u32 I = Assetpack->Header.TagCount;
+    assetpack_tag *Tag = (assetpack_tag*)Assetpack->Tags->Data + I;
+    
+    Tag->AssetCount = 0;
+    
+    switch(Registry->Type.ID) {
+        case TYPEID_VPTR: {
+            Tag->ValueP = Value;
+        } break;
+        
+        case TYPEID_U32: {
+            Tag->ValueI = (u64)Value & 0xFFFFFFFF;
+        } break;
+        
+        default: {
+            Assert(FALSE, "This case isn't handled!");
+        }
+    }
+    
+    Registry->TagCount++;
+    Assetpack->Header.TagCount++;
+}
+
+internal void
+_File_CreateAssetpack(c08 *FileName,
+                      heap *Heap,
+                      r32 FontSize)
+{
+    assetpack_gen Assetpack;
+    
+    v2u32 AtlasDims = {512, 512};
+    u32 AtlasCount = 0;
+    
+    u08 *FontData = File_Read("assets\\fonts\\arial.ttf", 0, 0).Text;
+    font Font = Font_Init(FontData);
+    
+    r32 UnitScale = 1.0f/(Font.hhea->Ascent-Font.hhea->Descent);
+    
+    
+    
+    BeginAssetpack(&Assetpack, Heap);
+    {
+        BeginRegistry(&Assetpack, TAG_CODEPOINT, TYPE_U32);
+        {
+            for(u32 Codepoint = ' '; Codepoint <= '~'; Codepoint++) {
+                AddTag(&Assetpack, Codepoint);
+            }
+        }
+        
+        BeginRegistry(&Assetpack, TAG_BLOCK_TEXTURE, TYPE_U32);
+        {
+            for(u32 I = 0; I < BLOCK_Count-1; I++) {
+                AddTag(&Assetpack, I);
+            }
+        }
+        
+        BeginRegistry(&Assetpack, TAG_UI_TEXTURE, TYPE_U32);
+        {
+            for(u32 I = 0; I < GUI_TEXTURE_Count; I++) {
+                AddTag(&Assetpack, I);
+            }
+        }
+        
+        BeginRegistry(&Assetpack, TAG_FONT_DEF, TYPE_VPTR);
+        {
+            assetpack_font *FontDescriptor;
+            AddTagData(&Assetpack, sizeof(assetpack_font), &FontDescriptor);
+            FontDescriptor->Ascent  = Font.hhea->Ascent*UnitScale;
+            FontDescriptor->Descent = Font.hhea->Descent*UnitScale;
+            FontDescriptor->LineGap = Font.hhea->LineGap*UnitScale;
+            
+            AddTag(&Assetpack, FontDescriptor);
+        }
+        
+        BeginRegistry(&Assetpack, TAG_ATLAS_DESCRIPTOR, TYPE_VPTR);
+        {
+            assetpack_atlas *AtlasDescriptor;
+            AddTagData(&Assetpack, sizeof(assetpack_atlas), &AtlasDescriptor);
+            AtlasDescriptor->DataOffset = 0;
+            AtlasDescriptor->Size = AtlasDims;
+            AtlasDescriptor->Count = AtlasCount;
+            
+            AddTag(&Assetpack, AtlasDescriptor);
+        }
+    }
+    EndAssetpack(&Assetpack, FileName);
+}
