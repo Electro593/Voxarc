@@ -60,47 +60,54 @@ Game_Init(platform_state *Platform,
       TextureBytes[I] = (u64)((u08*)Asset - (u64)Renderer->Assetpack.Assets);
    }
    
-   u32 ChunkCount = 1;
-   Game->Chunks = Heap_Allocate(RendererHeap, ChunkCount * sizeof(chunk));
-   chunk *Chunks = Game->Chunks->Data;
+   // World
+   {
+      u32 ChunkCount = 1;
+      Game->Chunks = Heap_Allocate(RendererHeap, ChunkCount * sizeof(chunk));
+      chunk *Chunks = Game->Chunks->Data;
+      
+      Chunks[0] = MakeChunk(RendererHeap, &Renderer->PTMesh, (v3s32){0,0,0}, TextureBytes);
+      // Chunks[1] = MakeChunk(RendererHeap, &Renderer->PTMesh, (v3s32){1,0,0}, TextureBytes);
+      // mesh_object *Objects[] = {&Chunks[0].Object, &Chunks[1].Object};
+      mesh_object *Objects[] = {&Chunks[0].Object};
+      
+      Mesh_AddObjects(&Renderer->PTMesh, ChunkCount, Objects);
+      for(u32 I = 0; I < ChunkCount; I++)
+         Mesh_FreeObject(Chunks[I].Object);
+      Mesh_Update(&Renderer->PTMesh);
+   }
    
-   Chunks[0] = MakeChunk(RendererHeap, &Renderer->PTMesh, (v3s32){0,0,0}, TextureBytes);
-   // Chunks[1] = MakeChunk(RendererHeap, &Renderer->PTMesh, (v3s32){1,0,0}, TextureBytes);
-   // mesh_object *Objects[] = {&Chunks[0].Object, &Chunks[1].Object};
-   mesh_object *Objects[] = {&Chunks[0].Object};
-   
-   Mesh_AddObjects(&Renderer->PTMesh, ChunkCount, Objects);
-   for(u32 I = 0; I < ChunkCount; I++)
-      Mesh_FreeObject(Chunks[I].Object);
-   Mesh_Update(&Renderer->PTMesh);
-   
+   // Block highlight
    Game->AimBlockObjectIndex = Mesh_ReserveObject(&Renderer->PMesh, 24, 0);
    
-   mesh_object Object;
-   Object.Vertices = Heap_Allocate(RendererHeap,  8*sizeof(pc_vertex));
-   Object.Indices  = Heap_Allocate(RendererHeap, 12*sizeof(u32));
-   v4u08 C = {127, 127, 127, 255};
-   u32 Indices[] = {0,1,2,  0,2,3,  4,5,6,  4,6,7};
-   Mem_Cpy(Object.Indices->Data, Indices, sizeof(Indices));
-   pc_vertex *Vertex = Object.Vertices->Data;
-   r32 Width = 0.15;
-   *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){-1, -Width, 0}), C};
-   *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){ 1, -Width, 0}), C};
-   *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){ 1,  Width, 0}), C};
-   *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){-1,  Width, 0}), C};
-   *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){-Width, -1, 0}), C};
-   *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){ Width, -1, 0}), C};
-   *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){ Width,  1, 0}), C};
-   *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){-Width,  1, 0}), C};
-   r32 Scale = 0.02;
-   Object.TranslationMatrix = M4x4r32_I;
-   Object.ScalingMatrix     = M4x4r32_Scaling(Scale, Scale, 1);
-   Object.RotationMatrix    = M4x4r32_I;
-   Objects[0] = &Object;
-   Mesh_AddObjects(&Renderer->PC2Mesh, 1, Objects);
-   Game->CrosshairObjectIndex = Object.Index;
-   Mesh_Update(&Renderer->PC2Mesh);
-   Mesh_FreeObject(Object);
+   // Crosshair
+   {
+      mesh_object Object;
+      Object.Vertices = Heap_Allocate(RendererHeap,  8*sizeof(pc_vertex));
+      Object.Indices  = Heap_Allocate(RendererHeap, 12*sizeof(u32));
+      v4u08 C = {127, 127, 127, 255};
+      u32 Indices[] = {0,1,2,  0,2,3,  4,5,6,  4,6,7};
+      Mem_Cpy(Object.Indices->Data, Indices, sizeof(Indices));
+      pc_vertex *Vertex = Object.Vertices->Data;
+      r32 Width = 0.15;
+      *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){-1, -Width, 0}), C};
+      *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){ 1, -Width, 0}), C};
+      *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){ 1,  Width, 0}), C};
+      *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){-1,  Width, 0}), C};
+      *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){-Width, -1, 0}), C};
+      *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){ Width, -1, 0}), C};
+      *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){ Width,  1, 0}), C};
+      *Vertex++ = (pc_vertex){Mesh_EncodePosition((v3r32){-Width,  1, 0}), C};
+      r32 Scale = 0.02;
+      Object.TranslationMatrix = M4x4r32_I;
+      Object.ScalingMatrix     = M4x4r32_Scaling(Scale, Scale, 1);
+      Object.RotationMatrix    = M4x4r32_I;
+      mesh_object *Objects[] = {&Object};
+      Mesh_AddObjects(&Renderer->PC2Mesh, 1, Objects);
+      Game->CrosshairObjectIndex = Object.Index;
+      Mesh_Update(&Renderer->PC2Mesh);
+      Mesh_FreeObject(Object);
+   }
    
    Stack_Pop();
 }
@@ -522,7 +529,7 @@ Game_Update(platform_state *Platform,
             
             p_vertex *Vertex = Mesh_GetVertices(&Renderer->PMesh, Game->AimBlockObjectIndex);
             
-            #if 1
+            #if 0
             v3s32 B = Game->AimBlock;
             v3u32 D = ChunkDims;
             v3r32 P = {
@@ -563,8 +570,9 @@ Game_Update(platform_state *Platform,
             *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S.X, P.Y+S.Y, P.Z    })};
             *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){P.X+S.X, P.Y+S.Y, P.Z+S.Z})};
             
+            r32 Factor = 0;
             m4x4r32 Translation = M4x4r32_Translation(ChunkPos.X*ChunkDims.X, ChunkPos.Y*ChunkDims.Y, ChunkPos.Z*ChunkDims.Z);
-            m4x4r32 Scaling     = M4x4r32_Scaling(ChunkDims.X/2.0f, ChunkDims.Y/2.0f, ChunkDims.Z/2.0f);
+            m4x4r32 Scaling     = M4x4r32_Scaling(ChunkDims.X/2.0f + Factor, ChunkDims.Y/2.0f + Factor, ChunkDims.Z/2.0f + Factor);
             m4x4r32 Rotation    = M4x4r32_I;
             #else
             v3s32 B = Game->AimBlock;
@@ -599,9 +607,8 @@ Game_Update(platform_state *Platform,
             *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+S, -1+S, -1+0})};
             *Vertex++ = (p_vertex){Mesh_EncodePosition((v3r32){-1+S, -1+S, -1+S})};
             
-            r32 Factor = 0;
-            m4x4r32 Translation = M4x4r32_Translation(ChunkPos.X*16 - 7.5 + B.X - Factor/2, ChunkPos.Y*16 - 7.5 + B.Y - Factor/2, ChunkPos.Z*16 - 7.5 + B.Z - Factor/2);
-            m4x4r32 Scaling     = M4x4r32_Scaling(0.5+Factor, 0.5+Factor, 0.5+Factor);
+            m4x4r32 Translation = M4x4r32_Translation(ChunkPos.X*16 - 7.5 + B.X, ChunkPos.Y*16 - 7.5 + B.Y, ChunkPos.Z*16 - 7.5 + B.Z);
+            m4x4r32 Scaling     = M4x4r32_Scaling(0.5, 0.501, 0.5);
             m4x4r32 Rotation    = M4x4r32_I;
             #endif
             

@@ -35,44 +35,6 @@ global u32 CubePositions[] = {
 global v3u32 ChunkDims = {16, 16, 16};
 
 internal mesh_object
-MakePCBlockObject(mesh *Mesh, heap *Heap, v3r32 Pos, v4u08 Color)
-{
-   persist u32 Indices[] = {
-      0,1,2,  0,2,3,
-      1,5,6,  1,6,2,
-      5,4,7,  5,7,6,
-      4,0,3,  4,3,7,
-      3,2,6,  3,6,7,
-      4,5,1,  4,1,0
-   };
-   
-   mesh_object Object;
-   
-   Object.Vertices = Heap_Allocate(Heap, sizeof(pc_vertex)*8);
-   Object.Indices  = Heap_Allocate(Heap, sizeof(Indices));
-   
-   pc_vertex *Vertex = (vptr)Object.Vertices->Data;
-   u32       *Index  = (vptr)Object.Indices->Data;
-   
-   *Vertex++ = (pc_vertex){CubePositions[0], Color};
-   *Vertex++ = (pc_vertex){CubePositions[1], Color};
-   *Vertex++ = (pc_vertex){CubePositions[2], Color};
-   *Vertex++ = (pc_vertex){CubePositions[3], Color};
-   *Vertex++ = (pc_vertex){CubePositions[4], Color};
-   *Vertex++ = (pc_vertex){CubePositions[5], Color};
-   *Vertex++ = (pc_vertex){CubePositions[6], Color};
-   *Vertex++ = (pc_vertex){CubePositions[7], Color};
-   
-   Mem_Cpy(Object.Indices->Data, Indices, sizeof(Indices));
-   
-   Object.TranslationMatrix = M4x4r32_Translation(Pos.X, Pos.Y, Pos.Z);
-   Object.ScalingMatrix = M4x4r32_Scaling(0.4, 0.4, 0.4);
-   Object.RotationMatrix = M4x4r32_I;
-   
-   return Object;
-}
-
-internal mesh_object
 MakePTBlockObject(mesh *Mesh, heap *Heap, v3r32 Pos, u32 BytesFromFirstAsset)
 {
    persist u32 Indices[] = {
@@ -154,10 +116,7 @@ MakeChunk(heap *Heap, mesh *Mesh, v3s32 ChunkPos, u32 *TextureBytes)
       
       for(u32 Z = 0; Z < ChunkDims.Z; Z++) {
          for(u32 X = 0; X < ChunkDims.X; X++) {
-            if(Y == 3 && Z == 0 && X == 0)
-               Blocks[INDEX_3D(X, Y, Z, ChunkDims.X, ChunkDims.Y)] = BLOCK_TEST;
-            else
-               Blocks[INDEX_3D(X, Y, Z, ChunkDims.X, ChunkDims.Y)] = Type;
+            Blocks[INDEX_3D(X, Y, Z, ChunkDims.X, ChunkDims.Y)] = Type;
          }
       }
    }
@@ -166,6 +125,16 @@ MakeChunk(heap *Heap, mesh *Mesh, v3s32 ChunkPos, u32 *TextureBytes)
    Blocks[INDEX_3D(7, 4, 8, ChunkDims.X, ChunkDims.Y)] = BLOCK_GRASS;
    Blocks[INDEX_3D(8, 4, 7, ChunkDims.X, ChunkDims.Y)] = BLOCK_GRASS;
    Blocks[INDEX_3D(8, 4, 8, ChunkDims.X, ChunkDims.Y)] = BLOCK_GRASS;
+   
+   Blocks[INDEX_3D(0, 3, 0, ChunkDims.X, ChunkDims.Y)] = BLOCK_TEST;
+   
+   Blocks[INDEX_3D(15, 1, 0, ChunkDims.X, ChunkDims.Y)] = BLOCK_NONE;
+   Blocks[INDEX_3D(15, 2, 0, ChunkDims.X, ChunkDims.Y)] = BLOCK_NONE;
+   Blocks[INDEX_3D(15, 3, 0, ChunkDims.X, ChunkDims.Y)] = BLOCK_NONE;
+   Blocks[INDEX_3D(14, 2, 0, ChunkDims.X, ChunkDims.Y)] = BLOCK_NONE;
+   Blocks[INDEX_3D(14, 3, 0, ChunkDims.X, ChunkDims.Y)] = BLOCK_NONE;
+   Blocks[INDEX_3D(14, 2, 0, ChunkDims.X, ChunkDims.Y)] = BLOCK_NONE;
+   Blocks[INDEX_3D(13, 3, 0, ChunkDims.X, ChunkDims.Y)] = BLOCK_NONE;
    
    Stack_Push();
    

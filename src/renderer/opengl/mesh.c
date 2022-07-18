@@ -7,13 +7,15 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-internal u32
+// internal u32
+internal v4s16
 Mesh_EncodePosition(v3r32 P)
 {
     P = V3r32_Clamp(P, -1, 1);
-    P = V3r32_MulS(P, 511);
+    P = V3r32_MulS(P, S16_MAX); // 511
     v3s32 I = V3r32_ToV3s32(P);
-    u32 E = (1<<30)|((I.Z&0x3FF)<<20)|((I.Y&0x3FF)<<10)|(I.X&0x3FF);
+    // u32 E = (1<<30)|((I.Z&0x3FF)<<20)|((I.Y&0x3FF)<<10)|(I.X&0x3FF);
+    v4s16 E = {I.X, I.Y, I.Z, S16_MAX};
     return E;
 }
 
@@ -99,7 +101,12 @@ Mesh_Init(mesh *Mesh,
     Mesh_Bind(Mesh);
     
     u64 Offset = 0;
-    u32 Stride = sizeof(u32);
+    // u32 Stride = sizeof(u32);
+    u32 Stride;
+    if(Mesh->Flags & MESH_IS_FOR_UI)
+        Stride = sizeof(u32);
+    else
+        Stride = sizeof(v4s16);
     if(Mesh->Flags & MESH_HAS_NORMALS)
         Stride += sizeof(u32);
     if(Mesh->Flags & MESH_HAS_TEXTURES)
@@ -113,8 +120,10 @@ Mesh_Init(mesh *Mesh,
         OpenGL_VertexAttribPointer(0, 2, GL_SHORT, TRUE, Stride, (vptr)Offset);
         Offset += sizeof(u32);
     } else {
-        OpenGL_VertexAttribPointer(0, 4, GL_INT_2_10_10_10_REV, TRUE, Stride, (vptr)Offset);
-        Offset += sizeof(u32);
+        // OpenGL_VertexAttribPointer(0, 4, GL_INT_2_10_10_10_REV, TRUE, Stride, (vptr)Offset);
+        // Offset += sizeof(u32);
+        OpenGL_VertexAttribPointer(0, 4, GL_SHORT, TRUE, Stride, (vptr)Offset);
+        Offset += sizeof(v4s16);
     }
     
     if(Mesh->Flags & MESH_HAS_NORMALS) {

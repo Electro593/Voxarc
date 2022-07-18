@@ -463,22 +463,19 @@ Renderer_Draw(platform_state *Platform,
     
     Mesh_FreeObject(Object);
     
-    
-    
     OpenGL_Clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     
     Mesh_Draw(&Renderer->PTMesh, GL_TRIANGLES);
     
-    if(Game->AimBlockValid) {
-        OpenGL_Disable(GL_DEPTH_TEST);
+    if(Game->AimBlockValid)
         Mesh_DrawPartial(&Renderer->PMesh, GL_LINES, Game->AimBlockObjectIndex, 1);
-        OpenGL_Enable(GL_DEPTH_TEST);
-    }
     
     if(Platform->CursorIsDisabled)
         Mesh_DrawPartial(&Renderer->PC2Mesh, GL_TRIANGLES, Game->CrosshairObjectIndex, 1);
     
+    OpenGL_Disable(GL_DEPTH_TEST);
     Mesh_Draw(&Renderer->GlyphMesh, GL_TRIANGLES);
+    OpenGL_Enable(GL_DEPTH_TEST);
     
     Stack_Pop();
 }

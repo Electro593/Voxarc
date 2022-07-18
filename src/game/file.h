@@ -10,14 +10,36 @@
 internal string File_Read(c08 *FileName, u64 Length, u64 Offset);
 
 typedef enum asset_type {
+    ASSET_TEXTURE,
     ASSET_GLYPH,
-    ASSET_BLOCK
 } asset_type;
+
+#define GUI_TEXTURE_PREFIX "assets\\gui\\"
+
+#define GUI_TEXTURES \
+   ENUM(BLOCK_HIGHLIGHT, block_highlight) \
+
+typedef enum gui_texture {
+   #define ENUM(EnumName, FileName) \
+      GUI_TEXTURE_##EnumName,
+   GUI_TEXTURES
+   #undef ENUM
+   
+   GUI_TEXTURE_Count
+} gui_texture;
+
+global c08 *GUITexturePaths[GUI_TEXTURE_Count] = {
+   #define ENUM(EnumName, FileName) \
+      GUI_TEXTURE_PREFIX #FileName ".bmp",
+   GUI_TEXTURES
+   #undef ENUM
+};
 
 //IMPORTANT: Remember, these have to be sorted!
 typedef enum assetpack_tag_id {
     TAG_CODEPOINT=1,
     TAG_BLOCK_TEXTURE,
+    TAG_UI_TEXTURE,
     TAG_ATLAS_DESCRIPTOR,
     TAG_FONT_DEF,
 } assetpack_tag_id;

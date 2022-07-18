@@ -159,7 +159,7 @@ File_CreateAssetpack(c08 *FileName,
     */
     
     assetpack_header Header;
-    heap_handle *Registries;
+    heap_handle *RegistriesHandle;
     heap_handle *Tags;
     heap_handle *TagData;
     heap_handle *Assets;
@@ -172,34 +172,48 @@ File_CreateAssetpack(c08 *FileName,
     
     r32 UnitScale = 1.0f/(Font.hhea->Ascent-Font.hhea->Descent);
     
+    u32 TextureAssetSize = sizeof(struct assetpack_asset_header);
     u32 GlyphAssetSize = sizeof(struct assetpack_asset_header) + sizeof(assetpack_glyph);
-    u32 BlockAssetSize = sizeof(struct assetpack_asset_header);
     
     u32 CodepointCount = 127 - 32;
-    u32 AssetCount = CodepointCount + BLOCK_Count-1;
-    Header.AssetsSize = CodepointCount*GlyphAssetSize + (BLOCK_Count-1)*BlockAssetSize;
+    u32 GlyphAssetCount = CodepointCount;
+    u32 TextureAssetCount = BLOCK_Count-1 + GUI_TEXTURE_Count;
+    u32 AssetCount = GlyphAssetCount + TextureAssetCount;
+    Header.AssetsSize = GlyphAssetCount*GlyphAssetSize + TextureAssetCount*TextureAssetSize;
     Assets = Heap_Allocate(Heap, Header.AssetsSize);
     
-    Header.TagCount = AssetCount+1+1;
+    Header.TagCount = AssetCount+1+1; // assets + font def + atlas
     Tags = Heap_Allocate(Heap, Header.TagCount*sizeof(assetpack_tag) + AssetCount*sizeof(assetpack_asset*));
     
     Header.TagDataSize = sizeof(assetpack_atlas) + sizeof(assetpack_font) + AssetCount*sizeof(assetpack_asset*);
     TagData = Heap_Allocate(Heap, Header.TagDataSize);
     vptr TagDataCursor = TagData->Data;
     
+    
+    u64 TagsOffset = 0;
     u32 RegistryIndex = 0;
-    Header.RegistryCount = 4;
-    Registries = Heap_Allocate(Heap, Header.RegistryCount*sizeof(assetpack_registry));
-    ((assetpack_registry*)Registries->Data)[RegistryIndex].ID = TAG_CODEPOINT;
-    ((assetpack_registry*)Registries->Data)[RegistryIndex].Type = TYPE_U32;
-    ((assetpack_registry*)Registries->Data)[RegistryIndex].TagCount = CodepointCount;
-    ((assetpack_registry*)Registries->Data)[RegistryIndex].Tags = 0;
+    Header.RegistryCount = 5;
+    RegistriesHandle = Heap_Allocate(Heap, Header.RegistryCount*sizeof(assetpack_registry));
+    assetpack_registry *Registries = RegistriesHandle->Data;
+    Registries[RegistryIndex].ID = TAG_CODEPOINT;
+    Registries[RegistryIndex].Type = TYPE_U32;
+    Registries[RegistryIndex].TagCount = CodepointCount;
+    Registries[RegistryIndex].Tags = (vptr)TagsOffset;
+    TagsOffset += sizeof(assetpack_tag)*Registries[RegistryIndex].TagCount;
     RegistryIndex++;
     
-    ((assetpack_registry*)Registries->Data)[RegistryIndex].ID = TAG_BLOCK_TEXTURE;
-    ((assetpack_registry*)Registries->Data)[RegistryIndex].Type = TYPE_U32;
-    ((assetpack_registry*)Registries->Data)[RegistryIndex].TagCount = BLOCK_Count-1;
-    ((assetpack_registry*)Registries->Data)[RegistryIndex].Tags = (assetpack_tag*)(sizeof(assetpack_tag)*CodepointCount);
+    Registries[RegistryIndex].ID = TAG_BLOCK_TEXTURE;
+    Registries[RegistryIndex].Type = TYPE_U32;
+    Registries[RegistryIndex].TagCount = BLOCK_Count-1;
+    Registries[RegistryIndex].Tags = (vptr)TagsOffset;
+    TagsOffset += sizeof(assetpack_tag)*Registries[RegistryIndex].TagCount;
+    RegistryIndex++;
+    
+    Registries[RegistryIndex].ID = TAG_UI_TEXTURE;
+    Registries[RegistryIndex].Type = TYPE_U32;
+    Registries[RegistryIndex].TagCount = GUI_TEXTURE_Count;
+    Registries[RegistryIndex].Tags = (vptr)TagsOffset;
+    TagsOffset += sizeof(assetpack_tag)*Registries[RegistryIndex].TagCount;
     RegistryIndex++;
     
     v2u32 AtlasDims = {512, 512};
@@ -207,11 +221,15 @@ File_CreateAssetpack(c08 *FileName,
     u32 AtlasCount = 0;
     heap_handle *Atlases = Heap_Allocate(Heap, 0);
     
-    // Load in block bitmaps
-    file_handle BlockHandles[BLOCK_Count-1];
-    for(u32 BlockIndex = 0; BlockIndex < BLOCK_Count-1; BlockIndex++) {
-        Platform_OpenFile(BlockHandles+BlockIndex, BlockTexturePaths[BlockIndex], FILE_READ);
-    }
+    // Load in texture bitmaps
+    file_handle *TextureHandles = Stack_Allocate(TextureAssetCount*sizeof(file_handle));
+    u32 HandleCursor = 0;
+    for(u32 I = 0; I < BLOCK_Count-1; I++)
+        Platform_OpenFile(TextureHandles+HandleCursor+I, BlockTexturePaths[I], FILE_READ);
+    HandleCursor += BLOCK_Count-1;
+    for(u32 I = 0; I < GUI_TEXTURE_Count; I++)
+        Platform_OpenFile(TextureHandles+HandleCursor+I, GUITexturePaths[I], FILE_READ);
+    HandleCursor += GUI_TEXTURE_Count;
     
     binpacker_node *NullNode = Stack_Allocate(sizeof(binpacker_node));
     NullNode->AtlasIndex = 0;
@@ -224,8 +242,8 @@ File_CreateAssetpack(c08 *FileName,
     NullAssetNode->Next = NullAssetNode;
     NullAssetNode->Prev = NullAssetNode;
     
-    assetpack_tag *Tag = (assetpack_tag*)Tags->Data;
-    assetpack_asset *Asset = (assetpack_asset*)Assets->Data;
+    assetpack_tag *Tag = Tags->Data;
+    assetpack_asset *Asset = Assets->Data;
     
     for(c08 Codepoint = ' '; Codepoint <= '~'; Codepoint++) {
         u32 GlyphIndex = Font_GetGlyphIndex(Font, Codepoint);
@@ -263,21 +281,22 @@ File_CreateAssetpack(c08 *FileName,
         Tag++;
     }
     
-    for(u32 BlockIndex = 0; BlockIndex < BLOCK_Count-1; BlockIndex++) {
+    HandleCursor = 0;
+    for(u32 I = 0; I < BLOCK_Count-1; I++) {
         bitmap_header BitmapHeader;
-        Platform_ReadFile(BlockHandles[BlockIndex], &BitmapHeader, sizeof(bitmap_header), 0);
+        Platform_ReadFile(TextureHandles[HandleCursor+I], &BitmapHeader, sizeof(bitmap_header), 0);
         
         Asset->Size = (v2u32){BitmapHeader.Width, BitmapHeader.Height};
         
-        Tag->ValueI = BlockIndex+1;
+        Tag->ValueI = I+1;
         Tag->AssetCount = 1;
         Tag->Assets = (vptr)((u08*)TagDataCursor - (u64)TagData->Data);
         *(vptr*)TagDataCursor = (u08*)Asset - (u64)Assets->Data;
         (u08*)TagDataCursor += sizeof(assetpack_asset*);
         
         asset_node *AssetNode = Stack_Allocate(sizeof(asset_node));
-        AssetNode->Type = ASSET_BLOCK;
-        AssetNode->HandleIndex = BlockIndex;
+        AssetNode->Type = ASSET_TEXTURE;
+        AssetNode->HandleIndex = HandleCursor+I;
         AssetNode->BitmapOffset = BitmapHeader.DataOffset;
         AssetNode->Size = (v2u32){Asset->Size.X+Padding, Asset->Size.Y+Padding};
         AssetNode->Asset = Asset;
@@ -286,9 +305,38 @@ File_CreateAssetpack(c08 *FileName,
         AssetNode->Prev->Next = AssetNode;
         AssetNode->Next->Prev = AssetNode;
         
-        (u08*)Asset += BlockAssetSize;
+        (u08*)Asset += TextureAssetSize;
         Tag++;
     }
+    HandleCursor += BLOCK_Count-1;
+    
+    for(u32 I = 0; I < GUI_TEXTURE_Count; I++) {
+        bitmap_header BitmapHeader;
+        Platform_ReadFile(TextureHandles[HandleCursor+I], &BitmapHeader, sizeof(bitmap_header), 0);
+        
+        Asset->Size = (v2u32){BitmapHeader.Width, BitmapHeader.Height};
+        
+        Tag->ValueI = I+1;
+        Tag->AssetCount = 1;
+        Tag->Assets = (vptr)((u08*)TagDataCursor - (u64)TagData->Data);
+        *(vptr*)TagDataCursor = (u08*)Asset - (u64)Assets->Data;
+        (u08*)TagDataCursor += sizeof(assetpack_asset*);
+        
+        asset_node *AssetNode = Stack_Allocate(sizeof(asset_node));
+        AssetNode->Type = ASSET_TEXTURE;
+        AssetNode->HandleIndex = HandleCursor+I;
+        AssetNode->BitmapOffset = BitmapHeader.DataOffset;
+        AssetNode->Size = (v2u32){Asset->Size.X+Padding, Asset->Size.Y+Padding};
+        AssetNode->Asset = Asset;
+        AssetNode->Prev = NullAssetNode;
+        AssetNode->Next = NullAssetNode->Next;
+        AssetNode->Prev->Next = AssetNode;
+        AssetNode->Next->Prev = AssetNode;
+        
+        (u08*)Asset += TextureAssetSize;
+        Tag++;
+    }
+    HandleCursor += GUI_TEXTURE_Count;
     
     while(NullAssetNode->Next != NullAssetNode) {
         // Find a fitting node
@@ -367,12 +415,12 @@ File_CreateAssetpack(c08 *FileName,
                 MSDF_DrawShape(AssetNode->Glyph.Shape, &Asset->Pos, &Asset->Size, Bitmap, Node->Pos, Node->AtlasIndex, AtlasDims);
             } break;
             
-            case ASSET_BLOCK: {
+            case ASSET_TEXTURE: {
                 Stack_Push();
                 u32 Size = Asset->Size.X*Asset->Size.Y*sizeof(v4u08);
                 v4u08 *Src = Stack_Allocate(Size);
                 //TODO: Async read?
-                Platform_ReadFile(BlockHandles[AssetNode->HandleIndex], Src, Size, AssetNode->BitmapOffset);
+                Platform_ReadFile(TextureHandles[AssetNode->HandleIndex], Src, Size, AssetNode->BitmapOffset);
                 for(u32 Y = 0; Y < Asset->Size.Y; Y++) {
                     for(u32 X = 0; X < Asset->Size.X; X++) {
                         v4u08 Color = {Src->Z, Src->Y, Src->X, 255};
@@ -460,10 +508,10 @@ File_CreateAssetpack(c08 *FileName,
         }
     }
     
-    ((assetpack_registry*)Registries->Data)[RegistryIndex].ID = TAG_ATLAS_DESCRIPTOR;
-    ((assetpack_registry*)Registries->Data)[RegistryIndex].Type = TYPE_VPTR;
-    ((assetpack_registry*)Registries->Data)[RegistryIndex].TagCount = 1;
-    ((assetpack_registry*)Registries->Data)[RegistryIndex].Tags = (assetpack_tag*)((u08*)Tag - (u64)Tags->Data);
+    Registries[RegistryIndex].ID = TAG_ATLAS_DESCRIPTOR;
+    Registries[RegistryIndex].Type = TYPE_VPTR;
+    Registries[RegistryIndex].TagCount = 1;
+    Registries[RegistryIndex].Tags = (vptr)((u64)Tag - (u64)Tags->Data);
     RegistryIndex++;
     Tag->ValueP = (u08*)TagDataCursor - (u64)TagData->Data;
     Tag->AssetCount = 0;
@@ -474,10 +522,10 @@ File_CreateAssetpack(c08 *FileName,
     AtlasDescriptor->Size = AtlasDims;
     AtlasDescriptor->Count = AtlasCount;
     
-    ((assetpack_registry*)Registries->Data)[RegistryIndex].ID = TAG_FONT_DEF;
-    ((assetpack_registry*)Registries->Data)[RegistryIndex].Type = TYPE_VPTR;
-    ((assetpack_registry*)Registries->Data)[RegistryIndex].TagCount = 1;
-    ((assetpack_registry*)Registries->Data)[RegistryIndex].Tags = (assetpack_tag*)((u08*)Tag - (u64)Tags->Data);
+    Registries[RegistryIndex].ID = TAG_FONT_DEF;
+    Registries[RegistryIndex].Type = TYPE_VPTR;
+    Registries[RegistryIndex].TagCount = 1;
+    Registries[RegistryIndex].Tags = (vptr)((u64)Tag - (u64)Tags->Data);
     RegistryIndex++;
     Tag->ValueP = (u08*)TagDataCursor - (u64)TagData->Data;
     Tag->AssetCount = 0;
@@ -508,8 +556,8 @@ File_CreateAssetpack(c08 *FileName,
     
     Platform_OpenFile(&FileHandle, FileName, FILE_WRITE);
     u64 Offset = sizeof(assetpack_header);
-    Platform_WriteFile(FileHandle, Registries->Data, Registries->Size, Offset);
-    Offset += Registries->Size;
+    Platform_WriteFile(FileHandle, Registries, RegistriesHandle->Size, Offset);
+    Offset += RegistriesHandle->Size;
     Platform_WriteFile(FileHandle, Tags->Data, Tags->Size, Offset);
     Offset += Tags->Size;
     Header.TagDataOffset = Offset;
@@ -523,15 +571,19 @@ File_CreateAssetpack(c08 *FileName,
     Platform_WriteFile(FileHandle, &Header, sizeof(assetpack_header), 0);
     Platform_CloseFile(FileHandle);
     
-    for(u32 BlockIndex = 0; BlockIndex < BLOCK_Count-1; BlockIndex++) {
-        Platform_CloseFile(BlockHandles[BlockIndex]);
-    }
+    HandleCursor = 0;
+    for(u32 I = 0; I < BLOCK_Count-1; I++)
+        Platform_CloseFile(TextureHandles[HandleCursor+I]);
+    HandleCursor += BLOCK_Count-1;
+    for(u32 I = 0; I < GUI_TEXTURE_Count; I++)
+        Platform_CloseFile(TextureHandles[HandleCursor+I]);
+    HandleCursor += GUI_TEXTURE_Count;
     
     Heap_Free(Atlases);
     Heap_Free(Assets);
     Heap_Free(TagData);
     Heap_Free(Tags);
-    Heap_Free(Registries);
+    Heap_Free(RegistriesHandle);
     
     Stack_Pop();
 }

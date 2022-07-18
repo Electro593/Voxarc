@@ -8,6 +8,7 @@
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #define GL_ZERO                   0x0000
+#define GL_ONE                    0x0001
 #define GL_LINES                  0x0001
 #define GL_LINE_LOOP              0x0002
 #define GL_TRIANGLES              0x0004
