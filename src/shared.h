@@ -101,6 +101,15 @@ typedef enum type_id {
         TYPEID_##Name,
     TYPES
     #undef ENUM
+    
+    TYPEID_EXTRA_EXP = 8,
+    TYPEID_MOD_EXP   = 4,
+    
+    TYPEID_TYPE_MASK  = (1<<TYPEID_EXTRA_EXP)-1,
+    TYPEID_MOD_MASK   = ~((1<<(32-TYPEID_MOD_EXP))-1), 
+    TYPEID_EXTRA_MASK = ~(TYPEID_TYPE_MASK | TYPEID_MOD_MASK),
+    
+    TYPEID_MEMBER   = 0x10000000,
 } type_id;
 
 typedef struct type {
@@ -115,6 +124,10 @@ TYPES
 #undef ENUM
 
 #undef TYPES
+
+internal type MakeMemberType(type_id TypeID, u32 Offset, u32 Size) {
+    return (type){TYPEID_MEMBER | ((Offset<<TYPEID_EXTRA_EXP)&TYPEID_MOD_MASK) | TypeID, Size};
+}
 
 typedef struct datetime datetime;
 

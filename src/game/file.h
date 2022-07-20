@@ -14,6 +14,8 @@ typedef enum asset_type {
     ASSET_GLYPH,
 } asset_type;
 
+
+
 #define GUI_TEXTURE_PREFIX "assets\\gui\\"
 
 #define GUI_TEXTURES \
@@ -35,14 +37,33 @@ global c08 *GUITexturePaths[GUI_TEXTURE_Count] = {
    #undef ENUM
 };
 
-//IMPORTANT: Remember, these have to be sorted!
+
+
+#define TAG_TYPES \
+    ENUM(TAG_INVALID,          TYPE_NONE) \
+    ENUM(TAG_CODEPOINT,        TYPE_U32) \
+    ENUM(TAG_BLOCK_TEXTURE,    TYPE_U32) \
+    ENUM(TAG_UI_TEXTURE,       TYPE_U32) \
+    ENUM(TAG_ATLAS_DESCRIPTOR, TYPE_VPTR) \
+    ENUM(TAG_FONT_DEF,         TYPE_VPTR) \
+
 typedef enum assetpack_tag_id {
-    TAG_CODEPOINT=1,
-    TAG_BLOCK_TEXTURE,
-    TAG_UI_TEXTURE,
-    TAG_ATLAS_DESCRIPTOR,
-    TAG_FONT_DEF,
+    #define ENUM(Name, Type) \
+        Name,
+    TAG_TYPES
+    #undef ENUM
+    
+    TAG_Count
 } assetpack_tag_id;
+
+// global type TagTypes[] = {
+//     #define ENUM(Name, Type) \
+//         Type,
+//     TAG_TYPES
+//     #undef ENUM
+// };
+
+
 
 #pragma pack(push, 1)
 typedef struct bitmap_header {
@@ -63,12 +84,9 @@ typedef struct bitmap_header {
     u32 ImportantColors;
 } bitmap_header;
 
-// TODO: TagDataOffset can probably be removed, since tags are constant
-// size now
 typedef struct assetpack_header {
     u32 RegistryCount;
     u32 TagCount;
-    u32 TagDataOffset;
     u32 TagDataSize;
     u32 AssetsSize;
     u32 AssetDataOffset;
@@ -144,6 +162,8 @@ typedef struct assetpack_gen {
     HEAP(u08) AssetData;
     
     u16 CurrRegistry;
+    
+    u32 RegistryMap[TAG_Count];
 } assetpack_gen;
 #pragma pack(pop)
 

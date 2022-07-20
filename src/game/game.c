@@ -15,6 +15,7 @@ global_state __Global;
 #include <util/vector.c>
 #include <util/memory.c>
 #include <util/string.c>
+#include <util/set.c>
 #include <game/msdf.c>
 #include <renderer/font.c>
 #include <game/file.c>
