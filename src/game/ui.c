@@ -39,9 +39,9 @@ MakeUIString(heap *Heap, string String, ui_style Style)
     
     ui_font *Font = Style.Font;
     
-    assetpack_tag *Tag = Assetpack_FindFirstTag(Font->Assetpack, TAG_FONT_DEF);
-    Assert(Tag);
-    assetpack_font *FontData = Tag->ValueP;
+    assetpack_tag *Tag = Assetpack_FindFirstTag(Font->Assetpack, TAG_FONT_NAME);
+    Assert(Tag && Tag->AssetCount);
+    assetpack_font *FontData = &Tag->Assets[0]->Font;
     
     v2r32 P = {0, Style.FontSize * (FontData->Ascent-FontData->Descent)};
     r32 MaxX = 0;
@@ -158,9 +158,9 @@ MakeUIStringObject(heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize)
     
     ui_style Style = UIStr.Style;
     
-    assetpack_tag *Tag = Assetpack_FindFirstTag(Style.Font->Assetpack, TAG_FONT_DEF);
-    Assert(Tag);
-    assetpack_font *FontData = Tag->ValueP;
+    assetpack_tag *Tag = Assetpack_FindFirstTag(Style.Font->Assetpack, TAG_FONT_NAME);
+    Assert(Tag && Tag->AssetCount);
+    assetpack_font *FontData = &Tag->Assets[0]->Font;
     
     glyph_vertex *Vertex = Object.Vertices->Data;
     u32          *Index  = Object.Indices->Data;

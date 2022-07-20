@@ -91,7 +91,8 @@ typedef struct opengl_funcs opengl_funcs;
 typedef struct game_exports game_exports;
 
 #define TYPES \
-    ENUM(U32, u32) \
+    ENUM(U32,  u32) \
+    ENUM(STR,  c08*) \
     ENUM(VPTR, vptr) \
 
 typedef enum type_id {
@@ -140,9 +141,9 @@ typedef struct datetime datetime;
 #include <renderer/opengl/mesh.h>
 #include <game/msdf.h>
 #include <renderer/font.h>
+#include <platform/platform.h>
 #include <game/file.h>
 #include <game/ui.h>
-#include <platform/platform.h>
 #include <renderer/renderer.h>
 #include <game/world.h>
 #include <game/game.h>

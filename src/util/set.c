@@ -49,11 +49,10 @@ BinarySearchArray(vptr *Array, u32 Start, u32 End, vptr Target, type Type,
    
    // If we didn't find a match, give the insertion index
    // (In case the caller was looking for a place to insert)
-   if(Index < Start) {
-      Index = Start;
-   }
+   if(Index < Start) Index = Start;
    
    if(IndexOut) *IndexOut = Index;
    
+   if(Start == End) Curr = NULL;
    return Curr;
 }

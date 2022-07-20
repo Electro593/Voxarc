@@ -1,5 +1,10 @@
 @echo off
-call "D:\Programs\VisualStudio\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" x64
+
+if exist D:\Programs\VisualStudio\BuildTools\VC\Auxiliary\Build\vcvarsall.bat (
+    call "D:\Programs\VisualStudio\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" x64
+) else (
+    call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
+)
 
 if not exist build mkdir build
 pushd build

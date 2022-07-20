@@ -27,6 +27,8 @@ typedef enum block_type {
 } block_type;
 
 global c08 *BlockTexturePaths[BLOCK_Count] = {
+   "",
+   
    #define ENUM(EnumName, FileName) \
       BLOCK_TEXTURE_PREFIX #FileName ".bmp",
    BLOCK_TYPES

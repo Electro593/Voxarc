@@ -191,8 +191,8 @@ Renderer_LoadPTProgram(renderer_state *Renderer, b08 FirstTime)
         
         Renderer->PTProgram = Renderer_LoadShaders(VertName, FragName);
         
-        assetpack_tag *Tag = Assetpack_FindFirstTag(Renderer->Assetpack, TAG_ATLAS_DESCRIPTOR);
-        assetpack_atlas *Atlas = (assetpack_atlas*)Tag->ValueP;
+        assetpack_tag *Tag = Assetpack_FindFirstTag(Renderer->Assetpack, TAG_ATLAS);
+        assetpack_atlas *Atlas = &Tag->Assets[0]->Atlas;
         m4x4r32 VPMatrix = M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
         
         if(FirstTime) {
@@ -259,8 +259,8 @@ Renderer_LoadGlyphProgram(renderer_state *Renderer, b08 FirstTime)
             OpenGL_SamplerParameteri(Renderer->GlyphMesh.SamplerObject, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         }
         
-        assetpack_tag *Tag = Assetpack_FindFirstTag(Renderer->Assetpack, TAG_ATLAS_DESCRIPTOR);
-        assetpack_atlas *Atlas = (assetpack_atlas*)Tag->ValueP;
+        assetpack_tag *Tag = Assetpack_FindFirstTag(Renderer->Assetpack, TAG_ATLAS);
+        assetpack_atlas *Atlas = &Tag->Assets[0]->Atlas;
         
         Renderer->GlyphMesh.AtlasesSampler = OpenGL_GetUniformLocation(Renderer->GlyphProgram, "Atlases");
         Renderer->GlyphMesh.AtlasSize      = OpenGL_GetUniformLocation(Renderer->GlyphProgram, "AtlasSize");
@@ -352,9 +352,9 @@ Renderer_Init(renderer_state *Renderer,
     Renderer->ViewMatrix = M4x4r32_I;
     Renderer->WindowSize = WindowSize;
     
-    assetpack_tag *Tag = Assetpack_FindFirstTag(Renderer->Assetpack, TAG_ATLAS_DESCRIPTOR);
-    Assert(Tag);
-    assetpack_atlas *Atlas = (assetpack_atlas*)Tag->ValueP;
+    assetpack_tag *Tag = Assetpack_FindFirstTag(Renderer->Assetpack, TAG_ATLAS);
+    Assert(Tag && Tag->AssetCount);
+    assetpack_atlas *Atlas = &Tag->Assets[0]->Atlas;
     
     Renderer_LoadPProgram(Renderer, TRUE);
     Renderer_LoadPC2Program(Renderer, TRUE);
