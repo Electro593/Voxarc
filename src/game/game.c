@@ -42,7 +42,7 @@ Game_Init(platform_state *Platform,
    heap *RendererHeap = Heap_Init(MemBase, RendererHeapSize);
    (u08*)MemBase += RendererHeapSize;
    
-   File_CreateAssetpack("assets\\0.pack", RendererHeap, 60.0f);
+   // File_CreateAssetpack("assets\\0.pack", RendererHeap, 60.0f);
    Renderer->Assetpack = File_LoadAssetpack("assets\\0.pack", RendererHeap);
    
    Game->Flying = TRUE;
@@ -56,9 +56,8 @@ Game_Init(platform_state *Platform,
    
    u32 *TextureBytes = Stack_Allocate(sizeof(u32) * BLOCK_Count);
    for(u32 I = 1; I < BLOCK_Count; I++) {
-      assetpack_tag *Tag = Assetpack_FindExactTag(Renderer->Assetpack, TAG_BLOCK_TEXTURE, (vptr)(u64)I);
-      assetpack_asset *Asset = Tag->Assets[0];
-      TextureBytes[I] = (u64)((u08*)Asset - (u64)Renderer->Assetpack.Assets);
+      assetpack_asset *Asset = FindFirstAssetFromExactTag(Renderer->Assetpack, TAG_BLOCK_TEXTURE, &I);
+      TextureBytes[I] = (u64)Asset - (u64)Renderer->Assetpack.Assets;
    }
    
    // World

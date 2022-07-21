@@ -191,8 +191,7 @@ Renderer_LoadPTProgram(renderer_state *Renderer, b08 FirstTime)
         
         Renderer->PTProgram = Renderer_LoadShaders(VertName, FragName);
         
-        assetpack_tag *Tag = Assetpack_FindFirstTag(Renderer->Assetpack, TAG_ATLAS_DESC);
-        assetpack_atlas *Atlas = &Tag->Assets[0]->Atlas;
+        assetpack_atlas Atlas = FindFirstAssetFromExactTag(Renderer->Assetpack, TAG_ATLAS_DESC, &(u32){0})->Atlas;
         m4x4r32 VPMatrix = M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
         
         if(FirstTime) {
@@ -203,7 +202,7 @@ Renderer_LoadPTProgram(renderer_state *Renderer, b08 FirstTime)
             OpenGL_SamplerParameteri(Renderer->PTMesh.SamplerObject, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             OpenGL_SamplerParameteri(Renderer->PTMesh.SamplerObject, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             OpenGL_SamplerParameteri(Renderer->PTMesh.SamplerObject, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            OpenGL_TexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, Atlas->Size.X, Atlas->Size.Y, Atlas->Count, 0, GL_RGBA, GL_UNSIGNED_BYTE, Renderer->Assetpack.AssetData+Atlas->DataOffset);
+            OpenGL_TexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, Atlas.Size.X, Atlas.Size.Y, Atlas.Count, 0, GL_RGBA, GL_UNSIGNED_BYTE, Renderer->Assetpack.AssetData+Atlas.DataOffset);
             OpenGL_BindSampler(0, Renderer->PTMesh.SamplerObject);
             
             Heap_Resize(Renderer->PTMesh.Storage, Renderer->Assetpack.Header->AssetsSize);
@@ -217,7 +216,7 @@ Renderer_LoadPTProgram(renderer_state *Renderer, b08 FirstTime)
         
         OpenGL_UseProgram(Renderer->PTProgram);
         OpenGL_Uniform1i(Renderer->PTMesh.AtlasesSampler, 0);
-        OpenGL_Uniform2ui(Renderer->PTMesh.AtlasSize, Atlas->Size.X, Atlas->Size.Y);
+        OpenGL_Uniform2ui(Renderer->PTMesh.AtlasSize, Atlas.Size.X, Atlas.Size.Y);
         OpenGL_UniformMatrix4fv(Renderer->PTMesh.VPMatrix, 1, FALSE, VPMatrix);
         
         Renderer->PTLastModified[0] = VertTime;
@@ -259,15 +258,14 @@ Renderer_LoadGlyphProgram(renderer_state *Renderer, b08 FirstTime)
             OpenGL_SamplerParameteri(Renderer->GlyphMesh.SamplerObject, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         }
         
-        assetpack_tag *Tag = Assetpack_FindFirstTag(Renderer->Assetpack, TAG_ATLAS_DESC);
-        assetpack_atlas *Atlas = &Tag->Assets[0]->Atlas;
+        assetpack_atlas Atlas = FindFirstAssetFromExactTag(Renderer->Assetpack, TAG_ATLAS_DESC, &(u32){0})->Atlas;
         
         Renderer->GlyphMesh.AtlasesSampler = OpenGL_GetUniformLocation(Renderer->GlyphProgram, "Atlases");
         Renderer->GlyphMesh.AtlasSize      = OpenGL_GetUniformLocation(Renderer->GlyphProgram, "AtlasSize");
         
         OpenGL_UseProgram(Renderer->GlyphProgram);
         OpenGL_Uniform1i(Renderer->GlyphMesh.AtlasesSampler, 0);
-        OpenGL_Uniform2ui(Renderer->GlyphMesh.AtlasSize, Atlas->Size.X, Atlas->Size.Y);
+        OpenGL_Uniform2ui(Renderer->GlyphMesh.AtlasSize, Atlas.Size.X, Atlas.Size.Y);
         
         Renderer->UILastModified[0] = VertTime;
         Renderer->UILastModified[1] = FragTime;
@@ -351,10 +349,6 @@ Renderer_Init(renderer_state *Renderer,
     Renderer->PerspectiveMatrix = M4x4r32_I;
     Renderer->ViewMatrix = M4x4r32_I;
     Renderer->WindowSize = WindowSize;
-    
-    assetpack_tag *Tag = Assetpack_FindFirstTag(Renderer->Assetpack, TAG_ATLAS_DESC);
-    Assert(Tag && Tag->AssetCount);
-    assetpack_atlas *Atlas = &Tag->Assets[0]->Atlas;
     
     Renderer_LoadPProgram(Renderer, TRUE);
     Renderer_LoadPC2Program(Renderer, TRUE);

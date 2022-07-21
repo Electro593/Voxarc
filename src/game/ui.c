@@ -14,9 +14,11 @@ GetGlyph(ui_font *Font, c08 Codepoint)
     assetpack_asset *Asset = Font->CharCache[I];
     
     if(!Asset) {
-        assetpack_tag *Tag = Assetpack_FindExactTag(Font->Assetpack, TAG_CODEPOINT, (vptr)(u64)Codepoint);
-        if(Tag && Tag->AssetCount)
-            Asset = Font->CharCache[I] = Tag->Assets[0];
+        Asset = FindFirstAssetFromExactTag(Font->Assetpack, TAG_CODEPOINT, &Codepoint);
+        Font->CharCache[I] = Asset;
+        // assetpack_tag *Tag = Assetpack_FindExactTag(Font->Assetpack, TAG_CODEPOINT, (vptr)(u64)Codepoint);
+        // if(Tag && Tag->AssetCount)
+        //     Asset = Font->CharCache[I] = Tag->Assets[0];
     }
     
     return Asset;
@@ -39,14 +41,12 @@ MakeUIString(heap *Heap, string String, ui_style Style)
     
     ui_font *Font = Style.Font;
     
-    assetpack_tag *Tag = Assetpack_FindFirstTag(Font->Assetpack, TAG_FONT_NAME);
-    Assert(Tag && Tag->AssetCount);
-    assetpack_font *FontData = &Tag->Assets[0]->Font;
+    assetpack_font FontData = FindFirstAssetFromExactTag(Font->Assetpack, TAG_FONT_DESC, &(u32){0})->Font;
     
-    v2r32 P = {0, Style.FontSize * (FontData->Ascent-FontData->Descent)};
+    v2r32 P = {0, Style.FontSize * (FontData.Ascent-FontData.Descent)};
     r32 MaxX = 0;
     
-    r32 AdvanceY = Style.FontSize * (FontData->Ascent-FontData->Descent+FontData->LineGap);
+    r32 AdvanceY = Style.FontSize * (FontData.Ascent-FontData.Descent+FontData.LineGap);
     
     u32 LastWordBreakI = 0;
     u32 LastWordBreakX = 0;
@@ -158,17 +158,16 @@ MakeUIStringObject(heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize)
     
     ui_style Style = UIStr.Style;
     
-    assetpack_tag *Tag = Assetpack_FindFirstTag(Style.Font->Assetpack, TAG_FONT_NAME);
-    Assert(Tag && Tag->AssetCount);
-    assetpack_font *FontData = &Tag->Assets[0]->Font;
+    //TODO: Cache the font data
+    assetpack_font FontData = FindFirstAssetFromExactTag(Style.Font->Assetpack, TAG_FONT_DESC, &(u32){0})->Font;
     
     glyph_vertex *Vertex = Object.Vertices->Data;
     u32          *Index  = Object.Indices->Data;
     
     u32 *Lines = UIStr.Lines->Data;
     
-    v2r32 P = {0, UIStr.Size.Y - Style.FontSize*FontData->Ascent};
-    r32 AdvanceY = Style.FontSize * (FontData->Ascent-FontData->Descent+FontData->LineGap);
+    v2r32 P = {0, UIStr.Size.Y - Style.FontSize*FontData.Ascent};
+    r32 AdvanceY = Style.FontSize * (FontData.Ascent-FontData.Descent+FontData.LineGap);
     
     u32 PI = 0;
     
@@ -220,7 +219,7 @@ MakeUIStringObject(heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize)
         P.Y -= AdvanceY;
     }
     
-    P.Y -= -FontData->Descent * Style.FontSize;
+    P.Y -= -FontData.Descent * Style.FontSize;
     
     Object.TranslationMatrix = M4x4r32_Translation(
         -1 + (Style.StringOffset.X + Pos.X + UIStr.Size.X)/ViewSize.X,

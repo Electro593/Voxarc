@@ -86,6 +86,7 @@ typedef struct assetpack_header {
     u32 TagCount;
     u32 TagDataSize;
     u32 AssetsSize;
+    u32 AssetCount;
     u32 AssetDataOffset;
     u32 AssetDataSize;
 } assetpack_header;
@@ -110,6 +111,7 @@ typedef struct assetpack_atlas {
 
 //NOTE: sizeof(assetpack_asset) MUST be a multiple of 4
 //TODO: Shouldn't AtlasIndex be specific to glyph and texture?
+//TODO: Actually implement the hash
 typedef struct assetpack_asset {
     struct assetpack_asset_header {
         v2u32 Pos;
@@ -196,5 +198,3 @@ typedef struct assetpack_gen {
     binpacker_node *NullPackerNode;
 } assetpack_gen;
 #pragma pack(pop)
-
-internal assetpack_tag *Assetpack_FindFirstTag(assetpack Assetpack, assetpack_tag_id TagID);

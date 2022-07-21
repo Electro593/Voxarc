@@ -8,9 +8,7 @@
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 internal string
-File_Read(c08 *FileName,
-          u64 Length,
-          u64 Offset)
+File_Read(c08 *FileName, u64 Length, u64 Offset)
 {
     file_handle FileHandle;
     Assert(Platform_OpenFile(&FileHandle, FileName, FILE_READ),
@@ -30,81 +28,127 @@ File_Read(c08 *FileName,
     return String;
 }
 
+
+
+internal s08
+CompareAssetpackTagString(vptr A, vptr B, vptr Param)
+{
+    u64 Unserialize = *(u64*)Param;
+    string *AStr = (vptr)(*(u08**)A + Unserialize);
+    string *BStr = *(string**)B;
+    c08 *AText = AStr->Text + Unserialize;
+    u32 Len = MIN(AStr->Length, BStr->Length);
+    return Mem_Cmp(AText, BStr->Text, Len);
+}
+
 internal assetpack_registry *
-Assetpack_FindRegistry(assetpack Assetpack,
-                       assetpack_tag_id TagID)
+FindTagRegistry(assetpack Assetpack, assetpack_tag_id TagID)
 {
-    u32 Index;
-    u32 Start = 0;
-    u32 End = Assetpack.Header->RegistryCount;
-    while(Start != End) {
-        Index = Start+(End-Start)/2;
-        if(Assetpack.Registries[Index].ID == TagID) break;
-        if(Assetpack.Registries[Index].ID < TagID) Start = Index+1;
-        else End = Index;
-    }
-    if(Start == End) return NULL;
-    return Assetpack.Registries+Index;
+    type Type = MakeMemberType(TYPEID_U32, 0, sizeof(assetpack_registry));
+    return BinarySearchArray(&Assetpack.Registries, 0, Assetpack.Header->RegistryCount, &TagID, Type, NULL, NULL, NULL);
 }
 
 internal assetpack_tag *
-Assetpack_FindFirstTag(assetpack Assetpack,
-                       assetpack_tag_id TagID)
+FindTagEntry(assetpack Assetpack, assetpack_tag_id TagID, vptr TagValue)
 {
-    assetpack_registry *Registry = Assetpack_FindRegistry(Assetpack, TagID);
-    if(Registry == NULL) return NULL;
-    if(Registry->TagCount == 0) return NULL;
-    return Registry->Tags+0;
-}
-
-internal assetpack_tag *
-Assetpack_FindExactTag(assetpack Assetpack,
-                       assetpack_tag_id TagID,
-                       vptr Value)
-{
-    assetpack_registry *Registry = Assetpack_FindRegistry(Assetpack, TagID);
-    if(Registry == NULL) return NULL;
-    if(Registry->TagCount == 0) return NULL;
+    assetpack_registry *Registry = FindTagRegistry(Assetpack, TagID);
+    if(!Registry) return NULL;
     
-    u32 Index;
-    u32 Start = 0;
-    u32 End = Registry->TagCount;
-    while(Start != End) {
-        Index = Start+(End-Start)/2;
-        s08 CmpResult;
-        switch(Registry->Type.ID) {
-            case TYPEID_U32: {
-                if(Registry->Tags[Index].ValueI < (u64)Value) CmpResult = LESS;
-                else if(Registry->Tags[Index].ValueI > (u64)Value) CmpResult = GREATER;
-                else CmpResult = EQUAL;
-            } break;
-            
-            default: {
-                Assert(0, "Not implemented");
-            }
-        }
-        if(CmpResult == EQUAL) return Registry->Tags+Index;
-        if(CmpResult == LESS) Start = Index+1;
-        else End = Index;
+    cmp_func *Func = NULL;
+    u64 Param = 0;
+    type Type = MakeMemberType(Registry->Type.ID, 0, sizeof(assetpack_tag));
+    if(Registry->Type.ID == TYPEID_STR)
+        Func = CompareAssetpackTagString;
+    
+    return BinarySearchArray(&Registry->Tags, 0, Registry->TagCount, TagValue, Type, Func, &Param, NULL);
+}
+
+internal assetpack_asset **
+FindAssetsFromPartialTags(assetpack Assetpack, u32 TypeCount, assetpack_tag_id *TagIDs, vptr *TagValues, u32 *MatchedCountOut)
+{
+    if(TypeCount == 0) {
+        if(MatchedCountOut) *MatchedCountOut = Assetpack.Header->AssetCount;
+        return &Assetpack.Assets;
+    } else if(TypeCount == 1) {
+        assetpack_tag *Entry = FindTagEntry(Assetpack, TagIDs[0], TagValues[0]);
+        if(MatchedCountOut) *MatchedCountOut = Entry->AssetCount;
+        return Entry->Assets;
+    } else {
+    	// Get the tag entries for each registry.
+    	assetpack_tag **SelectedTags = Stack_Allocate(TypeCount * sizeof(assetpack_tag*));
+    	for(u32 I = 0; I < TypeCount; I++) {
+    		SelectedTags[I] = FindTagEntry(Assetpack, TagIDs[I], TagValues[I]);
+    	}
+    	
+    	// Find the tag with the fewest assets.
+    	assetpack_tag *StartTag = SelectedTags[0];
+    	for(u32 I = 1; I < TypeCount; I++) {
+    		if(SelectedTags[I]->AssetCount < StartTag->AssetCount)
+    			StartTag = SelectedTags[I];
+    	}
+    	
+    	assetpack_asset **Matched = Stack_Allocate(StartTag->AssetCount * sizeof(assetpack_asset*));
+    	u32 MatchedCount = 0;
+    	
+        // For each asset (Asset) in the first tag, if every other tag
+        // contains it, it's a match.
+    	for(u32 I = 0; I < StartTag->AssetCount; I++) {
+    		assetpack_asset *Asset = StartTag->Assets[I];
+    		
+    		u32 J = 0;
+    		for(; J < TypeCount; J++) {
+    			assetpack_tag *CurrTag = SelectedTags[J];
+    			if(CurrTag == StartTag) continue;
+    			
+    			assetpack_asset *Match = BinarySearchArray((vptr*)&CurrTag->Assets, 0, CurrTag->AssetCount, &Asset, TYPE_VPTR, NULL, NULL, NULL);
+    			if(!Match) break;
+    		}
+    		
+    		// Asset was in all of the other sets, so it's a match
+    		if(J == TypeCount) Matched[MatchedCount++] = Asset;
+    	}
+    	
+        if(MatchedCountOut) *MatchedCountOut = MatchedCount;
+    	return Matched;
     }
-    return NULL;
 }
 
 internal assetpack_asset *
-Assetpack_FindExactAsset(assetpack Assetpack,
-                         u32 IDCount,
-                         assetpack_tag_id *IDs,
-                         vptr *Values)
+FindFirstAssetFromPartialTags(assetpack Assetpack, u32 TypeCount, assetpack_tag_id *TagIDs, vptr *TagValues)
 {
-    if(IDCount == 0) return NULL;
+    Stack_Push();
     
-    Assert(0, "Not implemented!");
-    return NULL;
+    u32 MatchedCount;
+    assetpack_asset **Matches = FindAssetsFromPartialTags(Assetpack, TypeCount, TagIDs, TagValues, &MatchedCount);
+    
+    assetpack_asset *Result;
+    if(MatchedCount == 0)
+        Result = NULL;
+    else
+        Result = Matches[0];
+    
+    Stack_Pop();
+    
+    return Result;
+}
+
+internal assetpack_asset *
+FindFirstAssetFromExactTags(assetpack Assetpack, u32 TypeCount, assetpack_tag_id *TagIDs, vptr *TagValues)
+{
+    // Since hashing isn't implemented, just do this
+    return FindFirstAssetFromPartialTags(Assetpack, TypeCount, TagIDs, TagValues);
+}
+
+internal assetpack_asset *
+FindFirstAssetFromExactTag(assetpack Assetpack, assetpack_tag_id TagID, vptr TagValue)
+{
+    assetpack_tag *Tag = FindTagEntry(Assetpack, TagID, TagValue);
+    if(!Tag || Tag->AssetCount == 0) return NULL;
+    return Tag->Assets[0];
 }
 
 internal assetpack
-File_LoadAssetpack(c08 *FileName,
-                   heap *Heap)
+File_LoadAssetpack(c08 *FileName, heap *Heap)
 {
     assetpack Assetpack;
     
@@ -120,21 +164,29 @@ File_LoadAssetpack(c08 *FileName,
     
     Assetpack.Header = (assetpack_header*)FileCursor;
     FileCursor += sizeof(assetpack_header);
+    
     Assetpack.Registries = (assetpack_registry*)FileCursor;
     FileCursor += sizeof(assetpack_registry) * Assetpack.Header->RegistryCount;
+    
     Assetpack.Tags = (assetpack_tag*)FileCursor;
     FileCursor += sizeof(assetpack_tag) * Assetpack.Header->TagCount;
+    
     Assetpack.TagData = FileCursor;
     FileCursor += Assetpack.Header->TagDataSize;
+    
     Assetpack.Assets = (assetpack_asset*)FileCursor;
+    
     FileCursor = FileBase + Assetpack.Header->AssetDataOffset;
     Assetpack.AssetData = FileCursor;
     
     for(u32 R = 0; R < Assetpack.Header->RegistryCount; R++) {
         assetpack_registry *Registry = Assetpack.Registries+R;
+        
         (u08*)Registry->Tags += (u64)Assetpack.Tags;
+        
         for(u32 T = 0; T < Registry->TagCount; T++) {
             assetpack_tag *Tag = Registry->Tags+T;
+            
             switch(Registry->Type.ID) {
                 case TYPEID_VPTR: {
                     (u08*)Tag->ValueP += (u64)Assetpack.TagData;
@@ -152,7 +204,9 @@ File_LoadAssetpack(c08 *FileName,
                     Assert(FALSE, "Unsupported type!");
                 }
             }
+            
             (u08*)Tag->Assets += (u64)Assetpack.TagData;
+            
             for(u32 A = 0; A < Tag->AssetCount; A++)
                 (u08*)(Tag->Assets[A]) += (u64)Assetpack.Assets;
         }
@@ -165,6 +219,9 @@ File_LoadAssetpack(c08 *FileName,
   - Verify the efficiency of the packer; there's probably a bug
   - Maybe save RegistryMap to file, so it can be used instead
     of binary searches
+  - Have each asset point to an array of tag pointers in AssetData,
+    so you can find the full set of tags if the query was partial or
+    random
 */
 
 internal void
@@ -338,19 +395,9 @@ AddAsset(assetpack_gen *Assetpack, asset_type Type)
     assetpack_asset *Asset = (vptr)((u08*)Assets + Assetpack->Header.AssetsSize);
     
     Assetpack->Header.AssetsSize += Size;
+    Assetpack->Header.AssetCount++;
     
     return Asset;
-}
-
-internal s08
-CompareAssetpackTagString(vptr A, vptr B, vptr Param)
-{
-    u64 Unserialize = *(u64*)Param;
-    string *AStr = (vptr)(*(u08**)A + Unserialize);
-    string *BStr = *(string**)B;
-    c08 *AText = AStr->Text + Unserialize;
-    u32 Len = MIN(AStr->Length, BStr->Length);
-    return Mem_Cmp(AText, BStr->Text, Len);
 }
 
 internal void
@@ -641,8 +688,7 @@ MakeAtlas(assetpack_gen *Assetpack, v4u08 BorderColor)
     Asset->Atlas.DataOffset = 0;
     Asset->Atlas.Size       = AtlasDims;
     Asset->Atlas.Count      = AtlasCount;
-    u32 AtlasValue = 0;
-    AddTag(Assetpack, Asset, TAG_ATLAS_DESC, &AtlasValue);
+    AddTag(Assetpack, Asset, TAG_ATLAS_DESC, &(u32){0});
     
     Assetpack->AtlasCount = AtlasCount;
     Assetpack->AtlasOffset = AtlasesOffset;
@@ -650,9 +696,7 @@ MakeAtlas(assetpack_gen *Assetpack, v4u08 BorderColor)
 }
 
 internal void
-File_CreateAssetpack(c08 *FileName,
-                     heap *Heap,
-                     r32 FontSize)
+File_CreateAssetpack(c08 *FileName, heap *Heap, r32 FontSize)
 {
     Stack_Push();
     
@@ -684,10 +728,9 @@ File_CreateAssetpack(c08 *FileName,
         Asset->Font.Ascent  = Font.hhea->Ascent  *  UnitScale;
         Asset->Font.Descent = Font.hhea->Descent *  UnitScale;
         Asset->Font.LineGap = Font.hhea->LineGap *  UnitScale;
-        u32 FontDescValue = TRUE;
         AddTag(&Assetpack, Asset, TAG_FONT_NAME, &FontName);
         AddTag(&Assetpack, Asset, TAG_FONT_STYLE, &FontStyle);
-        AddTag(&Assetpack, Asset, TAG_FONT_DESC, &FontDescValue);
+        AddTag(&Assetpack, Asset, TAG_FONT_DESC, &(u32){0});
         
         for(u32 Codepoint = ' '; Codepoint <= '~'; Codepoint++) {
             u32 GlyphIndex = Font_GetGlyphIndex(Font, Codepoint);
