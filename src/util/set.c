@@ -7,8 +7,12 @@
 // **                                                                         **
 // \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+// NOTE: Haha... the nightmare of C polymorphism. Well, this is where it'll
+// all go, so at least I won't have to see it anywhere else.
+
 internal vptr
-BinarySearchArray(vptr *Array, u32 Start, u32 End, vptr Target, type Type,
+BinarySearchArray(vptr *Array, u32 Start, u32 End, vptr Target,
+                  type Type, cmp_func *Func, vptr Param,
                   u32 *IndexOut)
 {
    u32 Offset = 0;
@@ -25,20 +29,28 @@ BinarySearchArray(vptr *Array, u32 Start, u32 End, vptr Target, type Type,
       Index = Start+(End-Start)/2;
       Curr = (vptr)((u64)(*Array) + Offset + Type.Size*Index);
       
-      b08 Cmp = EQUAL;
-      switch(Type.ID & TYPEID_TYPE_MASK) {
-         case TYPEID_U32: {
-                 if(*(u32*)Curr < *(u32*)Target) Cmp = LESS;
-            else if(*(u32*)Curr > *(u32*)Target) Cmp = GREATER;
-         } break;
-         
-         case TYPEID_VPTR: {
-                 if(*(vptr*)Curr < *(vptr*)Target) Cmp = LESS;
-            else if(*(vptr*)Curr > *(vptr*)Target) Cmp = GREATER;
-         } break;
-         
-         default: {
-            Assert(FALSE, "Type not supported in BinarySearchArray!");
+      b08 Cmp;
+      if(Func) {
+         Cmp = Func(Curr, Target, Param);
+      } else {
+         // Default handler
+         switch(Type.ID & TYPEID_TYPE_MASK) {
+            case TYPEID_U32: {
+                    if(*(u32*)Curr < *(u32*)Target) Cmp = LESS;
+               else if(*(u32*)Curr > *(u32*)Target) Cmp = GREATER;
+               else                                 Cmp = EQUAL;
+            } break;
+            
+            case TYPEID_VPTR: {
+                    if(*(u64*)Curr < *(u64*)Target) Cmp = LESS;
+               else if(*(u64*)Curr > *(u64*)Target) Cmp = GREATER;
+               else                                 Cmp = EQUAL;
+            } break;
+            
+            default: {
+               Assert(FALSE, "Type not supported in BinarySearchArray!");
+               Cmp = EQUAL;
+            }
          }
       }
       

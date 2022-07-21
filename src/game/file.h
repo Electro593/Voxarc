@@ -42,29 +42,23 @@ global c08 *GUITexturePaths[GUI_TEXTURE_Count] = {
 
 
 
-#define TAG_TYPES \
-    ENUM(TAG_INVALID,       TYPE_NONE) \
-    ENUM(TAG_CODEPOINT,     TYPE_U32) \
-    ENUM(TAG_BLOCK_TEXTURE, TYPE_U32) \
-    ENUM(TAG_UI_TEXTURE,    TYPE_U32) \
-    ENUM(TAG_ATLAS,         TYPE_VPTR) \
-    ENUM(TAG_FONT_NAME,     TYPE_STR) \
+typedef enum font_style {
+    FONT_MONOSPACE,
+} font_style;
 
 typedef enum assetpack_tag_id {
-    #define ENUM(Name, Type) \
-        Name,
-    TAG_TYPES
-    #undef ENUM
+    TAG_INVALID,
+    TAG_CODEPOINT,
+    TAG_BLOCK_TEXTURE,
+    TAG_UI_TEXTURE,
+    TAG_ATLAS_DESC,
+    TAG_FONT_DESC,
+    TAG_FONT_NAME,
+    TAG_FONT_STYLE,
     
     TAG_Count
 } assetpack_tag_id;
 
-// global type TagTypes[] = {
-//     #define ENUM(Name, Type) \
-//         Type,
-//     TAG_TYPES
-//     #undef ENUM
-// };
 
 
 
