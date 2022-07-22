@@ -45,7 +45,9 @@ Game_Init(platform_state *Platform,
    // File_CreateAssetpack("assets\\0.pack", RendererHeap, 60.0f);
    Renderer->Assetpack = File_LoadAssetpack("assets\\0.pack", RendererHeap);
    
-   string String = FString("%", -4, 0, 65);
+   string Format = CNString("String: %p\n");
+   string String = FString(Format, NULL);
+   Error(String.Text);
    
    Game->Flying = TRUE;
    Game->Dir = (v3r32){0,0,0};

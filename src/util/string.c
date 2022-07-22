@@ -19,7 +19,8 @@ CLString(c08 *Chars,
     return String;
 }
 internal string CString(c08 *Chars) { return CLString(Chars, Mem_BytesUntil(Chars, 0)); }
-internal string EString(u64 Length) { return CLString(Stack_Allocate(Length), Length); }
+internal string CNString(c08 *Chars) { return CLString(Chars, Mem_BytesUntil(Chars, 0)+1); }
+internal string LString(u64 Length) { return CLString(Stack_Allocate(Length), Length); }
 
 /*
 TODO:
@@ -27,26 +28,25 @@ TODO:
  - n$ Specifier
  - %u, %b/%B, %x/%X, %o
  - %f, %e/%E, %g/%G
- - %c, %p, %n
+ - %c
 */
 internal string
-FString(c08 *Format, ...)
+VString(string Format, va_list Args)
 {
-    va_list Args;
-    VA_Start(Args, Format);
-    
     c08 *Out = Stack_GetCursor();
     string Result;
     Result.Resizable = FALSE;
     Result.Text = Out;
     
-    c08 *C = Format;
-    while(*C) {
+    c08 *C = Format.Text;
+    while(C < Format.Text+Format.Length) {
         if(*C == '%') {
             C++;
             if(*C == '%') {
                 *Out++ = *C++;
             } else {
+                persist c08 *BaseCharsL = "0123456789abcdef";
+                persist c08 *BaseCharsU = "0123456789ABCDEF";
                 b08 AlignLeft = FALSE;
                 b08 PrefixPlus = FALSE;
                 b08 PrefixSpace = FALSE;
@@ -223,7 +223,33 @@ FString(c08 *Format, ...)
                     // } break;
                     
                     case 'p': {
+                        u64 Value = (u64)VA_Next(Args, vptr);
                         
+                        s32 Len;
+                        if(Value) Len = 18;
+                        else      Len = 6;
+                        s32 Padding = MinChars - Len;
+                        
+                        if(!AlignLeft) {
+                            while(Padding-- > 0)
+                                *Out++ = ' ';
+                        }
+                        
+                        if(Value) {
+                            *Out++ = '0';
+                            *Out++ = 'x';
+                            for(s32 I = 15; I >= 0; I--) {
+                                Out[I] = BaseCharsU[Value%16];
+                                Value /= 16;
+                            }
+                            Out += 16;
+                        } else {
+                            Mem_Cpy(Out, "(null)", 6);
+                            Out += 6;
+                        }
+                        
+                        while(Padding-- > 0)
+                            *Out++ = ' ';
                     } break;
                     
                     case 'n': {
@@ -258,6 +284,30 @@ FString(c08 *Format, ...)
     
     Stack_SetCursor(Out);
     
+    return Result;
+}
+
+internal string
+FString(string Format, ...)
+{
+    va_list Args;
+    VA_Start(Args, Format);
+    
+    string Result = VString(Format, Args);
+    
+    VA_End(Args);
+    
+    return Result;
+}
+
+internal string
+CFString(c08 *Format, ...)
+{
+    va_list Args;
+    VA_Start(Args, Format);
+    
+    string Result = VString(CString(Format), Args);
+    
     VA_End(Args);
     
     return Result;
@@ -266,7 +316,7 @@ FString(c08 *Format, ...)
 internal string
 String_Cat(string A, string B)
 {
-    string Result = EString(A.Length + B.Length);
+    string Result = LString(A.Length + B.Length);
     
     Mem_Cpy(Result.Text,          A.Text, A.Length);
     Mem_Cpy(Result.Text+A.Length, B.Text, B.Length);
@@ -366,7 +416,7 @@ R32_ToString(r32 N, u32 DigitsAfterDecimal)
         Frac *= -1;
     }
     
-    string Str = EString(Whole.Length + 1 + DigitsAfterDecimal);
+    string Str = LString(Whole.Length + 1 + DigitsAfterDecimal);
     Mem_Cpy(Str.Text, Whole.Text, Whole.Length);
     Str.Text[Whole.Length] = '.';
     
