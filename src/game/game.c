@@ -45,6 +45,8 @@ Game_Init(platform_state *Platform,
    // File_CreateAssetpack("assets\\0.pack", RendererHeap, 60.0f);
    Renderer->Assetpack = File_LoadAssetpack("assets\\0.pack", RendererHeap);
    
+   string String = FString("%", -4, 0, 65);
+   
    Game->Flying = TRUE;
    Game->Dir = (v3r32){0,0,0};
    Game->Pos = (v3r32){0,0,0};

@@ -30,7 +30,7 @@ r128 _mm_set_ps(r32, r32, r32, r32);
 
 typedef u08* va_list;
 void __va_start(va_list *Args, ...);
-#define VA_Start(Args, Last) ((void)(__va_start(&Args, 0)))
+#define VA_Start(Args, Last) ((void)(__va_start(&Args, Last)))
 #define VA_End(Args) ((void)(Args = NULL))
 #define VA_Next(Args, Type) \
     ((sizeof(Type) > 8 || (sizeof(Type) & (sizeof(Type) - 1)) != 0) /*Pointer or not a power of 2*/ \

@@ -292,6 +292,24 @@ Heap_Free(heap_handle *Handle)
 
 internal void Heap_FreeA(vptr Data) { Heap_Free(Heap_GetHandle(Data)); }
 
+// internal void
+// Heap_Dump(heap *Heap)
+// {
+//     heap_handle *Handles = (heap_handle*)Heap;
+    
+//     string Border = CString("+--------------+\n");
+    
+//     u32 Width = 12;
+//     u32 LeftWidth = 8;
+//     string HeapName = CString("HEAP");
+//     string HeapStr = FString("| %*s%*s |", Width/2+HeapName->Length/2, HeapName, Width/2-HeapName->Length/2, "");
+    
+//     file_handle FileHandle;
+//     Platform_OpenFile(&FileHandle, "heap_dump.txt", FILE_WRITE);
+//     Platform_WriteFile(FileHandle, String->Text, String->Length, 0);
+//     Platform_CloseFile(FileHandle);
+// }
+
 
 
 
@@ -317,6 +335,7 @@ Stack_Push(void)
 
 // For unbounded allocations
 internal vptr Stack_GetCursor(void) { return __Global.Stack->Cursor; }
+internal void Stack_SetCursor(vptr Cursor) { __Global.Stack->Cursor = Cursor; }
 
 internal vptr
 Stack_Allocate(u64 Size)
