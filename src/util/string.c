@@ -22,17 +22,23 @@ internal string CString(c08 *Chars) { return CLString(Chars, Mem_BytesUntil(Char
 internal string CNString(c08 *Chars) { return CLString(Chars, Mem_BytesUntil(Chars, 0)+1); }
 internal string LString(u64 Length) { return CLString(Stack_Allocate(Length), Length); }
 
-/*
-TODO:
- - ' Flag
- - n$ Specifier
- - %u, %b/%B, %x/%X, %o
- - %f, %e/%E, %g/%G
- - %c
+internal void
+SetVAArgsToIndex(va_list ArgsStart, va_list *Args, u32 Index)
+{
+    #ifdef _X64
+        *Args = ArgsStart + 8*Index;
+    #endif
+}
+
+/* TODO:
+  - %f, %e/%E, %g/%G
+  - %lc
 */
 internal string
 VString(string Format, va_list Args)
 {
+    va_list ArgsStart = Args;
+    
     c08 *Out = Stack_GetCursor();
     string Result;
     Result.Resizable = FALSE;
@@ -45,12 +51,12 @@ VString(string Format, va_list Args)
             if(*C == '%') {
                 *Out++ = *C++;
             } else {
-                persist c08 *BaseCharsL = "0123456789abcdef";
-                persist c08 *BaseCharsU = "0123456789ABCDEF";
+                persist c08 *BaseChars = "0123456789abcdef0123456789ABCDEF";
+                u32 BaseCharsUOffset = 16;
                 b08 AlignLeft = FALSE;
                 b08 PrefixPlus = FALSE;
                 b08 PrefixSpace = FALSE;
-                b08 PrefixHex = FALSE;
+                b08 HashFlag = FALSE;
                 b08 PadZero = FALSE;
                 b08 CustomPrecision = FALSE;
                 u32 LengthLen = 0;
@@ -59,6 +65,23 @@ VString(string Format, va_list Args)
                 u32 FloatWidth = 8;
                 s32 MinChars = 0;
                 s32 Precision = 0;
+                b08 CustomConversionIndex = FALSE;
+                u32 ConversionIndex = 0;
+                b08 HasSeparatorChar = FALSE;
+                
+                if(*C >= '0' && *C <= '9') {
+                    u32 Index = 0;
+                    while(*C >= '0' && *C <= '9')
+                        Index = Index*10 + *C++-'0';
+                    
+                    if(*C == '$') {
+                        CustomConversionIndex = TRUE;
+                        ConversionIndex = Index;
+                        C++;
+                    } else {
+                        MinChars = Index;
+                    }
+                }
                 
                 while(TRUE) {
                     if(*C == '-')
@@ -68,20 +91,32 @@ VString(string Format, va_list Args)
                     else if(*C == ' ')
                         PrefixSpace = TRUE;
                     else if(*C == '#')
-                        PrefixHex = TRUE;
+                        HashFlag = TRUE;
                     else if(*C == '0')
                         PadZero = TRUE;
+                    else if(*C == '\'')
+                        HasSeparatorChar = TRUE;
                     else break;
                     C++;
                 }
                 
                 if(*C == '*') {
+                    C++;
+                    if(*C >= '0' && *C <= '9') {
+                        u32 Index = 0;
+                        while(*C >= '0' && *C <= '9')
+                            Index = Index*10 + *C++-'0';
+                        Assert(*C == '$', "Invalid format!");
+                        C++;
+                        
+                        SetVAArgsToIndex(ArgsStart, &Args, Index-1);
+                    }
+                    
                     MinChars = VA_Next(Args, s64);
                     if(MinChars < 0) {
                         AlignLeft = !AlignLeft;
                         MinChars = -MinChars;
                     }
-                    C++;
                 } else {
                     while(*C >= '0' && *C <= '9') {
                         MinChars = MinChars*10 + *C-'0';
@@ -94,9 +129,19 @@ VString(string Format, va_list Args)
                     CustomPrecision = TRUE;
                     
                     if(*C == '*') {
+                        C++;
+                        if(*C >= '0' && *C <= '9') {
+                            u32 Index = 0;
+                            while(*C >= '0' && *C <= '9')
+                                Index = Index*10 + *C++-'0';
+                            Assert(*C == '$', "Invalid format!");
+                            C++;
+                            
+                            SetVAArgsToIndex(ArgsStart, &Args, Index-1);
+                        }
+                        
                         Precision = VA_Next(Args, s64);
                         if(Precision < 0) Precision = 0;
-                        C++;
                     } else {
                         while(*C >= '0' && *C <= '9') {
                             Precision = Precision*10 + *C-'0';
@@ -115,7 +160,11 @@ VString(string Format, va_list Args)
                     C++;
                 }
                 
+                if(CustomConversionIndex)
+                    SetVAArgsToIndex(ArgsStart, &Args, ConversionIndex-1);
+                
                 switch(*C) {
+                    // Signed numbers
                     case 'd':
                     case 'i': {
                         s64 Temp = VA_Next(Args, s64);
@@ -124,7 +173,7 @@ VString(string Format, va_list Args)
                             Temp = (s08)Temp;
                         else if(LengthLen == 1 && LengthChars[0] == 'h')
                             Temp = (s16)Temp;
-                        if(!LengthLen || (LengthLen == 1 && LengthChars[0] == 'l'))
+                        else if(!((LengthLen == 2 && LengthChars[0] == 'l' && LengthChars[1] == 'l') || (LengthLen == 1 && (LengthChars[0] == 'L' || LengthChars[0] == 't' || LengthChars[0] == 'j' || LengthChars[0] == 'z' || LengthChars[0] == 'q'))))
                             Temp = (s32)Temp;
                         
                         if(!CustomPrecision) Precision = 1;
@@ -143,8 +192,12 @@ VString(string Format, va_list Args)
                             Len++;
                         }
                         Len = MAX(Len, Precision);
-                        if(PadZero) Len = MAX(MinChars-HasPrefix, Len);
-                        s32 Padding = MinChars - (Len + HasPrefix);
+                        s32 SeparatorCount = 0;
+                        if(HasSeparatorChar)
+                            SeparatorCount = (Len-1)/3;
+                        s32 MinDigits = MinChars - HasPrefix - SeparatorCount;
+                        if(PadZero) Len = MAX(MinDigits, Len);
+                        s32 Padding = MinDigits - Len;
                         
                         Value = (s64)Temp * (1-2*Negative);
                         
@@ -156,71 +209,258 @@ VString(string Format, va_list Args)
                         if(HasPrefix)
                             *Out++ = Prefix;
                         
-                        for(s32 I = Len-1; I >= 0; I--) {
-                            Out[I] = (Value%10) + '0';
-                            Value /= 10;
+                        u32 IStart = Len + SeparatorCount - 1;
+                        for(s32 I = IStart; I >= 0; I--) {
+                            if(HasSeparatorChar && (IStart-I+1)%4 == 0) {
+                                Out[I] = ',';
+                            } else {
+                                Out[I] = (Value%10) + '0';
+                                Value /= 10;
+                            }
                         }
-                        Out += Len;
+                        Out += IStart + 1;
                         
                         while(Padding-- > 0)
                             *Out++ = ' ';
                     } break;
                     
-                    // case 'u': {
+                    // Unsigned numbers
+                    case 'b':
+                    case 'B':
+                    case 'o':
+                    case 'u':
+                    case 'x':
+                    case 'X': {
+                        u64 Temp = VA_Next(Args, u64);
                         
-                    // } break;
+                        if(LengthLen == 2 && LengthChars[0] == 'h' && LengthChars[1] == 'h')
+                            Temp = (u08)Temp;
+                        else if(LengthLen == 1 && LengthChars[0] == 'h')
+                            Temp = (u16)Temp;
+                        else if(!((LengthLen == 2 && LengthChars[0] == 'l' && LengthChars[1] == 'l') || (LengthLen == 1 && (LengthChars[0] == 'L' || LengthChars[0] == 't' || LengthChars[0] == 'j' || LengthChars[0] == 'z' || LengthChars[0] == 'q'))))
+                            Temp = (u32)Temp;
+                        
+                        if(!CustomPrecision) Precision = 1;
+                        
+                        u32 Radix;
+                        u32 SeparatorGap;
+                        c08 SeparatorChar;
+                        if(*C == 'b' || *C == 'B') {
+                            Radix = 2;
+                            SeparatorGap = 8;
+                            SeparatorChar = '_';
+                        } else if(*C == 'o') {
+                            Radix = 8;
+                            SeparatorGap = 4;
+                            SeparatorChar = '_';
+                        } else if(*C == 'u') {
+                            Radix = 10;
+                            SeparatorGap = 3;
+                            SeparatorChar = ',';
+                        } else if(*C == 'x' || *C == 'X') {
+                            Radix = 16;
+                            SeparatorGap = 4;
+                            SeparatorChar = '_';
+                        }
+                        
+                        u32 Offset = (*C == 'B' || *C == 'X') ? BaseCharsUOffset : 0;
+                        
+                        u64 Value = Temp;
+                        b08 PrefixLen = HashFlag*(2*(Radix == 2) + (Radix == 8) + 2*(Radix == 16));
+                        s32 Len = 0;
+                        while(Value > 0) {
+                            Value /= Radix;
+                            Len++;
+                        }
+                        Len = MAX(Len, Precision);
+                        s32 SeparatorCount = 0;
+                        if(HasSeparatorChar)
+                            SeparatorCount = (Len-1)/SeparatorGap;
+                        s32 MinDigits = MinChars - PrefixLen - SeparatorCount;
+                        if(PadZero) Len = MAX(MinDigits, Len);
+                        s32 Padding = MinDigits - Len;
+                        
+                        Value = Temp;
+                        
+                        if(!AlignLeft) {
+                            while(Padding-- > 0)
+                                *Out++ = ' ';
+                        }
+                        
+                        if(PrefixLen && Radix == 2) {
+                            *Out++ = '0';
+                            *Out++ = *C;
+                        } else if(PrefixLen && Radix == 8)
+                            *Out++ = '0';
+                        else if(PrefixLen && Radix == 16) {
+                            *Out++ = '0';
+                            *Out++ = *C;
+                        }
+                        
+                        u32 IStart = Len + SeparatorCount - 1;
+                        for(s32 I = IStart; I >= 0; I--) {
+                            if(HasSeparatorChar && (IStart-I+1)%(SeparatorGap+1) == 0) {
+                                Out[I] = SeparatorChar;
+                            } else {
+                                Out[I] = BaseChars[Value%Radix + Offset];
+                                Value /= Radix;
+                            }
+                        }
+                        Out += IStart + 1;
+                        
+                        while(Padding-- > 0)
+                            *Out++ = ' ';
+                    } break;
                     
-                    // case 'o': {
-                        
-                    // } break;
+                    // Floating point numbers
                     
-                    // case 'x': {
+                    case 'e':
+                    case 'E':
+                    case 'f':
+                    case 'F':
+                    case 'g':
+                    case 'G': {
                         
-                    // } break;
+                    } break;
                     
-                    // case 'X': {
+                    case 'a':
+                    case 'A': {
+                        if(LengthLen == 1 && LengthChars[0] == 'L')
+                            Assert(FALSE, "Long doubles not implemeneted!");
                         
-                    // } break;
+                        b08 Caps = (*C == 'A');
+                        u32 Offset = Caps * BaseCharsUOffset;
+                        
+                        r64 Value = VA_Next(Args, r64);
+                        u64 Binary = FORCE_CAST(u64, Value);
+                        
+                        s32 Sign         = (Binary & R64_SIGN_MASK) >> R64_SIGN_SHIFT;
+                        s32 Exponent     = (s32)((Binary & R64_EXPONENT_MASK) >> R64_EXPONENT_SHIFT) - R64_EXPONENT_BIAS;
+                        u64 MantissaBits = Binary & R64_MANTISSA_MASK;
+                        
+                        u32 Whole;
+                        if(Exponent == -R64_EXPONENT_BIAS) {
+                            Whole = 0;
+                        } else {
+                            u64 NewExp = MIN(Exponent, 3);
+                            Exponent -= NewExp;
+                            u64 ModifiedExp = (NewExp + R64_EXPONENT_BIAS) << R64_EXPONENT_SHIFT;
+                            u64 ModifiedBin = ModifiedExp | MantissaBits;
+                            r64 NewFloat = FORCE_CAST(r64, ModifiedBin);
+                            Whole = (u32)NewFloat;
+                        }
+                        
+                        if(!CustomPrecision) Precision = 0;
+                        
+                        u32 FracLen = 0;
+                        u32 Index;
+                        b08 ValidIndex = Intrin_BitScanForward64(&Index, MantissaBits);
+                        if(!ValidIndex) FracLen = 0;
+                        else FracLen = Index/4 + 1;
+                        FracLen = MAX(Precision, FracLen);
+                        u32 FracMax = (R64_MANTISSA_BITS+3)/4;
+                        
+                        b08 Negative = Sign;
+                        b08 HasPrefix = Negative || PrefixSpace || PrefixPlus;
+                        c08 Prefix;
+                        
+                        b08 HasExpSign = (Exponent < 0) || PrefixPlus;
+                        s32 ExpLen = 1;
+                        s32 ExpCpy = Exponent;
+                        while(ExpCpy /= 10) ExpLen++;
+                        
+                        b08 HasDecimal = (Precision != 0) || HashFlag;
+                        u32 TotalLen = HasPrefix + 2 + 1 + HasDecimal + FracLen + 1 + HasExpSign + ExpLen;
+                        s32 Padding = MinChars - TotalLen;
+                        
+                        if(!AlignLeft) {
+                            while(Padding-- > 0)
+                                *Out++ = ' ';
+                        }
+                        
+                        if(HasPrefix) {
+                            if(Negative)        *Out++ = '-';
+                            else if(PrefixPlus) *Out++ = '+';
+                            else                *Out++ = ' ';
+                        }
+                        
+                        *Out++ = '0';
+                        *Out++ = (Caps) ? 'X' : 'x';
+                        
+                        *Out++ = BaseChars[Whole + Offset];
+                        
+                        if(HasDecimal)
+                            *Out++ = '.';
+                        
+                        while(FracLen) {
+                            u32 Digit = (MantissaBits >> (4*(FracMax-FracLen))) & 0xF;
+                            *Out++ = BaseChars[Digit + Offset];
+                            FracLen--;
+                        }
+                        
+                        *Out++ = (Caps) ? 'P' : 'p';
+                        
+                        if(HasExpSign)
+                            *Out++ = (Exponent < 0) ? '-' : '+';
+                        
+                        do {
+                            *Out++ = (Exponent%10) + '0';
+                        } while(Exponent /= 10);
+                        
+                        while(Padding-- > 0)
+                            *Out++ = ' ';
+                    } break;
                     
-                    // case 'f': {
-                        
-                    // } break;
+                    // Other values
                     
-                    // case 'F': {
+                    case 'c': {
+                        s32 Value = VA_Next(Args, s32);
                         
-                    // } break;
+                        s32 Len;
+                        if(Value) Len = 18;
+                        else      Len = 6;
+                        s32 Padding = MinChars - Len;
+                        
+                        if(!AlignLeft) {
+                            while(Padding-- > 0)
+                                *Out++ = ' ';
+                        }
+                        
+                        if(LengthLen == 1 && LengthChars[0] == 'l')
+                            Assert(FALSE, "Wide chars not implemented!");
+                        else
+                            *Out++ = (c08)Value;
+                        
+                        while(Padding-- > 0)
+                            *Out++ = ' ';
+                    } break;
                     
-                    // case 'e': {
+                    case 's': {
+                        if(!CustomPrecision) Precision = S32_MAX;
                         
-                    // } break;
-                    
-                    // case 'E': {
-                        
-                    // } break;
-                    
-                    // case 'g': {
-                        
-                    // } break;
-                    
-                    // case 'G': {
-                        
-                    // } break;
-                    
-                    // case 'a': {
-                        
-                    // } break;
-                    
-                    // case 'A': {
-                        
-                    // } break;
-                    
-                    // case 'c': {
-                        
-                    // } break;
-                    
-                    // case 's': {
-                        
-                    // } break;
+                        if(LengthLen == 1 && LengthChars[0] == 'l') {
+                            Assert(FALSE, "Wide strings not implemented!");
+                        } else {
+                            c08 *In = VA_Next(Args, c08*);
+                            c08 *Start = Out;
+                            
+                            if(!AlignLeft) {
+                                s32 Len = Mem_BytesUntil(In, 0);
+                                Len = MIN(Len, Precision);
+                                s32 Padding = MinChars-Len;
+                                while(Padding-- > 0)
+                                    *Out++ = ' ';
+                            }
+                            
+                            while(*In && Precision > 0) {
+                                *Out++ = *In++;
+                                Precision--;
+                            }
+                            
+                            while(Out < Start + MinChars)
+                                *Out++ = ' ';
+                        }
+                    } break;
                     
                     case 'p': {
                         u64 Value = (u64)VA_Next(Args, vptr);
@@ -239,7 +479,7 @@ VString(string Format, va_list Args)
                             *Out++ = '0';
                             *Out++ = 'x';
                             for(s32 I = 15; I >= 0; I--) {
-                                Out[I] = BaseCharsU[Value%16];
+                                Out[I] = BaseChars[Value%16 + BaseCharsUOffset];
                                 Value /= 16;
                             }
                             Out += 16;
@@ -259,11 +499,11 @@ VString(string Format, va_list Args)
                         } else if(LengthLen == 1 && LengthChars[0] == 'h') {
                             s16 *Value = VA_Next(Args, s16*);
                             *Value = (u64)Out - (u64)Result.Text;
-                        } else if(LengthLen == 0 || (LengthLen == 1 && LengthChars[0] == 'l')) {
-                            s32 *Value = VA_Next(Args, s32*);
+                        } else if((LengthLen == 2 && LengthChars[0] == 'l' && LengthChars[1] == 'l') || (LengthLen == 1 && (LengthChars[0] == 'L' || LengthChars[0] == 't' || LengthChars[0] == 'j' || LengthChars[0] == 'z' || LengthChars[0] == 'q'))) {
+                            s64 *Value = VA_Next(Args, s64*);
                             *Value = (u64)Out - (u64)Result.Text;
                         } else {
-                            s64 *Value = VA_Next(Args, s64*);
+                            s32 *Value = VA_Next(Args, s32*);
                             *Value = (u64)Out - (u64)Result.Text;
                         }
                     } break;

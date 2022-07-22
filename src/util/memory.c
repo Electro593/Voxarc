@@ -335,7 +335,12 @@ Stack_Push(void)
 
 // For unbounded allocations
 internal vptr Stack_GetCursor(void) { return __Global.Stack->Cursor; }
-internal void Stack_SetCursor(vptr Cursor) { __Global.Stack->Cursor = Cursor; }
+internal void
+Stack_SetCursor(vptr Cursor)
+{
+    Assert((u08*)Cursor <= (u08*)(__Global.Stack+1)+__Global.Stack->Size);
+    __Global.Stack->Cursor = Cursor;
+}
 
 internal vptr
 Stack_Allocate(u64 Size)

@@ -45,8 +45,8 @@ Game_Init(platform_state *Platform,
    // File_CreateAssetpack("assets\\0.pack", RendererHeap, 60.0f);
    Renderer->Assetpack = File_LoadAssetpack("assets\\0.pack", RendererHeap);
    
-   string Format = CNString("String: %p\n");
-   string String = FString(Format, NULL);
+   string Format = CNString("Num: [%a]\n");
+   string String = FString(Format, 384.25);
    Error(String.Text);
    
    Game->Flying = TRUE;

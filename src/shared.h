@@ -80,6 +80,7 @@ typedef s32 b32;
 
 typedef u08 c08;
 typedef u16 c16;
+typedef u32 c32;
 
 typedef struct platform_state platform_state;
 typedef struct renderer_state renderer_state;
