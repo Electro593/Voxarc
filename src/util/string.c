@@ -32,7 +32,7 @@ SetVAArgsToIndex(va_list ArgsStart, va_list *Args, u32 Index)
 
 /* TODO:
   - %f, %e/%E, %g/%G
-  - %lc
+  - %lc, %La
 */
 internal string
 VString(string Format, va_list Args)
@@ -317,10 +317,112 @@ VString(string Format, va_list Args)
                     case 'e':
                     case 'E':
                     case 'f':
-                    case 'F':
                     case 'g':
                     case 'G': {
+                        Assert(FALSE, "Floats not implemented!");
+                        // if(LengthLen == 1 && LengthChars[0] == 'L')
+                        //     Assert(FALSE, "Long doubles not implemeneted!");
                         
+                        // b08 Caps = (*C == 'A');
+                        // u32 Offset = Caps * BaseCharsUOffset;
+                        
+                        // r64 Value = VA_Next(Args, r64);
+                        // u64 Binary = FORCE_CAST(u64, Value);
+                        
+                        // s32 Sign         = (Binary & R64_SIGN_MASK) >> R64_SIGN_SHIFT;
+                        // s32 Exponent     = (s32)((Binary & R64_EXPONENT_MASK) >> R64_EXPONENT_SHIFT) - R64_EXPONENT_BIAS;
+                        // u64 MantissaBits = Binary & R64_MANTISSA_MASK;
+                        // u32 FracMax = (R64_MANTISSA_BITS+3)/4;
+                        
+                        // b08 Negative = Sign;
+                        // b08 HasPrefix = Negative || PrefixSpace || PrefixPlus;
+                        // c08 Prefix;
+                        
+                        // b08 IsInf = FALSE;
+                        // b08 IsNAN = FALSE;
+                        
+                        // b08 HasDecimal;
+                        // r64 IntPart, FracPart;
+                        // s32 TotalLen, IntLen, FracLen;
+                        
+                        // if(Exponent == R64_EXPONENT_MAX) {
+                        //     if(MantissaBits == 0) {
+                        //         IsInf = TRUE;
+                        //         TotalLen = 3;
+                        //     } else {
+                        //         IsNAN = TRUE;
+                        //         TotalLen = 3 + 1 + 1 + FracMax + 1;
+                        //     }
+                        // } else {
+                        //     if(!CustomPrecision) Precision = 6;
+                            
+                        //     IntLen = 1;
+                        //     r64 Val = Value;
+                        //     while(Val /= 10) IntLen++;
+                            
+                        //     FracLen = Precision;
+                            
+                        //     // Absolute maximum is 2 times the exponent (exclusive)
+                            
+                        //     // Absolute minimum is the value of the smallest
+                        //     // bit in the mantissa times the exponent
+                            
+                        //     HasDecimal = FracLen || HashFlag;
+                        //     TotalLen = IntLen + HasDecimal + FracLen;
+                        // }
+                        
+                        // s32 Padding = MinChars - TotalLen;
+                        
+                        // if(!AlignLeft) {
+                        //     while(Padding-- > 0)
+                        //         *Out++ = ' ';
+                        // }
+                        
+                        // if(HasPrefix) {
+                        //     if(Negative)        *Out++ = '-';
+                        //     else if(PrefixPlus) *Out++ = '+';
+                        //     else                *Out++ = ' ';
+                        // }
+                        
+                        // if(IsInf) {
+                        //     *Out++ = (Caps) ? 'I' : 'i';
+                        //     *Out++ = (Caps) ? 'N' : 'n';
+                        //     *Out++ = (Caps) ? 'F' : 'f';
+                        // } else if(IsNAN) {
+                        //     *Out++ = (Caps) ? 'N' : 'n';
+                        //     *Out++ = (Caps) ? 'A' : 'a';
+                        //     *Out++ = (Caps) ? 'N' : 'n';
+                        //     *Out++ = ' ';
+                        //     *Out++ = '(';
+                        //     *Out++ = '0';
+                        //     *Out++ = (Caps) ? 'X' : 'x';
+                        //     for(s32 I = FracMax-1; I >= 0; I--) {
+                        //         u32 Digit = MantissaBits & 0xF;
+                        //         Out[I] = BaseChars[Digit + Offset];
+                        //         MantissaBits >>= 4;
+                        //     }
+                        //     Out += FracMax;
+                        //     *Out++ = ')';
+                        // } else {
+                        //     c08 *IntStart = Out;
+                        //     c08 *FracStart = Out + TotalLen - FracLen;
+                            
+                        //     for(s32 I = FracLen-1; I >= 0; I--) {
+                        //         Out[I] = ;
+                        //     }
+                        //     Out += FracLen;
+                            
+                        //     for(s32 I = IntLen-1; I >= 0; I--) {
+                        //         Out[I] = ;
+                        //     }
+                        //     Out += IntLen;
+                            
+                        //     if(HasDecimal)
+                        //         *Out++ = '.';
+                        // }
+                        
+                        // while(Padding-- > 0)
+                        //     *Out++ = ' ';
                     } break;
                     
                     case 'a':
@@ -337,40 +439,52 @@ VString(string Format, va_list Args)
                         s32 Sign         = (Binary & R64_SIGN_MASK) >> R64_SIGN_SHIFT;
                         s32 Exponent     = (s32)((Binary & R64_EXPONENT_MASK) >> R64_EXPONENT_SHIFT) - R64_EXPONENT_BIAS;
                         u64 MantissaBits = Binary & R64_MANTISSA_MASK;
-                        
-                        u32 Whole;
-                        if(Exponent == -R64_EXPONENT_BIAS) {
-                            Whole = 0;
-                        } else {
-                            u64 NewExp = MIN(Exponent, 3);
-                            Exponent -= NewExp;
-                            u64 ModifiedExp = (NewExp + R64_EXPONENT_BIAS) << R64_EXPONENT_SHIFT;
-                            u64 ModifiedBin = ModifiedExp | MantissaBits;
-                            r64 NewFloat = FORCE_CAST(r64, ModifiedBin);
-                            Whole = (u32)NewFloat;
-                        }
-                        
-                        if(!CustomPrecision) Precision = 0;
-                        
-                        u32 FracLen = 0;
-                        u32 Index;
-                        b08 ValidIndex = Intrin_BitScanForward64(&Index, MantissaBits);
-                        if(!ValidIndex) FracLen = 0;
-                        else FracLen = Index/4 + 1;
-                        FracLen = MAX(Precision, FracLen);
                         u32 FracMax = (R64_MANTISSA_BITS+3)/4;
                         
                         b08 Negative = Sign;
                         b08 HasPrefix = Negative || PrefixSpace || PrefixPlus;
                         c08 Prefix;
                         
-                        b08 HasExpSign = (Exponent < 0) || PrefixPlus;
-                        s32 ExpLen = 1;
-                        s32 ExpCpy = Exponent;
-                        while(ExpCpy /= 10) ExpLen++;
+                        b08 IsInf = FALSE;
+                        b08 IsNAN = FALSE;
                         
-                        b08 HasDecimal = (Precision != 0) || HashFlag;
-                        u32 TotalLen = HasPrefix + 2 + 1 + HasDecimal + FracLen + 1 + HasExpSign + ExpLen;
+                        b08 HasDecimal, ExpIsNegative, HasExpSign, IsDenormal, ExpHasComma;
+                        u32 TotalLen, FracLen;
+                        s32 ExpLen;
+                        
+                        if(Exponent == R64_EXPONENT_MAX) {
+                            if(MantissaBits == 0) {
+                                IsInf = TRUE;
+                                TotalLen = 3;
+                            } else {
+                                IsNAN = TRUE;
+                                TotalLen = 3 + 1 + 1 + FracMax + 1;
+                            }
+                        } else {
+                            IsDenormal = (Exponent == -R64_EXPONENT_BIAS);
+                            if(IsDenormal) Exponent++;
+                            if(Value == 0) Exponent = 0;
+                            
+                            if(!CustomPrecision) Precision = 0;
+                            
+                            u32 Index;
+                            b08 ValidIndex = Intrin_BitScanForward64(&Index, MantissaBits);
+                            if(!ValidIndex) FracLen = 0;
+                            else FracLen = (R64_MANTISSA_BITS-Index)/4 + 1;
+                            FracLen = MAX(Precision, FracLen);
+                            
+                            ExpIsNegative = Exponent < 0;
+                            Exponent *= 1 - 2*ExpIsNegative;
+                            HasExpSign = ExpIsNegative || PrefixPlus;
+                            ExpHasComma = HasSeparatorChar && (Exponent > 999);
+                            ExpLen = 1 + ExpHasComma;
+                            s32 ExpCpy = Exponent;
+                            while(ExpCpy /= 10) ExpLen++;
+                            
+                            HasDecimal = FracLen || HashFlag;
+                            TotalLen = HasPrefix + 2 + 1 + HasDecimal + FracLen + 1 + HasExpSign + ExpLen;
+                        }
+                        
                         s32 Padding = MinChars - TotalLen;
                         
                         if(!AlignLeft) {
@@ -384,28 +498,54 @@ VString(string Format, va_list Args)
                             else                *Out++ = ' ';
                         }
                         
-                        *Out++ = '0';
-                        *Out++ = (Caps) ? 'X' : 'x';
-                        
-                        *Out++ = BaseChars[Whole + Offset];
-                        
-                        if(HasDecimal)
-                            *Out++ = '.';
-                        
-                        while(FracLen) {
-                            u32 Digit = (MantissaBits >> (4*(FracMax-FracLen))) & 0xF;
-                            *Out++ = BaseChars[Digit + Offset];
-                            FracLen--;
+                        if(IsInf) {
+                            *Out++ = (Caps) ? 'I' : 'i';
+                            *Out++ = (Caps) ? 'N' : 'n';
+                            *Out++ = (Caps) ? 'F' : 'f';
+                        } else if(IsNAN) {
+                            *Out++ = (Caps) ? 'N' : 'n';
+                            *Out++ = (Caps) ? 'A' : 'a';
+                            *Out++ = (Caps) ? 'N' : 'n';
+                            *Out++ = ' ';
+                            *Out++ = '(';
+                            *Out++ = '0';
+                            *Out++ = (Caps) ? 'X' : 'x';
+                            for(s32 I = FracMax-1; I >= 0; I--) {
+                                u32 Digit = MantissaBits & 0xF;
+                                Out[I] = BaseChars[Digit + Offset];
+                                MantissaBits >>= 4;
+                            }
+                            Out += FracMax;
+                            *Out++ = ')';
+                        } else {
+                            *Out++ = '0';
+                            *Out++ = (Caps) ? 'X' : 'x';
+                            
+                            *Out++ = IsDenormal ? '0' : '1';
+                            
+                            if(HasDecimal)
+                                *Out++ = '.';
+                            
+                            for(u32 I = 0; I < FracLen; I++) {
+                                u32 Digit = (MantissaBits >> (4*(FracMax-I-1))) & 0xF;
+                                *Out++ = BaseChars[Digit + Offset];
+                            }
+                            
+                            *Out++ = (Caps) ? 'P' : 'p';
+                            
+                            if(HasExpSign)
+                                *Out++ = ExpIsNegative ? '-' : '+';
+                            
+                            for(s32 I = ExpLen-1; I >= 0; I--) {
+                                if(ExpHasComma && I == 1) {
+                                    Out[I] = ',';
+                                } else {
+                                    Out[I] = (Exponent%10) + '0';
+                                    Exponent /= 10;
+                                }
+                            }
+                            Out += ExpLen;
                         }
-                        
-                        *Out++ = (Caps) ? 'P' : 'p';
-                        
-                        if(HasExpSign)
-                            *Out++ = (Exponent < 0) ? '-' : '+';
-                        
-                        do {
-                            *Out++ = (Exponent%10) + '0';
-                        } while(Exponent /= 10);
                         
                         while(Padding-- > 0)
                             *Out++ = ' ';
