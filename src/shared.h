@@ -76,7 +76,9 @@ typedef void* vptr;
 typedef void (*fptr)(void);
 
 typedef s08 b08;
+typedef s16 b16;
 typedef s32 b32;
+typedef s64 b64;
 
 typedef u08 c08;
 typedef u16 c16;

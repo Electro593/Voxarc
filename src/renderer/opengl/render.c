@@ -393,8 +393,6 @@ Renderer_Draw(platform_state *Platform,
     Renderer_LoadPTProgram(Renderer, FALSE);
     Renderer_LoadGlyphProgram(Renderer, FALSE);
     
-    
-    
     Stack_Push();
     
     string String = CString("Position (X, Y, Z): ");
@@ -423,7 +421,7 @@ Renderer_Draw(platform_state *Platform,
     String = String_Cat(String, R32_ToString(Game->JumpCharge, 2));
     String = String_Cat(String, CString("\n"));
     
-        String = String_Cat(String, CString("Looking At: "));
+    String = String_Cat(String, CString("Looking At: "));
     if(Game->AimBlockValid) {
         String = String_Cat(String, S32_ToString(Game->AimBlock.X));
         String = String_Cat(String, CString(", "));
@@ -447,8 +445,9 @@ Renderer_Draw(platform_state *Platform,
     
     ui_string UIString = MakeUIString(Renderer->Heap, String, Renderer->Style);
     mesh_object Object = MakeUIStringObject(Renderer->Heap, UIString, (v2u32){10, 0}, Renderer->WindowSize);
-    Object.Index = Renderer->ObjectIndex;
+    FreeUIString(UIString);
     
+    Object.Index = Renderer->ObjectIndex;
     Mesh_Bind(&Renderer->GlyphMesh);
     
     Mesh_UpdateVertices(&Renderer->GlyphMesh, Object);

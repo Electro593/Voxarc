@@ -12,6 +12,7 @@
 global_state __Global;
 
 #include <util/memory.c>
+#include <util/string.c>
 
 global platform_state *Platform;
 
@@ -624,7 +625,6 @@ Platform_Entry(void)
     
     s64 StartTime;
     Win32_QueryPerformanceCounter(&StartTime);
-    
     Platform->ExecutionState = EXECUTION_RUNNING;
     while(Platform->ExecutionState == EXECUTION_RUNNING) {
         // Will reload the game if necessary
@@ -658,7 +658,6 @@ Platform_Entry(void)
         }
         
         Game_Update(Platform, &GameState, &Renderer);
-        
         Win32_SwapBuffers(DeviceContext);
         
         s64 EndTime;
@@ -669,6 +668,8 @@ Platform_Entry(void)
         
         Platform->FPS = CountsPerSecond / (r64)ElapsedTime;
     }
+    
+    Heap_Dump(Renderer.Heap);
     
     Win32_ExitProcess(0);
 }

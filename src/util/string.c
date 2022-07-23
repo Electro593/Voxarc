@@ -224,6 +224,37 @@ VString(string Format, va_list Args)
                             *Out++ = ' ';
                     } break;
                     
+                    // Boolean
+                    case 'T': {
+                        b64 Value = VA_Next(Args, s64);
+                        
+                        if(LengthLen == 1 && LengthChars[0] == 'h')
+                            Value = (b16)Value;
+                        else if(LengthLen == 1 && LengthChars[0] == 'l')
+                            Value = (b32)Value;
+                        else if(!((LengthLen == 2 && LengthChars[0] == 'l' && LengthChars[1] == 'l') || (LengthLen == 1 && (LengthChars[0] == 'L' || LengthChars[0] == 't' || LengthChars[0] == 'j' || LengthChars[0] == 'z' || LengthChars[0] == 'q'))))
+                            Value = (b08)Value;
+                        
+                        c08 FalseStr[] = "False";
+                        c08 TrueStr[] = "True";
+                        
+                        s32 Len;
+                        if(Value) Len = sizeof(TrueStr)-1;
+                        else      Len = sizeof(FalseStr)-1;
+                        s32 Padding = MinChars - Len;
+                        
+                        if(!AlignLeft) {
+                            while(Padding-- > 0)
+                                *Out++ = ' ';
+                        }
+                        
+                        Mem_Cpy(Out, (Value) ? TrueStr : FalseStr, Len);
+                        Out += Len;
+                        
+                        while(Padding-- > 0)
+                            *Out++ = ' ';
+                    } break;
+                    
                     // Unsigned numbers
                     case 'b':
                     case 'B':
@@ -581,21 +612,21 @@ VString(string Format, va_list Args)
                         if(LengthLen == 1 && LengthChars[0] == 'l') {
                             Assert(FALSE, "Wide strings not implemented!");
                         } else {
-                            c08 *In = VA_Next(Args, c08*);
+                            string String = VA_Next(Args, string);
+                            c08 *In = String.Text;
                             c08 *Start = Out;
                             
+                            s32 Len = String.Length;
+                            Len = MIN(Len, Precision);
+                            s32 Padding = MinChars - Len;
+                            
                             if(!AlignLeft) {
-                                s32 Len = Mem_BytesUntil(In, 0);
-                                Len = MIN(Len, Precision);
-                                s32 Padding = MinChars-Len;
                                 while(Padding-- > 0)
                                     *Out++ = ' ';
                             }
                             
-                            while(*In && Precision > 0) {
+                            while(Len--)
                                 *Out++ = *In++;
-                                Precision--;
-                            }
                             
                             while(Out < Start + MinChars)
                                 *Out++ = ' ';

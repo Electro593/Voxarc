@@ -292,23 +292,138 @@ Heap_Free(heap_handle *Handle)
 
 internal void Heap_FreeA(vptr Data) { Heap_Free(Heap_GetHandle(Data)); }
 
-// internal void
-// Heap_Dump(heap *Heap)
-// {
-//     heap_handle *Handles = (heap_handle*)Heap;
+internal void
+Heap_Dump(heap *Heap)
+{
+    file_handle FileHandle;
+    Platform_OpenFile(&FileHandle, "heap_dump.txt", FILE_WRITE);
+    u32 FileOffset = 0;
     
-//     string Border = CString("+--------------+\n");
+    heap_handle *Handles = (heap_handle*)Heap;
+    u32 HandleCount = Handles[0].Size / sizeof(heap_handle);
     
-//     u32 Width = 12;
-//     u32 LeftWidth = 8;
-//     string HeapName = CString("HEAP");
-//     string HeapStr = FString("| %*s%*s |", Width/2+HeapName->Length/2, HeapName, Width/2-HeapName->Length/2, "");
+    Stack_Push();
+    {
+        string NoneStr = CString("");
+        
+        string Line1 = NoneStr;
+        string Line2 = NoneStr;
+        string Line3 = NoneStr;
+        string Line4 = NoneStr;
+        
+        heap_handle *Handle = Handles;
+        do {
+            if(Handle->Size == 0) goto next;
+            
+            u32 Index;
+            Intrin_BitScanReverse(&Index, Handle->Size);
+            u32 SizeWidth = (Index < 3) ? 1 : Index-1;
+            
+            b08 IsValid = Intrin_BitScanReverse64(&Index, Handle->Offset);
+            u32 OffsetWidth = IsValid * ((Index < 3) ? 1 : Index-1);
+            
+            string Size   = CFString("%'d", Handle->Size);
+            string Offset = CFString("%'Ld", Handle->Offset);
+            
+            c08 BorderChar = (Handle->Anchored) ? '=' : '-';
+            
+            string PlusStr = IsValid ? CString("+") : NoneStr;
+            string PipeStr = IsValid ? CString("|") : NoneStr;
+            string Seg1 = CFString(".%*s%s%2$-*s.", SizeWidth, NoneStr, PlusStr, OffsetWidth);
+            string Seg2 = CFString(":%*s%s%2$-*s:", SizeWidth, NoneStr, PipeStr, OffsetWidth);
+            string Seg3 = CFString(":%*s%-*s%s%*.*s%-*s:", (SizeWidth+Size.Length)/2, Size, (SizeWidth-Size.Length+1)/2, NoneStr, PipeStr, (OffsetWidth+Offset.Length)/2, OffsetWidth, Offset, (OffsetWidth-Offset.Length+1)/2, NoneStr);
+            string Seg4 = CFString("'%*s%s%2$-*s'", SizeWidth, NoneStr, PlusStr, OffsetWidth);
+            
+            Mem_Set(Seg1.Text+1, BorderChar, SizeWidth);
+            Mem_Set(Seg1.Text+1+SizeWidth+1, BorderChar, OffsetWidth);
+            Mem_Set(Seg2.Text+1, '#', SizeWidth);
+            Mem_Set(Seg4.Text+1, BorderChar, SizeWidth);
+            Mem_Set(Seg4.Text+1+SizeWidth+1, BorderChar, OffsetWidth);
+            
+            Line1 = CFString("%s%s", Line1, Seg1);
+            Line2 = CFString("%s%s", Line2, Seg2);
+            Line3 = CFString("%s%s", Line3, Seg3);
+            Line4 = CFString("%s%s", Line4, Seg4);
+            
+            next:
+            Handle = Handles + Handle->NextBlock;
+        } while(Handle->Index);
+        
+        string String = CFString("\n%s\n%s\n%s\n%s\n%s\n", Line1, Line2, Line3, Line2, Line4);
+        Platform_WriteFile(FileHandle, String.Text, String.Length, 0);
+        FileOffset += String.Length;
+    }
+    Stack_Pop();
     
-//     file_handle FileHandle;
-//     Platform_OpenFile(&FileHandle, "heap_dump.txt", FILE_WRITE);
-//     Platform_WriteFile(FileHandle, String->Text, String->Length, 0);
-//     Platform_CloseFile(FileHandle);
-// }
+    Stack_Push();
+    {
+        string NoneStr = CString("");
+        
+        string DataStr = CString("Data:");
+        string FlagsStr = CString("Status:");
+        string HandlesStr = CString("Handles:");
+        string SizeStr = CString("Size:");
+        string OffsetStr = CString("Offset:");
+        u32 LabelWidthU = MAX(DataStr.Length, FlagsStr.Length);
+        LabelWidthU     = MAX(HandlesStr.Length, LabelWidthU);
+        LabelWidthU     = MAX(SizeStr.Length, LabelWidthU);
+        LabelWidthU     = MAX(OffsetStr.Length, LabelWidthU);
+        s32 LabelWidth = -(s32)LabelWidthU;
+        
+        string FreeStr = CString("Free");
+        string UsedStr = CString("Used");
+        string IsAnchoredStr = CString(", Anchored");
+        
+        s32 Width = 0;
+        s32 CurrWidth;
+        
+        string String = NoneStr;
+        
+        for(u32 I = 0; I < HandleCount; I++) {
+            string Name, Data, Size, Offset, Flags;
+            
+            if(I == 0) Name = CFString("HEAP (Handle 0)%n", &CurrWidth);
+            else       Name = CFString("Handle %'d%n", Handles[I].Index, &CurrWidth);
+            if(Width < CurrWidth) Width = CurrWidth;
+            
+            Data = CFString("%*s %p%n", LabelWidth, DataStr, Handles[I].Data, &CurrWidth);
+            if(Width < CurrWidth) Width = CurrWidth;
+            
+            string UsageStr = (Handles[I].Free) ? FreeStr : UsedStr;
+            string AnchoredStr = (Handles[I].Anchored) ? IsAnchoredStr : NoneStr;
+            Flags = CFString("%*s %s%s%n", LabelWidth, FlagsStr, UsageStr, AnchoredStr, &CurrWidth);
+            if(Width < CurrWidth) Width = CurrWidth;
+            
+            if(I == 0) Size = CFString("%*s %'u (%'u bytes)%n", LabelWidth, HandlesStr, HandleCount, Handles[I].Size, &CurrWidth);
+            else       Size = CFString("%*s %'u bytes%n", LabelWidth, SizeStr, Handles[I].Size, &CurrWidth);
+            if(Width < CurrWidth) Width = CurrWidth;
+            
+            Offset = CFString("%*s %'u bytes%n", LabelWidth, OffsetStr, Handles[I].Offset, &CurrWidth);
+            if(Width < CurrWidth) Width = CurrWidth;
+            
+            string NextHandleStr = CFString("---Next %s---> %'d", UsageStr, (Handles[I].Free) ? Handles[I].NextFree : Handles[I].NextUsed);
+            string PrevHandleStr = CFString("---Prev %s---> %'d", UsageStr, (Handles[I].Free) ? Handles[I].PrevFree : Handles[I].PrevUsed);
+            string NextBlockStr  = CFString("---Next Block--> %'d", Handles[I].NextBlock);
+            string PrevBlockStr  = CFString("---Prev Block--> %'d", Handles[I].PrevBlock);
+            
+            string BorderTop    = CFString(".-%*s-.", Width, NoneStr);
+            string BorderBottom = CFString("'-%*s-'", Width, NoneStr);
+            Mem_Set(BorderTop.Text   +2, '-', Width);
+            Mem_Set(BorderBottom.Text+2, '-', Width);
+            
+            String = CFString("%s\n%s\n| %*4$s%*s | %12$s\n| %8$*3$s | %13$s\n| %9$*3$s | %14$s\n| %10$*3$s | %15$s\n| %11$*3$s |\n%16$s\n",
+                String, BorderTop, -Width,
+                (Width+Name.Length)/2, Name, (Width-Name.Length+1)/2, NoneStr,
+                Data, Size, Offset, Flags,
+                NextHandleStr, PrevHandleStr, NextBlockStr, PrevBlockStr,
+                BorderBottom);
+        }
+        
+        Platform_WriteFile(FileHandle, String.Text, String.Length, FileOffset);
+        Platform_CloseFile(FileHandle);
+    }
+    Stack_Pop();
+}
 
 
 

@@ -232,3 +232,9 @@ MakeUIStringObject(heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize)
     
     return Object;
 }
+
+internal void
+FreeUIString(ui_string String)
+{
+    Heap_Free(String.Lines);
+}

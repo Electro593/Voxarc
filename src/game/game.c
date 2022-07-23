@@ -49,7 +49,6 @@ Game_Init(platform_state *Platform,
    Game->Dir = (v3r32){0,0,0};
    Game->Pos = (v3r32){0,0,0};
    Game->Velocity = (v3r32){0,0,0};
-   
    Renderer_Init(Renderer, RendererHeap, Platform->WindowSize);
    
    Stack_Push();

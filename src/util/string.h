@@ -20,3 +20,10 @@ internal string U64_ToString(u64 N, u08 Radix);
 internal string U32_ToString(u32 N, u08 Radix);
 internal string U16_ToString(u16 N, u08 Radix);
 internal string U08_ToString(u08 N, u08 Radix);
+
+internal string CString(c08 *Chars);
+internal string LString(u64 Length);
+internal string CNString(c08 *Chars);
+internal string CLString(c08 *Chars, u64 Length);
+internal string FString(string Format, ...);
+internal string CFString(c08 *Format, ...);
