@@ -24,7 +24,8 @@ struct game_state {
     r32 JumpTime;
     r32 JumpCharge;
     
-    HEAP(chunk) Chunks;
+    heap *WorldHeap;
+    region Region;
     
     v3r32 Dir;
     v3r32 Pos;

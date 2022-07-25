@@ -32,15 +32,19 @@ Game_Init(platform_state *Platform,
           game_state *Game,
           renderer_state *Renderer)
 {
-   u64 StackSize = 32*1024*1024;
+   u64 StackSize        = 32*1024*1024;
    u64 RendererHeapSize = 32*1024*1024;
-   vptr MemBase = Platform_AllocateMemory(StackSize+RendererHeapSize);
+   u64 WorldHeapSize    = 32*1024*1024;
+   vptr MemBase = Platform_AllocateMemory(StackSize+RendererHeapSize+WorldHeapSize);
    
    __Global.Stack = Stack_Init(MemBase, StackSize);
    (u08*)MemBase += StackSize;
    
    heap *RendererHeap = Heap_Init(MemBase, RendererHeapSize);
    (u08*)MemBase += RendererHeapSize;
+   
+   Game->WorldHeap = Heap_Init(MemBase, WorldHeapSize);
+   (u08*)MemBase += WorldHeapSize;
    
    // File_CreateAssetpack("assets\\0.pack", RendererHeap, 60.0f);
    Renderer->Assetpack = File_LoadAssetpack("assets\\0.pack", RendererHeap);
@@ -61,15 +65,25 @@ Game_Init(platform_state *Platform,
    
    // World
    {
-      u32 ChunkCount = 1;
-      Game->Chunks = Heap_Allocate(RendererHeap, ChunkCount * sizeof(chunk));
-      chunk *Chunks = Game->Chunks->Data;
+      Assert(ChunkDims.X  * ChunkDims.Y  * ChunkDims.Z  <= U16_MAX);
+      Assert(RegionDims.X * RegionDims.Y * RegionDims.Z <= U16_MAX);
+      //TODO: Oblong regions
+      Assert(ChunkDims.X  == ChunkDims.Y  && ChunkDims.Y  == ChunkDims.Z);
+      Assert(RegionDims.X == RegionDims.Y && RegionDims.Y == RegionDims.Z);
       
-      Chunks[0] = MakeChunk(RendererHeap, &Renderer->PTMesh, (v3s32){0,0,0}, TextureBytes);
-      // Chunks[1] = MakeChunk(RendererHeap, &Renderer->PTMesh, (v3s32){1,0,0}, TextureBytes);
-      // mesh_object *Objects[] = {&Chunks[0].Object, &Chunks[1].Object};
-      mesh_object *Objects[] = {&Chunks[0].Object};
+      Game->Region.Pos = (v3s32){0};
+      Game->Region.Chunks = Heap_Allocate(Game->WorldHeap, 0);
+      Game->Region.Nodes = Heap_Allocate(Game->WorldHeap, sizeof(region_node));
+      Mem_Set(Game->Region.Nodes->Data, 0, sizeof(region_node));
       
+      MakeChunk(Game->WorldHeap, &Game->Region, &Renderer->PTMesh, (v3s32){0,0,0}, TextureBytes);
+      MakeChunk(Game->WorldHeap, &Game->Region, &Renderer->PTMesh, (v3s32){1,0,0}, TextureBytes);
+      
+      u32 ChunkCount = Game->Region.Chunks->Size / sizeof(chunk);
+      chunk *Chunks = Game->Region.Chunks->Data;
+      mesh_object **Objects = Stack_Allocate(sizeof(mesh_object*)*ChunkCount);
+      for(u32 I = 0; I < ChunkCount; I++)
+         Objects[I] = &Chunks[I].Object;
       Mesh_AddObjects(&Renderer->PTMesh, ChunkCount, Objects);
       for(u32 I = 0; I < ChunkCount; I++)
          Mesh_FreeObject(Chunks[I].Object);
@@ -334,7 +348,7 @@ Game_Update(platform_state *Platform,
             Moved = TRUE;
             
             Game->TouchingGround = FALSE;
-            chunk *Chunks = Game->Chunks->Data;
+            chunk *Chunks = Game->Region.Chunks->Data;
             v3r32 PlayerSize = {.6,1.8,.6};
             v3s32 ChunkPos = {
                Game->Pos.X / ChunkDims.X,
@@ -417,27 +431,38 @@ Game_Update(platform_state *Platform,
       v3r32 AimDir = {AimDir4.X, AimDir4.Y, AimDir4.Z};
       
       v3s32 ChunkPos = {
-         (Game->Pos.X + ChunkDims.X/2.0f) / ChunkDims.X,
-         (Game->Pos.Y + ChunkDims.Y/2.0f) / ChunkDims.Y,
-         (Game->Pos.Z + ChunkDims.Z/2.0f) / ChunkDims.Z
+         (s32)((Game->Pos.X + ChunkDims.X*1.5f) / ChunkDims.X) - 1,
+         (s32)((Game->Pos.Y + ChunkDims.Y*1.5f) / ChunkDims.Y) - 1,
+         (s32)((Game->Pos.Z + ChunkDims.Z*1.5f) / ChunkDims.Z) - 1
       };
       v3r32 PosInChunk = {
          Game->Pos.X + ChunkDims.X/2.0f - ChunkPos.X*ChunkDims.X,
          Game->Pos.Y + ChunkDims.Y/2.0f - ChunkPos.Y*ChunkDims.Y,
          Game->Pos.Z + ChunkDims.Z/2.0f - ChunkPos.Z*ChunkDims.Z
       };
-      chunk *Chunks = Game->Chunks->Data;
       v3r32 AimBase = {PosInChunk.X, PosInChunk.Y+EyeHeight, PosInChunk.Z};
-      block_type *Blocks = Chunks[0].Blocks->Data;
+      
       Game->AimBlockValid = FALSE;
       
-      // TODO: Make this work for multiple chunks
+      b08 UpdateChunkPos = TRUE;
+      block_type *Blocks;
       
       s32 X = (s32)AimBase.X;
       s32 Y = (s32)AimBase.Y;
       s32 Z = (s32)AimBase.Z;
       
       while(TRUE) {
+         if(UpdateChunkPos) {
+            u32 ChunkIndex;
+            b08 Found = GetChunk(&Game->Region, ChunkPos, &ChunkIndex);
+            if(!Found) break;
+            
+            chunk *Chunks = Game->Region.Chunks->Data;
+            Blocks = Chunks[ChunkIndex].Blocks->Data;
+            
+            UpdateChunkPos = FALSE;
+         }
+         
          block_type BlockType = Blocks[INDEX_3D(X, Y, Z, ChunkDims.X, ChunkDims.Y)];
          
          if(BlockType != BLOCK_NONE) {
@@ -484,9 +509,21 @@ Game_Update(platform_state *Platform,
             else             Z++;
          }
          
-         //TODO: Handle this better for multi-chunk
-         if(X <  0 || Y <  0 || Z <  0) break;
-         if(X > 16 || Y > 16 || Z > 16) break;
+         v3s32 ChunkDimsS = V3u32_ToV3s32(ChunkDims);
+         v3s32 Offset = V3s32_Add((v3s32){X, Y, Z}, ChunkDimsS);
+         v3s32 Dir = V3s32_SubS(V3s32_Div(Offset, ChunkDimsS), 1);
+         if(!V3s32_IsEqual(Dir, (v3s32){0})) {
+            ChunkPos = V3s32_Add(ChunkPos, Dir);
+            UpdateChunkPos = TRUE;
+            
+            AimBase.X -= Dir.X * ChunkDimsS.X;
+            AimBase.Y -= Dir.Y * ChunkDimsS.Y;
+            AimBase.Z -= Dir.Z * ChunkDimsS.Z;
+            
+            X = Offset.X % ChunkDims.X;
+            Y = Offset.Y % ChunkDims.Y;
+            Z = Offset.Z % ChunkDims.Z;
+         }
          
          if(MinT > AimRange) break;
       }
@@ -495,7 +532,6 @@ Game_Update(platform_state *Platform,
          p_vertex *Vertex = Mesh_GetVertices(&Renderer->PMesh, Game->AimBlockObjectIndex);
          
          v3s32 B = Game->AimBlock;
-         v3u32 D = ChunkDims;
          v3r32 P = {(B.X-8), (B.Y-8), (B.Z-8)};
          r32 S = 2;
          

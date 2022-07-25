@@ -40,3 +40,17 @@ typedef struct chunk {
    HEAP(block_type) Blocks;
    mesh_object Object;
 } chunk;
+
+typedef union region_node {
+   u16 Chunks[8];
+   u16 Children[8];
+} region_node;
+
+typedef struct region {
+   v3s32 Pos;
+   HEAP(chunk) Chunks;
+   HEAP(region_node) Nodes;
+} region;
+
+global v3u32 ChunkDims = {16, 16, 16};
+global v3u32 RegionDims = {16, 16, 16};

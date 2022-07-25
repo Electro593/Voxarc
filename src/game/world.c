@@ -32,8 +32,6 @@ global u32 CubePositions[] = {
    0b01011111111101111111111000000001
 };
 
-global v3u32 ChunkDims = {16, 16, 16};
-
 internal mesh_object
 MakePTBlockObject(mesh *Mesh, heap *Heap, v3r32 Pos, u32 BytesFromFirstAsset)
 {
@@ -97,16 +95,91 @@ MakePTBlockObject(mesh *Mesh, heap *Heap, v3r32 Pos, u32 BytesFromFirstAsset)
    return Object;
 }
 
-internal chunk
-MakeChunk(heap *Heap, mesh *Mesh, v3s32 ChunkPos, u32 *TextureBytes)
+internal b08
+GetChunk(region *Region, v3s32 Pos, u32 *ChunkIndexOut)
 {
+   v3u32 Start = {0};
+   v3u32 Dims = RegionDims;
+   u32 PrevNode = 0;
+   
+   region_node *Nodes = Region->Nodes->Data;
+   chunk *Chunks = Region->Chunks->Data;
+   
+   while(TRUE) {
+      Dims = V3u32_DivS(Dims, 2);
+      v3u32 I = {0, 0, 0};
+      if(Pos.X >= Start.X + Dims.X) I.X++, Start.X += Dims.X;
+      if(Pos.Y >= Start.Y + Dims.Y) I.Y++, Start.Y += Dims.Y;
+      if(Pos.Z >= Start.Z + Dims.Z) I.Z++, Start.Z += Dims.Z;
+      
+      u32 J = INDEX_3D(I.X, I.Y, I.Z, 2, 2);
+      
+      if(Nodes[PrevNode].Children[J] == 0)
+         return FALSE;
+      
+      if(Dims.X == 1 && Dims.Y == 1 && Dims.Z == 1) {
+         if(ChunkIndexOut) *ChunkIndexOut = Nodes[PrevNode].Chunks[J]-1;
+         return TRUE;
+      }
+      
+      PrevNode = Nodes[PrevNode].Children[J];
+   }
+}
+
+internal void
+MakeChunk(heap *Heap, region *Region, mesh *Mesh, v3s32 ChunkPos, u32 *TextureBytes)
+{
+   chunk *Chunk;
+   
+   v3u32 Start = {0};
+   v3u32 Dims = RegionDims;
+   u32 PrevNode = 0;
+   region_node *Nodes = Region->Nodes->Data;
+   chunk *Chunks = Region->Chunks->Data;
+   while(TRUE) {
+      Dims = V3u32_DivS(Dims, 2);
+      v3u32 I = {0, 0, 0};
+      if(ChunkPos.X >= Start.X + Dims.X) I.X++, Start.X += Dims.X;
+      if(ChunkPos.Y >= Start.Y + Dims.Y) I.Y++, Start.Y += Dims.Y;
+      if(ChunkPos.Z >= Start.Z + Dims.Z) I.Z++, Start.Z += Dims.Z;
+      
+      u32 J = INDEX_3D(I.X, I.Y, I.Z, 2, 2);
+      
+      if(Dims.X > 1 && Dims.Y > 1 && Dims.Z > 1) {
+         if(Nodes[PrevNode].Children[J] == 0) {
+            u32 NodeIndex = Region->Nodes->Size / sizeof(region_node);
+            Heap_Resize(Region->Nodes, Region->Nodes->Size+sizeof(region_node));
+            Nodes = Region->Nodes->Data;
+            
+            region_node *Node = Nodes+NodeIndex;
+            Mem_Set(Node, 0, sizeof(region_node));
+            
+            Nodes[PrevNode].Children[J] = NodeIndex;
+            PrevNode = NodeIndex;
+         } else {
+            PrevNode = Nodes[PrevNode].Children[J];
+         }
+      } else {
+         Assert(Nodes[PrevNode].Chunks[J] == 0);
+         
+         u32 ChunkIndex = Region->Chunks->Size / sizeof(chunk);
+         Heap_Resize(Region->Chunks, Region->Chunks->Size+sizeof(chunk));
+         Chunks = Region->Chunks->Data;
+         
+         Chunk = Chunks+ChunkIndex;
+         
+         Nodes[PrevNode].Chunks[J] = ChunkIndex+1;
+         break;
+      }
+   }
+   
+   
    // NOTE: Must be <= the 'repeat' max in the pt shaders
    
-   chunk Chunk;
-   Chunk.Pos = ChunkPos;
-   Chunk.Blocks = Heap_Allocate(Heap, V3u32_Volume(ChunkDims)*sizeof(block_type));
-   block_type *Blocks = Chunk.Blocks->Data;
-   Mem_Set(Blocks, BLOCK_NONE, Chunk.Blocks->Size);
+   Chunk->Pos = ChunkPos;
+   Chunk->Blocks = Heap_Allocate(Heap, V3u32_Volume(ChunkDims)*sizeof(block_type));
+   block_type *Blocks = Chunk->Blocks->Data;
+   Mem_Set(Blocks, BLOCK_NONE, Chunk->Blocks->Size);
    
    for(u32 Y = 0; Y < 4; Y++) {
       block_type Type = BLOCK_NONE;
@@ -144,10 +217,10 @@ MakeChunk(heap *Heap, mesh *Mesh, v3s32 ChunkPos, u32 *TextureBytes)
    
    u32 VertexIndex = 0;
    u32 VertexCount = 12;
-   Chunk.Object.Vertices = Heap_Allocate(Heap, VertexCount*4*Mesh->VertexSize);
-   Chunk.Object.Indices = Heap_Allocate(Heap, VertexCount*6*sizeof(u32));
-   pt_vertex *Vertex = Chunk.Object.Vertices->Data;
-   u32       *Index  = Chunk.Object.Indices->Data;
+   Chunk->Object.Vertices = Heap_Allocate(Heap, VertexCount*4*Mesh->VertexSize);
+   Chunk->Object.Indices = Heap_Allocate(Heap, VertexCount*6*sizeof(u32));
+   pt_vertex *Vertex = Chunk->Object.Vertices->Data;
+   u32       *Index  = Chunk->Object.Indices->Data;
    
    // A highly compacted greedy meshing algorithm
    //
@@ -239,10 +312,10 @@ MakeChunk(heap *Heap, mesh *Mesh, v3s32 ChunkPos, u32 *TextureBytes)
                
                // Potentially resize.
                if(VertexIndex == VertexCount) {
-                  Heap_Resize(Chunk.Object.Vertices, (VertexCount+12)*4*Mesh->VertexSize);
-                  Heap_Resize(Chunk.Object.Indices,  (VertexCount+12)*6*sizeof(u32));
-                  Vertex = (pt_vertex*)Chunk.Object.Vertices->Data + 4*VertexCount;
-                  Index  =       (u32*)Chunk.Object.Indices->Data  + 6*VertexCount;
+                  Heap_Resize(Chunk->Object.Vertices, (VertexCount+12)*4*Mesh->VertexSize);
+                  Heap_Resize(Chunk->Object.Indices,  (VertexCount+12)*6*sizeof(u32));
+                  Vertex = (pt_vertex*)Chunk->Object.Vertices->Data + 4*VertexCount;
+                  Index  =       (u32*)Chunk->Object.Indices->Data  + 6*VertexCount;
                   VertexCount += 12;
                }
                
@@ -308,14 +381,12 @@ MakeChunk(heap *Heap, mesh *Mesh, v3s32 ChunkPos, u32 *TextureBytes)
    
    Stack_Pop();
    
-   Heap_Resize(Chunk.Object.Vertices, VertexIndex*4*Mesh->VertexSize);
-   Heap_Resize(Chunk.Object.Indices,  VertexIndex*6*sizeof(u32));
+   Heap_Resize(Chunk->Object.Vertices, VertexIndex*4*Mesh->VertexSize);
+   Heap_Resize(Chunk->Object.Indices,  VertexIndex*6*sizeof(u32));
    
-   Chunk.Object.TranslationMatrix = M4x4r32_Translation(ChunkPos.X*16, ChunkPos.Y*16, ChunkPos.Z*16);
-   Chunk.Object.ScalingMatrix = M4x4r32_Scaling(8, 8, 8);
-   Chunk.Object.RotationMatrix = M4x4r32_I;
-   
-   return Chunk;
+   Chunk->Object.TranslationMatrix = M4x4r32_Translation(ChunkPos.X*16, ChunkPos.Y*16, ChunkPos.Z*16);
+   Chunk->Object.ScalingMatrix = M4x4r32_Scaling(8, 8, 8);
+   Chunk->Object.RotationMatrix = M4x4r32_I;
 }
 
 internal b08
@@ -341,7 +412,9 @@ CollidesWithBlock(chunk Chunk, v3u32 BlockPos, v3r32 PlayerPos, v3r32 PlayerSize
    return TRUE;
 }
 
-//TODO:
-// Each chunk is a heap handle
-// Octree of blocks per chunk
-// Short indices, like relative pointers, since max blocks per chunk is 16*16*16=4096
+
+/* TODO:
+ - Consider a hybrid scheme, where far-off chunks are loaded as octrees to
+   save memory, and nearby chunks are directly accessed?
+ - Short indices, like relative pointers, for octree accessing
+*/
