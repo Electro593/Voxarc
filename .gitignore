@@ -1,3 +1,4 @@
 build/
 
 DEBUGOutput.txt
+heap_dump.txt

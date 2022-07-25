@@ -412,7 +412,10 @@ RayRectIntersectionA(v3r32 RectStart, v3r32 RectEnd, v3r32 RectNormal,
     v3r32 L0 = RayPoint;
     v3r32 L = RayDir;
     
-    r32 t = V3r32_Dot(V3r32_Sub(P0, L0), N) / V3r32_Dot(L, N);
+    r32 LDotN = V3r32_Dot(L, N);
+    if(LDotN == 0) return FALSE;
+    
+    r32 t = V3r32_Dot(V3r32_Sub(P0, L0), N) / LDotN;
     if(T) *T = t;
     
     v3r32 I = V3r32_Add(L0, V3r32_MulS(L, t));
