@@ -336,3 +336,53 @@ U08_Lerp(u08 A, u08 B, r32 T)
 {
     return A + (u08)(T * ((r32)B - A));
 }
+
+
+
+
+
+internal random
+Rand_Init(u32 Seed)
+{
+    random Random;
+    Random.LFSR32 = Seed % U32_MAX;                      // 32 Bit
+    Random.LFSR31 = (Seed + 0x2F2F2F2F) % (U32_MAX / 2); // 31 Bit
+    return Random;
+}
+
+//TODO: Rework this
+
+internal u32
+Rand_Int(random *Random)
+{
+    s32 FeedBack;
+    u32 LFSR32 = Random->LFSR32;
+    
+    FeedBack = LFSR32 & 1;
+    LFSR32 >>= 1;
+    if(FeedBack == 1)
+        LFSR32 ^= RAND_POLYNOMIAL_MASK32;
+    FeedBack = LFSR32 & 1;
+    LFSR32 >>= 1;
+    if(FeedBack == 1)
+        LFSR32 ^= RAND_POLYNOMIAL_MASK32;
+    Random->LFSR32 = LFSR32;
+    
+    u32 LFSR31 = Random->LFSR31;
+    FeedBack = LFSR31 & 1;
+    LFSR31 >>= 1;
+    if(FeedBack == 1)
+        LFSR31 ^= RAND_POLYNOMIAL_MASK31;
+    Random->LFSR31 = LFSR31;
+    
+    return (LFSR32 ^ LFSR31) & 0xFFFF;
+}
+
+//NOTE: Max is exclusive, so Min <= Result < Max
+internal s32
+Rand_IntRange(random *Random, s32 Min, s32 Max)
+{
+    Assert(Min != Max);
+    s32 Result = Rand_Int(Random) % (Max - Min) + Min;
+    return Result;
+}

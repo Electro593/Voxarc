@@ -24,8 +24,19 @@ global_state __Global;
 #include <renderer/opengl/render.c>
 #include <game/world.c>
 
-// TODO handle errors, e.g. make a memory representation of a default
-//      file if loading it fails
+/* TODO: Unavoidable error sources that might need handling:
+ - Computer state
+   - Not enough memory
+   - File doesn't exist
+   - File is open
+   - Not enough storage space
+ - User input
+   - Mouse
+   - Keys
+ - User output
+   - No matching graphics modes
+   - Missing hardware
+*/
 
 internal void
 Game_Init(platform_state *Platform,

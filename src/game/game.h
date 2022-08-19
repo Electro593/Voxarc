@@ -27,6 +27,9 @@ struct game_state {
     heap *WorldHeap;
     region Region;
     
+    // TODO: Split pos into PosInRegion, PosInChunk, and PosInBlock. The
+    // first two should be s32, the last should be r32. That way, no floating
+    // point issues crop up
     v3r32 Dir;
     v3r32 Pos;
     v3s32 AimBlock;
