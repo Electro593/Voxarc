@@ -7,22 +7,48 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+typedef enum shader_id {
+    ShaderID_P3,
+    ShaderID_PC2,
+    ShaderID_PC3,
+    ShaderID_PT3,
+    ShaderID_Glyph,
+    ShaderID_PNM3,
+    
+    Shader_Count
+} shader_id;
+
+c08 *ShaderPaths[] = {
+    SHADERS_DIR "p.vert",
+    SHADERS_DIR "p.frag",
+    SHADERS_DIR "pc2.vert",
+    SHADERS_DIR "pc2.frag",
+    SHADERS_DIR "pc3.vert",
+    SHADERS_DIR "pc3.frag",
+    SHADERS_DIR "pt.vert",
+    SHADERS_DIR "pt.frag",
+    SHADERS_DIR "glyph.vert",
+    SHADERS_DIR "glyph.frag",
+    SHADERS_DIR "pnc3.vert",
+    SHADERS_DIR "pnc3.frag",
+};
+
+typedef struct shader {
+    mesh Mesh;
+    
+    datetime VertLastModified;
+    datetime FragLastModified;
+    
+    u32 Program;
+    b08 Initialized;
+} shader;
+
 typedef struct renderer_state {
     u32 VAO;
     u32 VBO;
     u32 EBO;
     
-    u32 PProgram;
-    u32 PC2Program;
-    u32 PC3Program;
-    u32 PTProgram;
-    u32 GlyphProgram;
-    
-    datetime PLastModified[2];
-    datetime PC2LastModified[2];
-    datetime PC3LastModified[2];
-    datetime PTLastModified[2];
-    datetime UILastModified[2];
+    shader Shaders[Shader_Count];
     
     m4x4r32 OrthographicMatrix;
     m4x4r32 PerspectiveMatrix;
@@ -31,12 +57,6 @@ typedef struct renderer_state {
     v2u32 WindowSize;
     
     heap *Heap;
-    
-    mesh PMesh;
-    mesh PC2Mesh;
-    mesh PC3Mesh;
-    mesh PTMesh;
-    mesh GlyphMesh;
     
     assetpack Assetpack;
     

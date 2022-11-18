@@ -352,8 +352,10 @@ Rand_Init(u32 Seed)
 
 //TODO: Rework this
 
+#define RAND_MAX 0xFFFF
+
 internal u32
-Rand_Int(random *Random)
+Rand_Next(random *Random)
 {
     s32 FeedBack;
     u32 LFSR32 = Random->LFSR32;
@@ -380,9 +382,23 @@ Rand_Int(random *Random)
 
 //NOTE: Max is exclusive, so Min <= Result < Max
 internal s32
-Rand_IntRange(random *Random, s32 Min, s32 Max)
+S32_RandRange(random *Random, s32 Min, s32 Max)
 {
-    Assert(Min != Max);
-    s32 Result = Rand_Int(Random) % (Max - Min) + Min;
-    return Result;
+    Assert(Min < Max);
+    return Rand_Next(Random) % (Max - Min) + Min;
+}
+
+internal r32
+R32_Random(random *Random)
+{
+    u32 Value = Rand_Next(Random);
+    return (r32)Value / RAND_MAX;
+}
+
+//NOTE: Max is exclusive, so Min <= Result < Max
+internal r32
+R32_RandRange(random *Random, r32 Min, r32 Max)
+{
+    Assert(Min < Max);
+    return R32_Random(Random)*(Max - Min) + Min;
 }

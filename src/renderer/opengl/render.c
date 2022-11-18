@@ -21,7 +21,7 @@ OpenGL_DebugCallback(u32 Source,
 }
 
 internal u32
-Renderer_LoadShaders(c08 *VertFileName,
+Renderer_LoadProgram(c08 *VertFileName,
                      c08 *FragFileName)
 {
     Stack_Push();
@@ -71,204 +71,107 @@ Renderer_LoadShaders(c08 *VertFileName,
 }
 
 internal void
-Renderer_LoadPProgram(renderer_state *Renderer, b08 FirstTime)
+Renderer_LoadShader(renderer_state *Renderer, shader_id ShaderID, mesh_flags Flags)
 {
-    c08 *VertName = SHADERS_DIR "p.vert";
-    c08 *FragName = SHADERS_DIR "p.frag";
+    c08 *VertName = ShaderPaths[2*ShaderID+0];
+    c08 *FragName = ShaderPaths[2*ShaderID+1];
     
     datetime VertTime, FragTime;
     Platform_GetFileTime(VertName, 0, 0, &VertTime);
     Platform_GetFileTime(FragName, 0, 0, &FragTime);
     
-    if(FirstTime ||
-       Platform_CmpFileTime(Renderer->PLastModified[0], VertTime) == LESS ||
-       Platform_CmpFileTime(Renderer->PLastModified[1], FragTime) == LESS)
+    shader *Shader = &Renderer->Shaders[ShaderID];
+    b32 N  = Flags & MESH_HAS_NORMALS;
+    b32 T  = Flags & MESH_HAS_TEXTURES;
+    b32 C  = Flags & MESH_HAS_COLORS;
+    b32 d3 = Flags & MESH_HAS_PERSPECTIVE;
+    b32 UI = Flags & MESH_IS_FOR_UI;
+    
+    if(!Shader->Initialized ||
+       Platform_CmpFileTime(Shader->VertLastModified, VertTime) == LESS ||
+       Platform_CmpFileTime(Shader->FragLastModified, FragTime) == LESS)
     {
-        if(!FirstTime)
-            OpenGL_DeleteProgram(Renderer->PProgram);
+        Shader->VertLastModified = VertTime;
+        Shader->FragLastModified = FragTime;
         
-        Renderer->PProgram = Renderer_LoadShaders(VertName, FragName);
+        if(Shader->Initialized)
+            OpenGL_DeleteProgram(Shader->Program);
         
-        if(FirstTime)
-            Mesh_Init(&Renderer->PMesh, Renderer->Heap, &Renderer->PProgram, 0);
-        
-        Renderer->PMesh.P.VPMatrix = OpenGL_GetUniformLocation(Renderer->PProgram, "VPMatrix");
-        Renderer->PMesh.P.Color    = OpenGL_GetUniformLocation(Renderer->PProgram, "Color");
-        
-        m4x4r32 VPMatrix = M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
-        
-        OpenGL_UseProgram(Renderer->PProgram);
-        OpenGL_UniformMatrix4fv(Renderer->PMesh.P.VPMatrix, 1, FALSE, VPMatrix);
-        OpenGL_Uniform4f(Renderer->PMesh.P.Color, 1, 1, 1, 1);
-        
-        Renderer->PLastModified[0] = VertTime;
-        Renderer->PLastModified[1] = FragTime;
-    }
-}
-
-internal void
-Renderer_LoadPC2Program(renderer_state *Renderer, b08 FirstTime)
-{
-    c08 *VertName = SHADERS_DIR "pc2.vert";
-    c08 *FragName = SHADERS_DIR "pc2.frag";
-    
-    datetime VertTime, FragTime;
-    Platform_GetFileTime(VertName, 0, 0, &VertTime);
-    Platform_GetFileTime(FragName, 0, 0, &FragTime);
-    
-    if(FirstTime ||
-       Platform_CmpFileTime(Renderer->PC2LastModified[0], VertTime) == LESS ||
-       Platform_CmpFileTime(Renderer->PC2LastModified[1], FragTime) == LESS)
-    {
-        if(!FirstTime)
-            OpenGL_DeleteProgram(Renderer->PC2Program);
-        
-        Renderer->PC2Program = Renderer_LoadShaders(VertName, FragName);
-        
-        if(FirstTime)
-            Mesh_Init(&Renderer->PC2Mesh, Renderer->Heap, &Renderer->PC2Program, MESH_HAS_ELEMENTS|MESH_HAS_COLORS);
-        
-        Renderer->PC2Mesh.VPMatrix = OpenGL_GetUniformLocation(Renderer->PC2Program, "VPMatrix");
-        
-        OpenGL_UseProgram(Renderer->PC2Program);
-        OpenGL_UniformMatrix4fv(Renderer->PC2Mesh.VPMatrix, 1, FALSE, Renderer->OrthographicMatrix);
-        
-        Renderer->PC2LastModified[0] = VertTime;
-        Renderer->PC2LastModified[1] = FragTime;
-    }
-}
-
-internal void
-Renderer_LoadPC3Program(renderer_state *Renderer, b08 FirstTime)
-{
-    c08 *VertName = SHADERS_DIR "pc3.vert";
-    c08 *FragName = SHADERS_DIR "pc3.frag";
-    
-    datetime VertTime, FragTime;
-    Platform_GetFileTime(VertName, 0, 0, &VertTime);
-    Platform_GetFileTime(FragName, 0, 0, &FragTime);
-    
-    if(FirstTime ||
-       Platform_CmpFileTime(Renderer->PC3LastModified[0], VertTime) == LESS ||
-       Platform_CmpFileTime(Renderer->PC3LastModified[1], FragTime) == LESS)
-    {
-        if(!FirstTime)
-            OpenGL_DeleteProgram(Renderer->PC3Program);
-        
-        Renderer->PC3Program = Renderer_LoadShaders(VertName, FragName);
-        
-        if(FirstTime)
-            Mesh_Init(&Renderer->PC3Mesh, Renderer->Heap, &Renderer->PC3Program, MESH_HAS_ELEMENTS|MESH_HAS_COLORS);
-        
-        Renderer->PC3Mesh.VPMatrix = OpenGL_GetUniformLocation(Renderer->PC3Program, "VPMatrix");
-        
-        m4x4r32 VPMatrix = M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
-        
-        OpenGL_UseProgram(Renderer->PC3Program);
-        OpenGL_UniformMatrix4fv(Renderer->PC3Mesh.VPMatrix, 1, FALSE, VPMatrix);
-        
-        Renderer->PC3LastModified[0] = VertTime;
-        Renderer->PC3LastModified[1] = FragTime;
-    }
-}
-
-internal void
-Renderer_LoadPTProgram(renderer_state *Renderer, b08 FirstTime)
-{
-    c08 *VertName = SHADERS_DIR "pt.vert";
-    c08 *FragName = SHADERS_DIR "pt.frag";
-    
-    datetime VertTime, FragTime;
-    Platform_GetFileTime(VertName, 0, 0, &VertTime);
-    Platform_GetFileTime(FragName, 0, 0, &FragTime);
-    
-    if(FirstTime ||
-       Platform_CmpFileTime(Renderer->PTLastModified[0], VertTime) == LESS ||
-       Platform_CmpFileTime(Renderer->PTLastModified[1], FragTime) == LESS)
-    {
-        if(!FirstTime)
-            OpenGL_DeleteProgram(Renderer->PTProgram);
-        
-        Renderer->PTProgram = Renderer_LoadShaders(VertName, FragName);
+        Shader->Program = Renderer_LoadProgram(VertName, FragName);
         
         assetpack_atlas Atlas = FindFirstAssetFromExactTag(Renderer->Assetpack, TAG_ATLAS_DESC, &(u32){0})->Atlas;
         m4x4r32 VPMatrix = M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
         
-        if(FirstTime) {
-            Renderer->PTMesh.TextureIndex = 0;
-            Mesh_Init(&Renderer->PTMesh, Renderer->Heap, &Renderer->PTProgram, MESH_HAS_ELEMENTS|MESH_HAS_TEXTURES);
+        if(!Shader->Initialized) {
+            if(T) Shader->Mesh.TextureIndex = 0;
             
-            OpenGL_SamplerParameteri(Renderer->PTMesh.SamplerObject, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            OpenGL_SamplerParameteri(Renderer->PTMesh.SamplerObject, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            OpenGL_SamplerParameteri(Renderer->PTMesh.SamplerObject, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            OpenGL_SamplerParameteri(Renderer->PTMesh.SamplerObject, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            OpenGL_TexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, Atlas.Size.X, Atlas.Size.Y, Atlas.Count, 0, GL_RGBA, GL_UNSIGNED_BYTE, Renderer->Assetpack.AssetData+Atlas.DataOffset);
-            OpenGL_BindSampler(0, Renderer->PTMesh.SamplerObject);
+            Mesh_Init(&Shader->Mesh, Renderer->Heap, &Shader->Program, Flags);
+            Shader->Initialized = TRUE;
             
-            Heap_Resize(Renderer->PTMesh.Storage, Renderer->Assetpack.Header->AssetsSize);
-            Mem_Cpy(Renderer->PTMesh.Storage->Data, Renderer->Assetpack.Assets, Renderer->PTMesh.Storage->Size);
-            Renderer->PTMesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
+            if(T && !UI) {
+                OpenGL_SamplerParameteri(Shader->Mesh.SamplerObject, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                OpenGL_SamplerParameteri(Shader->Mesh.SamplerObject, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                OpenGL_SamplerParameteri(Shader->Mesh.SamplerObject, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                OpenGL_SamplerParameteri(Shader->Mesh.SamplerObject, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                OpenGL_TexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, Atlas.Size.X, Atlas.Size.Y, Atlas.Count, 0, GL_RGBA, GL_UNSIGNED_BYTE, Renderer->Assetpack.AssetData+Atlas.DataOffset);
+                OpenGL_BindSampler(0, Shader->Mesh.SamplerObject);
+                
+                Heap_Resize(Shader->Mesh.Storage, Renderer->Assetpack.Header->AssetsSize);
+                Mem_Cpy(Shader->Mesh.Storage->Data, Renderer->Assetpack.Assets, Shader->Mesh.Storage->Size);
+                Shader->Mesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
+            } else if(UI) {
+                Shader->Mesh.TextureSSBO = Renderer->Shaders[ShaderID_PT3].Mesh.TextureSSBO;
+                Shader->Mesh.Atlases     = Renderer->Shaders[ShaderID_PT3].Mesh.Atlases;
+                Shader->Mesh.Storage     = Renderer->Shaders[ShaderID_PT3].Mesh.Storage;
+                
+                OpenGL_SamplerParameteri(Shader->Mesh.SamplerObject, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                OpenGL_SamplerParameteri(Shader->Mesh.SamplerObject, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                OpenGL_SamplerParameteri(Shader->Mesh.SamplerObject, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                OpenGL_SamplerParameteri(Shader->Mesh.SamplerObject, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            }
+            
+            if(FLAG_SET(Flags, MESH_HAS_MATERIALS)) {
+                material Material = {
+                    (v3u08){150, 150, 160},
+                    (v3u08){170, 170, 170},
+                    (v3u08){200, 200, 200},
+                    2,
+                };
+                ((Mat0 >> 16) & 0xFF) / 255.0d
+                Heap_Resize(Shader->Mesh.Materials, sizeof(material));
+                ((material*)Shader->Mesh.Materials->Data)[0] = Material;
+                OpenGL_BindBuffer(GL_SHADER_STORAGE_BUFFER, Shader->Mesh.MaterialSSBO);
+                OpenGL_BufferData(GL_SHADER_STORAGE_BUFFER, Shader->Mesh.Materials->Size, Shader->Mesh.Materials->Data, GL_STATIC_DRAW);
+            }
+            
+            if(T) Shader->Mesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
         }
         
-        Renderer->PTMesh.AtlasesSampler = OpenGL_GetUniformLocation(Renderer->PTProgram, "Atlases");
-        Renderer->PTMesh.AtlasSize      = OpenGL_GetUniformLocation(Renderer->PTProgram, "AtlasSize");
-        Renderer->PTMesh.VPMatrix       = OpenGL_GetUniformLocation(Renderer->PTProgram, "VPMatrix");
+        Shader->Mesh.Color          = OpenGL_GetUniformLocation(Shader->Program, "Color");
+        Shader->Mesh.AtlasesSampler = OpenGL_GetUniformLocation(Shader->Program, "Atlases");
+        Shader->Mesh.AtlasSize      = OpenGL_GetUniformLocation(Shader->Program, "AtlasSize");
+        Shader->Mesh.VPMatrix       = OpenGL_GetUniformLocation(Shader->Program, "VPMatrix");
+        Shader->Mesh.LightPos       = OpenGL_GetUniformLocation(Shader->Program, "LightPos");
+        Shader->Mesh.CameraPos      = OpenGL_GetUniformLocation(Shader->Program, "CameraPos");
         
-        OpenGL_UseProgram(Renderer->PTProgram);
-        OpenGL_Uniform1i(Renderer->PTMesh.AtlasesSampler, 0);
-        OpenGL_Uniform2ui(Renderer->PTMesh.AtlasSize, Atlas.Size.X, Atlas.Size.Y);
-        OpenGL_UniformMatrix4fv(Renderer->PTMesh.VPMatrix, 1, FALSE, VPMatrix);
-        
-        Renderer->PTLastModified[0] = VertTime;
-        Renderer->PTLastModified[1] = FragTime;
-    }
-}
-
-internal void
-Renderer_LoadGlyphProgram(renderer_state *Renderer, b08 FirstTime)
-{
-    c08 *VertName = SHADERS_DIR "glyph.vert";
-    c08 *FragName = SHADERS_DIR "glyph.frag";
-    
-    datetime VertTime, FragTime;
-    Platform_GetFileTime(VertName, 0, 0, &VertTime);
-    Platform_GetFileTime(FragName, 0, 0, &FragTime);
-    
-    if(FirstTime ||
-       Platform_CmpFileTime(Renderer->UILastModified[0], VertTime) == LESS ||
-       Platform_CmpFileTime(Renderer->UILastModified[1], FragTime) == LESS)
-    {
-        if(!FirstTime)
-            OpenGL_DeleteProgram(Renderer->GlyphProgram);
-        
-        Renderer->GlyphProgram = Renderer_LoadShaders(VertName, FragName);
-        
-        if(FirstTime) {
-            Renderer->GlyphMesh.TextureIndex = 0;
-            Mesh_Init(&Renderer->GlyphMesh, Renderer->Heap, &Renderer->GlyphProgram, MESH_IS_FOR_UI|MESH_HAS_ELEMENTS|MESH_HAS_TEXTURES|MESH_SHARED_TEXTURE_BUFFER);
-            
-            Renderer->GlyphMesh.TextureSSBO = Renderer->PTMesh.TextureSSBO;
-            Renderer->GlyphMesh.Atlases = Renderer->PTMesh.Atlases;
-            Renderer->GlyphMesh.Storage = Renderer->PTMesh.Storage;
-            Renderer->GlyphMesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
-            
-            OpenGL_SamplerParameteri(Renderer->GlyphMesh.SamplerObject, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            OpenGL_SamplerParameteri(Renderer->GlyphMesh.SamplerObject, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            OpenGL_SamplerParameteri(Renderer->GlyphMesh.SamplerObject, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            OpenGL_SamplerParameteri(Renderer->GlyphMesh.SamplerObject, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        if(!N && !T && !C &&  d3) {
+            OpenGL_UniformMatrix4fv(Shader->Mesh.VPMatrix, 1, FALSE, VPMatrix);
+            OpenGL_Uniform4f       (Shader->Mesh.Color,    1, 1, 1, 1);
+        } else if(!N && !T &&  C && !d3) {
+            OpenGL_UniformMatrix4fv(Shader->Mesh.VPMatrix, 1, FALSE, Renderer->OrthographicMatrix);
+        } else if(!N && !T &&  C &&  d3) {
+            OpenGL_UniformMatrix4fv(Shader->Mesh.VPMatrix, 1, FALSE, VPMatrix);
+        } else if(!N &&  T && !C &&  d3) {
+            OpenGL_Uniform1i       (Shader->Mesh.AtlasesSampler, 0);
+            OpenGL_Uniform2ui      (Shader->Mesh.AtlasSize, Atlas.Size.X, Atlas.Size.Y);
+            OpenGL_UniformMatrix4fv(Shader->Mesh.VPMatrix, 1, FALSE, VPMatrix);
+        } else if( N && !T &&  C &&  d3) {
+            OpenGL_UniformMatrix4fv(Shader->Mesh.VPMatrix, 1, FALSE, VPMatrix);
+            OpenGL_Uniform3f(Shader->Mesh.CameraPos, 0, 0, 0);
+        } else if(UI) {
+            OpenGL_Uniform1i(Shader->Mesh.AtlasesSampler, 0);
+            OpenGL_Uniform2ui(Shader->Mesh.AtlasSize, Atlas.Size.X, Atlas.Size.Y);
         }
-        
-        assetpack_atlas Atlas = FindFirstAssetFromExactTag(Renderer->Assetpack, TAG_ATLAS_DESC, &(u32){0})->Atlas;
-        
-        Renderer->GlyphMesh.AtlasesSampler = OpenGL_GetUniformLocation(Renderer->GlyphProgram, "Atlases");
-        Renderer->GlyphMesh.AtlasSize      = OpenGL_GetUniformLocation(Renderer->GlyphProgram, "AtlasSize");
-        
-        OpenGL_UseProgram(Renderer->GlyphProgram);
-        OpenGL_Uniform1i(Renderer->GlyphMesh.AtlasesSampler, 0);
-        OpenGL_Uniform2ui(Renderer->GlyphMesh.AtlasSize, Atlas.Size.X, Atlas.Size.Y);
-        
-        Renderer->UILastModified[0] = VertTime;
-        Renderer->UILastModified[1] = FragTime;
     }
 }
 
@@ -350,11 +253,12 @@ Renderer_Init(renderer_state *Renderer,
     Renderer->ViewMatrix = M4x4r32_I;
     Renderer->WindowSize = WindowSize;
     
-    Renderer_LoadPProgram(Renderer, TRUE);
-    Renderer_LoadPC2Program(Renderer, TRUE);
-    Renderer_LoadPC3Program(Renderer, TRUE);
-    Renderer_LoadPTProgram(Renderer, TRUE);
-    Renderer_LoadGlyphProgram(Renderer, TRUE);
+    Renderer_LoadShader(Renderer, ShaderID_P3,    0);
+    Renderer_LoadShader(Renderer, ShaderID_PC2,   MESH_HAS_ELEMENTS|MESH_HAS_COLORS);
+    Renderer_LoadShader(Renderer, ShaderID_PC3,   MESH_HAS_ELEMENTS|MESH_HAS_COLORS|MESH_HAS_PERSPECTIVE);
+    Renderer_LoadShader(Renderer, ShaderID_PT3,   MESH_HAS_ELEMENTS|MESH_HAS_TEXTURES|MESH_HAS_PERSPECTIVE);
+    Renderer_LoadShader(Renderer, ShaderID_Glyph, MESH_HAS_ELEMENTS|MESH_HAS_TEXTURES|MESH_IS_FOR_UI|MESH_SHARED_TEXTURE_BUFFER);
+    Renderer_LoadShader(Renderer, ShaderID_PNM3,  MESH_HAS_ELEMENTS|MESH_HAS_NORMALS|MESH_HAS_MATERIALS|MESH_HAS_PERSPECTIVE);
     
     Mem_Set(&Renderer->Font, 0, sizeof(ui_font));
     Renderer->Font.Assetpack = Renderer->Assetpack;
@@ -372,10 +276,11 @@ Renderer_Init(renderer_state *Renderer,
     ui_string UIString = MakeUIString(Renderer->Heap, CString("Position (X,Y,Z): "), Style);
     mesh_object Object = MakeUIStringObject(Renderer->Heap, UIString, (v2u32){10, 0}, WindowSize);
     
+    mesh *GlyphMesh = &Renderer->Shaders[ShaderID_Glyph].Mesh;
     mesh_object *Objects[] = {&Object};
-    Mesh_AddObjects(&Renderer->GlyphMesh, 1, Objects);
+    Mesh_AddObjects(GlyphMesh, 1, Objects);
     
-    Mesh_Update(&Renderer->GlyphMesh);
+    Mesh_Update(GlyphMesh);
     
     Renderer->ObjectIndex = Object.Index;
 }
@@ -387,11 +292,12 @@ Renderer_Draw(platform_state *Platform,
               r32 FPS)
 {
     // Hot-reload the shaders
-    Renderer_LoadPProgram(Renderer, FALSE);
-    Renderer_LoadPC2Program(Renderer, FALSE);
-    Renderer_LoadPC3Program(Renderer, FALSE);
-    Renderer_LoadPTProgram(Renderer, FALSE);
-    Renderer_LoadGlyphProgram(Renderer, FALSE);
+    Renderer_LoadShader(Renderer, ShaderID_P3,    0);
+    Renderer_LoadShader(Renderer, ShaderID_PC2,   0);
+    Renderer_LoadShader(Renderer, ShaderID_PC3,   0);
+    Renderer_LoadShader(Renderer, ShaderID_PT3,   0);
+    Renderer_LoadShader(Renderer, ShaderID_Glyph, 0);
+    Renderer_LoadShader(Renderer, ShaderID_PNM3,  0);
     
     Stack_Push();
     
@@ -439,6 +345,10 @@ Renderer_Draw(platform_state *Platform,
     String = String_Cat(String, R32_ToString(Game->Dir.Y, 4));
     String = String_Cat(String, CString("\n"));
     
+    String = String_Cat(String, CString("Time of Day: "));
+    String = String_Cat(String, U32_ToString(Game->TimeOfDay, 10));
+    String = String_Cat(String, CString("\n"));
+    
     String = String_Cat(String, CString("FPS: "));
     String = String_Cat(String, R32_ToString(FPS, 1));
     String = String_Cat(String, CString("\n"));
@@ -448,26 +358,29 @@ Renderer_Draw(platform_state *Platform,
     FreeUIString(UIString);
     
     Object.Index = Renderer->ObjectIndex;
-    Mesh_Bind(&Renderer->GlyphMesh);
+    mesh *GlyphMesh = &Renderer->Shaders[ShaderID_Glyph].Mesh;
+    Mesh_Bind(GlyphMesh);
     
-    Mesh_UpdateVertices(&Renderer->GlyphMesh, Object);
-    Mesh_UpdateIndices(&Renderer->GlyphMesh, Object);
-    Mesh_UpdateMatrix(&Renderer->GlyphMesh, Object);
+    Mesh_UpdateVertices(GlyphMesh, Object);
+    Mesh_UpdateIndices(GlyphMesh, Object);
+    Mesh_UpdateMatrix(GlyphMesh, Object);
     
     Mesh_FreeObject(Object);
     
     OpenGL_Clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     
-    Mesh_Draw(&Renderer->PTMesh, GL_TRIANGLES);
+    Mesh_Draw(&Renderer->Shaders[ShaderID_PT3].Mesh,  GL_TRIANGLES);
+    Mesh_Draw(&Renderer->Shaders[ShaderID_PC3].Mesh,  GL_TRIANGLES);
+    Mesh_Draw(&Renderer->Shaders[ShaderID_PNM3].Mesh, GL_TRIANGLES);
     
     if(Game->AimBlockValid)
-        Mesh_DrawPartial(&Renderer->PMesh, GL_LINES, Game->AimBlockObjectIndex, 1);
+        Mesh_DrawPartial(&Renderer->Shaders[ShaderID_P3].Mesh, GL_LINES, Game->AimBlockObjectIndex, 1);
     
     if(Platform->CursorIsDisabled)
-        Mesh_DrawPartial(&Renderer->PC2Mesh, GL_TRIANGLES, Game->CrosshairObjectIndex, 1);
+        Mesh_DrawPartial(&Renderer->Shaders[ShaderID_PC2].Mesh, GL_TRIANGLES, Game->CrosshairObjectIndex, 1);
     
     OpenGL_Disable(GL_DEPTH_TEST);
-    Mesh_Draw(&Renderer->GlyphMesh, GL_TRIANGLES);
+    Mesh_Draw(GlyphMesh, GL_TRIANGLES);
     OpenGL_Enable(GL_DEPTH_TEST);
     
     Stack_Pop();

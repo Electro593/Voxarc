@@ -7,10 +7,10 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-// typedef struct collision_pole {
-//     u32 IntersectionCount;
-//     r32 *Intersections;
-// } collision_pole;
+typedef struct collision_pole {
+    u32 IntersectionCount;
+    r32 *Intersections;
+} collision_pole;
 
 typedef struct global_state {
     stack *Stack;
@@ -43,6 +43,8 @@ struct game_state {
     
     b08 Flying;
     v2s32 PrevCursorPos;
+    
+    u32 TimeOfDay;
     
     global_state GlobalState;
 };

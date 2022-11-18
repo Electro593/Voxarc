@@ -71,8 +71,17 @@ Mem_BytesUntil(u08 *Data,
 
 
 
-internal heap *Heap_GetHeap(heap_handle *Handle) { return (heap*)(Handle-Handle->Index); }
-internal heap_handle *Heap_GetHandle(vptr Data) { return *((heap_handle**)Data-1); }
+internal heap *
+Heap_GetHeap(heap_handle *Handle)
+{
+    return (heap*)(Handle-Handle->Index);
+}
+
+internal heap_handle *
+Heap_GetHandle(vptr Data)
+{
+    return *((heap_handle**)Data-1);
+}
 
 internal heap *
 Heap_Init(vptr MemBase,
@@ -215,8 +224,17 @@ _Heap_Allocate(heap *Heap,
     return Handle;
 }
 
-internal heap_handle *Heap_Allocate (heap *Heap, u64 Size) { return _Heap_Allocate(Heap, Size, FALSE); }
-internal vptr         Heap_AllocateA(heap *Heap, u64 Size) { return (u08*)_Heap_Allocate(Heap, Size, TRUE)->Data + sizeof(heap_handle*); }
+internal heap_handle *
+Heap_Allocate(heap *Heap, u64 Size)
+{
+    return _Heap_Allocate(Heap, Size, FALSE);
+}
+
+internal vptr
+Heap_AllocateA(heap *Heap, u64 Size)
+{
+    return (u08*)_Heap_Allocate(Heap, Size, TRUE)->Data + sizeof(heap_handle*);
+}
 
 internal void
 Heap_Resize(heap_handle *Handle,
@@ -290,7 +308,11 @@ Heap_Free(heap_handle *Handle)
     }
 }
 
-internal void Heap_FreeA(vptr Data) { Heap_Free(Heap_GetHandle(Data)); }
+internal void
+Heap_FreeA(vptr Data)
+{
+    Heap_Free(Heap_GetHandle(Data));
+}
 
 internal void
 Heap_Dump(heap *Heap)

@@ -126,8 +126,8 @@ GetChunk(region *Region, v3s32 Pos, u32 *ChunkIndexOut)
    }
 }
 
-internal void
-MakeChunk(heap *Heap, region *Region, mesh *Mesh, v3s32 ChunkPos, u32 *TextureBytes)
+internal chunk *
+AddChunkToRegion(region *Region, v3s32 ChunkPos)
 {
    chunk *Chunk;
    
@@ -173,6 +173,13 @@ MakeChunk(heap *Heap, region *Region, mesh *Mesh, v3s32 ChunkPos, u32 *TextureBy
       }
    }
    
+   return Chunk;
+}
+
+internal void
+MakeChunk(heap *Heap, region *Region, mesh *Mesh, v3s32 ChunkPos, u32 *TextureBytes)
+{
+   chunk *Chunk = AddChunkToRegion(Region, ChunkPos);
    
    // NOTE: Must be <= the 'repeat' max in the pt shaders
    
@@ -418,3 +425,114 @@ CollidesWithBlock(chunk Chunk, v3u32 BlockPos, v3r32 PlayerPos, v3r32 PlayerSize
    save memory, and nearby chunks are directly accessed?
  - Short indices, like relative pointers, for octree accessing
 */
+
+
+
+
+internal void
+MakeNonVoxelChunk(heap *Heap, random *Random, region *Region,
+                  mesh *Mesh, v3s32 ChunkPos, u32 *TextureBytes)
+{
+   chunk *Chunk = AddChunkToRegion(Region, ChunkPos);
+   
+   Chunk->Pos = ChunkPos;
+   Chunk->Blocks = NULL;
+   
+   u32 SquareCountX = 32;
+   u32 SquareCountZ = 32;
+   u32 VertexCountX = SquareCountX+1;
+   u32 VertexCountZ = SquareCountZ+1;
+   u32 VertexCount = VertexCountX * VertexCountZ;
+   u32 TriangleCount = 2*SquareCountX*SquareCountZ;
+   Chunk->Object.Vertices = Heap_Allocate(Heap, VertexCount*Mesh->VertexSize);
+   Chunk->Object.Indices  = Heap_Allocate(Heap, TriangleCount*3*sizeof(u32));
+   v3r32 *Normals   = Heap_AllocateA(Heap, TriangleCount*sizeof(v3r32));
+   v3r32 *VerticesR = Heap_AllocateA(Heap, VertexCount*sizeof(v3r32));
+   pnm_vertex *Vertices = Chunk->Object.Vertices->Data;
+   u32        *Index    = Chunk->Object.Indices->Data;
+   
+   for(u32 Z = 0; Z < VertexCountZ; Z++) {
+      for(u32 X = 0; X < VertexCountX; X++) {
+         v3r32 Pos = {
+            2.0f * X/SquareCountX - 1 + R32_RandRange(Random, -0.01, 0.01),
+            R32_RandRange(Random, -0.8, -0.79),
+            2.0f * Z/SquareCountZ - 1 + R32_RandRange(Random, -0.01, 0.01)
+         };
+         
+         VerticesR[INDEX_2D(X, Z, VertexCountX)] = Pos;
+         
+         pnm_vertex *Vertex = Vertices + INDEX_2D(X, Z, VertexCountX);
+         *Vertex = (pnm_vertex){Mesh_EncodePosition(Pos), 0, 0};
+      }
+   }
+   
+   for(u32 Z = 0; Z < SquareCountZ; Z++) {
+      for(u32 X = 0; X < SquareCountX; X++) {
+         v3r32 VertexBL = VerticesR[INDEX_2D(X,   Z,   VertexCountX)];
+         v3r32 VertexBR = VerticesR[INDEX_2D(X+1, Z,   VertexCountX)];
+         v3r32 VertexTL = VerticesR[INDEX_2D(X,   Z+1, VertexCountX)];
+         v3r32 VertexTR = VerticesR[INDEX_2D(X+1, Z+1, VertexCountX)];
+         
+         v3r32 LineX = V3r32_Sub(VertexBR, VertexBL);
+         v3r32 LineZ = V3r32_Sub(VertexTL, VertexBL);
+         v3r32 LineD = V3r32_Sub(VertexTR, VertexBL);
+         
+         v3r32 CrossXD = V3r32_Cross(LineD, LineX);
+         v3r32 CrossDZ = V3r32_Cross(LineZ, LineD);
+         
+         Normals[2*INDEX_2D(X, Z, SquareCountX)+0] = CrossXD;
+         Normals[2*INDEX_2D(X, Z, SquareCountX)+1] = CrossDZ;
+         
+         *Index++ = INDEX_2D(X,   Z,   VertexCountX);
+         *Index++ = INDEX_2D(X+1, Z,   VertexCountX);
+         *Index++ = INDEX_2D(X+1, Z+1, VertexCountX);
+         *Index++ = INDEX_2D(X,   Z,   VertexCountX);
+         *Index++ = INDEX_2D(X+1, Z+1, VertexCountX);
+         *Index++ = INDEX_2D(X,   Z+1, VertexCountX);
+      }
+   }
+   
+   for(u32 Z = 0; Z < VertexCountZ; Z++) {
+      for(u32 X = 0; X < VertexCountX; X++) {
+         v3r32 TL,TM,TR,BL,BM,BR;
+         
+         if(X == 0 || Z == 0) {
+            BL = (v3r32){0};
+            BM = (v3r32){0};
+         } else {
+            BL = Normals[2*INDEX_2D(X-1, Z-1, SquareCountX)+1];
+            BM = Normals[2*INDEX_2D(X-1, Z-1, SquareCountX)+0];
+         }
+         
+         if(X == VertexCountX-1 || Z == 0)
+            BR = (v3r32){0};
+         else
+            BR = Normals[2*INDEX_2D(X,   Z-1, SquareCountX)+1];
+         
+         if(X == 0 || Z == VertexCountZ-1)
+            TL = (v3r32){0};
+         else
+            TL = Normals[2*INDEX_2D(X-1, Z,   SquareCountX)+0];
+         
+         if(X == VertexCountX-1 || Z == VertexCountZ-1) {
+            TM = (v3r32){0};
+            TR = (v3r32){0};
+         } else {
+            TR = Normals[2*INDEX_2D(X,   Z,   SquareCountX)+0];
+            TM = Normals[2*INDEX_2D(X,   Z,   SquareCountX)+1];
+         }
+         
+         v3r32 Sum = V3r32_Add(V3r32_Add(V3r32_Add(TL, TM), V3r32_Add(TR, BL)), V3r32_Add(BM, BR));
+         v3r32 Normal = V3r32_Norm(Sum);
+         
+         Vertices[INDEX_2D(X, Z, VertexCountX)].Normal = Mesh_EncodeNormal(Normal);
+      }
+   }
+   
+   Heap_FreeA(Normals);
+   Heap_FreeA(VerticesR);
+   
+   Chunk->Object.TranslationMatrix = M4x4r32_Translation(ChunkPos.X*16, ChunkPos.Y*16, ChunkPos.Z*16);
+   Chunk->Object.ScalingMatrix = M4x4r32_Scaling(8, 8, 8);
+   Chunk->Object.RotationMatrix = M4x4r32_I;
+}

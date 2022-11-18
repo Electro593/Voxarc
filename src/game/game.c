@@ -38,6 +38,8 @@ global_state __Global;
    - Missing hardware
 */
 
+#define TICKS_PER_DAY 480
+
 internal void
 Game_Init(platform_state *Platform,
           game_state *Game,
@@ -57,14 +59,22 @@ Game_Init(platform_state *Platform,
    Game->WorldHeap = Heap_Init(MemBase, WorldHeapSize);
    (u08*)MemBase += WorldHeapSize;
    
+   random Random = Rand_Init(0);
+   // random Random = Rand_Init(Asm_ReadTimeStampCounter());
+   
    // File_CreateAssetpack("assets\\0.pack", RendererHeap, 60.0f);
    Renderer->Assetpack = File_LoadAssetpack("assets\\0.pack", RendererHeap);
    
    Game->Flying = TRUE;
    Game->Dir = (v3r32){0,0,0};
    Game->Pos = (v3r32){0,0,0};
+   Game->TimeOfDay = TICKS_PER_DAY/4;
    Game->Velocity = (v3r32){0,0,0};
    Renderer_Init(Renderer, RendererHeap, Platform->WindowSize);
+   
+   OpenGL_UseProgram(Renderer->Shaders[ShaderID_PNM3].Program);
+   OpenGL_Uniform3f(Renderer->Shaders[ShaderID_PNM3].Mesh.CameraPos, Game->Pos.X, Game->Pos.Y, Game->Pos.Z);
+   OpenGL_Uniform3f(Renderer->Shaders[ShaderID_PNM3].Mesh.LightPos, -10000*R32_cos((r32)Game->TimeOfDay/TICKS_PER_DAY*2*R32_PI), 10000*R32_sin((r32)Game->TimeOfDay/TICKS_PER_DAY*2*R32_PI), 0);
    
    Stack_Push();
    
@@ -87,22 +97,34 @@ Game_Init(platform_state *Platform,
       Game->Region.Nodes = Heap_Allocate(Game->WorldHeap, sizeof(region_node));
       Mem_Set(Game->Region.Nodes->Data, 0, sizeof(region_node));
       
-      MakeChunk(Game->WorldHeap, &Game->Region, &Renderer->PTMesh, (v3s32){0,0,0}, TextureBytes);
-      MakeChunk(Game->WorldHeap, &Game->Region, &Renderer->PTMesh, (v3s32){1,0,0}, TextureBytes);
+      MakeNonVoxelChunk(Game->WorldHeap, &Random, &Game->Region, &Renderer->Shaders[ShaderID_PNM3].Mesh, (v3s32){0,0,0}, TextureBytes);
+      MakeChunk(Game->WorldHeap, &Game->Region, &Renderer->Shaders[ShaderID_PT3].Mesh, (v3s32){0,0,1}, TextureBytes);
+      MakeChunk(Game->WorldHeap, &Game->Region, &Renderer->Shaders[ShaderID_PT3].Mesh, (v3s32){1,0,0}, TextureBytes);
       
       u32 ChunkCount = Game->Region.Chunks->Size / sizeof(chunk);
       chunk *Chunks = Game->Region.Chunks->Data;
-      mesh_object **Objects = Stack_Allocate(sizeof(mesh_object*)*ChunkCount);
-      for(u32 I = 0; I < ChunkCount; I++)
-         Objects[I] = &Chunks[I].Object;
-      Mesh_AddObjects(&Renderer->PTMesh, ChunkCount, Objects);
+      u32 PTCount=0, PNM3Count=0;
+      for(u32 I = 0; I < ChunkCount; I++) {
+         if(Chunks[I].Blocks) PTCount++;
+         else PNM3Count++;
+      }
+      mesh_object **PTObjects   = Stack_Allocate(sizeof(mesh_object*)*PTCount);
+      mesh_object **PNM3Objects = Stack_Allocate(sizeof(mesh_object*)*PNM3Count);
+      PTCount=0, PNM3Count=0;
+      for(u32 I = 0; I < ChunkCount; I++) {
+         if(Chunks[I].Blocks) PTObjects[PTCount++] = &Chunks[I].Object;
+         else PNM3Objects[PNM3Count++] = &Chunks[I].Object;
+      }
+      Mesh_AddObjects(&Renderer->Shaders[ShaderID_PT3].Mesh,  PTCount,   PTObjects);
+      Mesh_AddObjects(&Renderer->Shaders[ShaderID_PNM3].Mesh, PNM3Count, PNM3Objects);
       for(u32 I = 0; I < ChunkCount; I++)
          Mesh_FreeObject(Chunks[I].Object);
-      Mesh_Update(&Renderer->PTMesh);
+      Mesh_Update(&Renderer->Shaders[ShaderID_PT3].Mesh);
+      Mesh_Update(&Renderer->Shaders[ShaderID_PNM3].Mesh);
    }
    
    // Block highlight
-   Game->AimBlockObjectIndex = Mesh_ReserveObject(&Renderer->PMesh, 24, 0);
+   Game->AimBlockObjectIndex = Mesh_ReserveObject(&Renderer->Shaders[ShaderID_P3].Mesh, 24, 0);
    
    // Crosshair
    {
@@ -127,9 +149,9 @@ Game_Init(platform_state *Platform,
       Object.ScalingMatrix     = M4x4r32_Scaling(Scale, Scale, 1);
       Object.RotationMatrix    = M4x4r32_I;
       mesh_object *Objects[] = {&Object};
-      Mesh_AddObjects(&Renderer->PC2Mesh, 1, Objects);
+      Mesh_AddObjects(&Renderer->Shaders[ShaderID_PC2].Mesh, 1, Objects);
       Game->CrosshairObjectIndex = Object.Index;
-      Mesh_Update(&Renderer->PC2Mesh);
+      Mesh_Update(&Renderer->Shaders[ShaderID_PC2].Mesh);
       Mesh_FreeObject(Object);
    }
    
@@ -144,8 +166,8 @@ Game_Update(platform_state *Platform,
    if(Platform->Updates & WINDOW_RESIZED) {
       Renderer_Resize(Platform->WindowSize, &Renderer->OrthographicMatrix, &Renderer->PerspectiveMatrix);
       
-      OpenGL_UseProgram(Renderer->PC2Program);
-      OpenGL_UniformMatrix4fv(Renderer->PC2Mesh.VPMatrix,  1, FALSE, Renderer->OrthographicMatrix);
+      OpenGL_UseProgram(Renderer->Shaders[ShaderID_PC2].Program);
+      OpenGL_UniformMatrix4fv(Renderer->Shaders[ShaderID_PC2].Mesh.VPMatrix,  1, FALSE, Renderer->OrthographicMatrix);
       
       Renderer->WindowSize = Platform->WindowSize;
    }
@@ -159,6 +181,10 @@ Game_Update(platform_state *Platform,
    r32 EyeHeight = 1.7;
    
    if(Platform->CursorIsDisabled) {
+      Game->TimeOfDay = (Game->TimeOfDay+1) % TICKS_PER_DAY;
+      OpenGL_UseProgram(Renderer->Shaders[ShaderID_PNM3].Program);
+      OpenGL_Uniform3f(Renderer->Shaders[ShaderID_PNM3].Mesh.LightPos, -10000*R32_cos((r32)Game->TimeOfDay/TICKS_PER_DAY*2*R32_PI), 10000*R32_sin((r32)Game->TimeOfDay/TICKS_PER_DAY*2*R32_PI), 0);
+      
       if(Platform->Keys[ScanCode_1] == PRESSED) {
          if(!Game->Key1WasDown) {
             Game->Flying = !Game->Flying;
@@ -308,22 +334,32 @@ Game_Update(platform_state *Platform,
          Game->Velocity.Y += Game->Acceleration.Y;
          
          if(!V3r32_IsEqual(Game->Velocity, (v3r32){0})) {
-            Game->Pos.X += Game->Velocity.X*R32_cos(Game->Dir.Y) - Game->Velocity.Z*R32_sin(Game->Dir.Y);
-            Game->Pos.Z += Game->Velocity.X*R32_sin(Game->Dir.Y) + Game->Velocity.Z*R32_cos(Game->Dir.Y);
-            Game->Pos.Y += Game->Velocity.Y;
+            r32 SinY = R32_sin(Game->Dir.Y);
+            r32 CosY = R32_cos(Game->Dir.Y);
+            v3r32 DeltaPos = {
+               Game->Velocity.X*CosY - Game->Velocity.Z*SinY,
+               Game->Velocity.Y,
+               Game->Velocity.Z*CosY + Game->Velocity.X*SinY
+            };
             
+            v3r32 NewPos = V3r32_Add(Game->Pos, DeltaPos);
             
             // Stack_Push();
+            // r32 DPLen = V3r32_Len(DeltaPos);
             
             // r32 PlayerRadius = 0.3;
-            // r32 PlayerHeight = 1.8;
-            // u32 PoleGenRadius = 16;
-            // u32 PoleCount = 4*PoleGenRadius*PoleGenRadius;
+            // r32 PlayerTotalHeight = 1.8;
+            // r32 PlayerLegHeight   = 0.8;
+            // u32 PoleGenRadius = 6;
+            // u32 PolesPerMeter = 8;
             
+            // u32 MaxZ = R32_Abs(DeltaPos.Z)*PolesPerMeter + 2*PoleGenRadius;
+            // u32 MaxX = R32_Abs(DeltaPos.X)*PolesPerMeter + 2*PoleGenRadius;
+            // u32 PoleCount = MaxX * MaxZ;
             // collision_pole *Poles = Stack_Allocate(PoleCount*sizeof(collision_pole));
-            // for(u32 X = 0; X < 2*PoleGenRadius; X++) {
-            //    for(u32 Z = 0; Z < 2*PoleGenRadius; Z++) {
-            //       collision_pole *Pole = Poles+INDEX_2D(X, Z, 2*PoleGenRadius);
+            // for(u32 X = 0; X < MaxX; X++) {
+            //    for(u32 Z = 0; Z < MaxZ; Z++) {
+            //       collision_pole *Pole = Poles+INDEX_2D(X, Z, MaxX);
             //       Pole->IntersectionCount = 0;
             //       Pole->Intersections = Stack_Allocate(8 * sizeof(r32));
                   
@@ -356,6 +392,7 @@ Game_Update(platform_state *Platform,
             // Stack_Pop();
             
             
+            Game->Pos = NewPos;
             Moved = TRUE;
             
             Game->TouchingGround = FALSE;
@@ -387,8 +424,12 @@ Game_Update(platform_state *Platform,
                Game->Velocity.Y = 0;
             }
          }
-         
       }
+   }
+   
+   if(Moved) {
+      OpenGL_UseProgram(Renderer->Shaders[ShaderID_PNM3].Program);
+      OpenGL_Uniform3f(Renderer->Shaders[ShaderID_PNM3].Mesh.CameraPos, Game->Pos.X, Game->Pos.Y, Game->Pos.Z);
    }
    
    if((Platform->Updates & WINDOW_RESIZED) ||
@@ -416,14 +457,12 @@ Game_Update(platform_state *Platform,
       
       m4x4r32 VPMatrix = M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
       
-      OpenGL_UseProgram(Renderer->PProgram);
-      OpenGL_UniformMatrix4fv(Renderer->PMesh.VPMatrix,  1, FALSE, VPMatrix);
-      
-      OpenGL_UseProgram(Renderer->PC3Program);
-      OpenGL_UniformMatrix4fv(Renderer->PC3Mesh.VPMatrix,  1, FALSE, VPMatrix);
-      
-      OpenGL_UseProgram(Renderer->PTProgram);
-      OpenGL_UniformMatrix4fv(Renderer->PTMesh.VPMatrix, 1, FALSE, VPMatrix);
+      for(u32 I = 0; I < Shader_Count; I++) {
+         if(Renderer->Shaders[I].Mesh.Flags & MESH_HAS_PERSPECTIVE) {
+            OpenGL_UseProgram(Renderer->Shaders[I].Program);
+            OpenGL_UniformMatrix4fv(Renderer->Shaders[I].Mesh.VPMatrix,  1, FALSE, VPMatrix);
+         }
+      }
       
       Platform->Updates &= ~WINDOW_RESIZED;
    }
@@ -469,8 +508,9 @@ Game_Update(platform_state *Platform,
             if(!Found) break;
             
             chunk *Chunks = Game->Region.Chunks->Data;
-            Blocks = Chunks[ChunkIndex].Blocks->Data;
+            if(!Chunks[ChunkIndex].Blocks) break;
             
+            Blocks = Chunks[ChunkIndex].Blocks->Data;
             UpdateChunkPos = FALSE;
          }
          
@@ -540,7 +580,7 @@ Game_Update(platform_state *Platform,
       }
       
       if(Game->AimBlockValid) {
-         p_vertex *Vertex = Mesh_GetVertices(&Renderer->PMesh, Game->AimBlockObjectIndex);
+         p_vertex *Vertex = Mesh_GetVertices(&Renderer->Shaders[ShaderID_P3].Mesh, Game->AimBlockObjectIndex);
          
          v3s32 B = Game->AimBlock;
          v3r32 P = {(B.X-8), (B.Y-8), (B.Z-8)};
@@ -577,13 +617,13 @@ Game_Update(platform_state *Platform,
          m4x4r32 Scaling     = M4x4r32_Scaling(0.5, 0.501, 0.5);
          m4x4r32 Rotation    = M4x4r32_I;
          
-         m4x4r32 *Matrix = Mesh_GetMatrix(&Renderer->PMesh, Game->AimBlockObjectIndex);
+         m4x4r32 *Matrix = Mesh_GetMatrix(&Renderer->Shaders[ShaderID_P3].Mesh, Game->AimBlockObjectIndex);
          *Matrix = M4x4r32_Mul(M4x4r32_Mul(Translation, Rotation), Scaling);
          
-         s32 *VertexCount = (s32*)Renderer->PMesh.VertexCounts->Data + Game->AimBlockObjectIndex;
+         s32 *VertexCount = (s32*)Renderer->Shaders[ShaderID_P3].Mesh.VertexCounts->Data + Game->AimBlockObjectIndex;
          *VertexCount = 24;
          
-         Mesh_Update(&Renderer->PMesh);
+         Mesh_Update(&Renderer->Shaders[ShaderID_P3].Mesh);
       }
    }
    

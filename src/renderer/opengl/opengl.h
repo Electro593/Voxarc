@@ -143,6 +143,7 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
     IMPORT(void, Uniform1f,                   s32 Location, r32 V0) \
     IMPORT(void, Uniform1i,                   s32 Location, s32 V0) \
     IMPORT(void, Uniform2ui,                  s32 Location, u32 V0, u32 V1) \
+    IMPORT(void, Uniform3f,                   s32 Location, r32 V0, r32 V1, r32 V2) \
     IMPORT(void, Uniform4f,                   s32 Location, r32 V0, r32 V1, r32 V2, r32 V3) \
     IMPORT(void, UniformMatrix4fv,            s32 Location, u32 Count, b08 Transpose, m4x4r32 Matrix) \
     IMPORT(void, UseProgram,                  u32 Program) \

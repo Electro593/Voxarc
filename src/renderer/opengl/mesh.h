@@ -8,19 +8,22 @@
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 typedef enum mesh_flags {
-    MESH_HAS_ELEMENTS          = 0x001,
-    MESH_HAS_NORMALS           = 0x002,
-    MESH_HAS_TEXTURES          = 0x004,
-    MESH_HAS_COLORS            = 0x008,
+    MESH_HAS_ELEMENTS          = 0x0001,
+    MESH_HAS_NORMALS           = 0x0002,
+    MESH_HAS_TEXTURES          = 0x0004,
+    MESH_HAS_COLORS            = 0x0008,
     
-    MESH_GROW_VERTEX_BUFFER    = 0x010,
-    MESH_GROW_INDEX_BUFFER     = 0x020,
-    MESH_GROW_TEXTURE_BUFFER   = 0x040,
-    MESH_GROW_MATRIX_BUFFER    = 0x080,
+    MESH_GROW_VERTEX_BUFFER    = 0x0010,
+    MESH_GROW_INDEX_BUFFER     = 0x0020,
+    MESH_GROW_TEXTURE_BUFFER   = 0x0040,
+    MESH_GROW_MATRIX_BUFFER    = 0x0080,
     
-    MESH_IS_FOR_UI             = 0x100,
-    MESH_IS_DYNAMIC            = 0x200,
-    MESH_SHARED_TEXTURE_BUFFER = 0x400,
+    MESH_IS_FOR_UI             = 0x0100,
+    MESH_IS_DYNAMIC            = 0x0200,
+    MESH_SHARED_TEXTURE_BUFFER = 0x0400,
+    MESH_HAS_PERSPECTIVE       = 0x0800,
+    
+    MESH_HAS_MATERIALS         = 0x1000 | MESH_HAS_COLORS,
     
     MESH_IS_DIRTY = MESH_GROW_VERTEX_BUFFER|MESH_GROW_INDEX_BUFFER|MESH_GROW_TEXTURE_BUFFER|MESH_GROW_MATRIX_BUFFER
 } mesh_flags;
@@ -29,6 +32,18 @@ typedef struct p_vertex {
     v4s16 Position;
     // u32 Position;
 } p_vertex;
+
+typedef struct pnc_vertex {
+    v4s16 Position;
+    u32 Normal;
+    v4u08 Color;
+} pnc_vertex;
+
+typedef struct pnm_vertex {
+    v4s16 Position;
+    u32 Normal;
+    u32 MaterialIndex;
+} pnm_vertex;
 
 typedef struct pc_vertex {
     v4s16 Position;
@@ -47,6 +62,15 @@ typedef struct glyph_vertex {
     u32 Texture;
 } glyph_vertex;
 
+typedef struct material {
+    v3u08 AmbientColor;
+    v3u08 DiffuseColor;
+    v3u08 SpecularColor;
+    u08 Shininess;
+    
+    u08 _Unused[2];
+} material;
+
 typedef struct mesh_object {
     heap_handle *Vertices;
     heap_handle *Indices;
@@ -63,37 +87,20 @@ typedef struct mesh {
     
     u32 VBO;
     u32 MatrixSSBO;
+    u32 MaterialSSBO;
     u32 EBO;
     u32 TextureSSBO;
     
-    u32 TextureIndex;
     u32 SamplerObject;
+    u32 TextureIndex;
     
-    union {
-        struct {
-            u32 VPMatrix;
-            u32 Atlases;
-            u32 AtlasesSampler;
-            u32 AtlasSize;
-            u32 Color;
-        };
-        
-        struct {
-            u32 VPMatrix;
-            u32 Color;
-        } P;
-        
-        struct {
-            u32 VPMatrix;
-        } PC3;
-        
-        struct {
-            u32 VPMatrix;
-            u32 Atlases;
-            u32 AtlasesSampler;
-            u32 AtlasSize;
-        } PT;
-    };
+    u32 Color;
+    u32 VPMatrix;
+    u32 LightPos;
+    u32 CameraPos;
+    u32 Atlases;
+    u32 AtlasesSampler;
+    u32 AtlasSize;
     
     mesh_flags Flags;
     u32 VertexSize;
@@ -108,4 +115,5 @@ typedef struct mesh {
     heap_handle *Indices;
     heap_handle *Storage;
     heap_handle *Matrices;
+    heap_handle *Materials;
 } mesh;

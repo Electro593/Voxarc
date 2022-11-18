@@ -34,6 +34,7 @@
 #define SWAP(A, B, Type) do { Type _A = A; A = B; B = _A; } while(0)
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
 #define MAX(A, B) ((A) > (B) ? (A) : (B))
+#define FLAG_SET(Value, Flag) (((Value) & (Flag)) == (Flag))
 
 #define Error(Message) Platform_Assert(__FILE__, __LINE__, "", Message)
 #define Assert(Expression, ...) \
@@ -45,8 +46,8 @@
     } while(0)
 
 #ifdef _DEBUG
-    #define STOP Intrin_DebugBreak()
-    #define NOP Intrin_Nop();
+    #define STOP Asm_DebugBreak()
+    #define NOP Asm_Nop();
 #else
     #define STOP
     #define NOP

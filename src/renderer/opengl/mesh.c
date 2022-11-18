@@ -7,26 +7,44 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-// internal u32
 internal v4s16
 Mesh_EncodePosition(v3r32 P)
 {
     P = V3r32_Clamp(P, -1, 1);
-    P = V3r32_MulS(P, S16_MAX); // 511
+    P = V3r32_MulS(P, S16_MAX);
     v3s32 I = V3r32_ToV3s32(P);
-    // u32 E = (1<<30)|((I.Z&0x3FF)<<20)|((I.Y&0x3FF)<<10)|(I.X&0x3FF);
     v4s16 E = {I.X, I.Y, I.Z, S16_MAX};
     return E;
 }
 
 internal v3r32
-Mesh_UnencodePosition(u32 E)
+Mesh_UnencodePosition(v4s16 E)
 {
     v3r32 P;
-    P.X = (r32)((E >>  0) & 0x3FF) / 511;
-    P.Y = (r32)((E >> 10) & 0x3FF) / 511;
-    P.Z = (r32)((E >> 20) & 0x3FF) / 511;
+    P.X = (r32)E.X / S16_MAX;
+    P.Y = (r32)E.Y / S16_MAX;
+    P.Z = (r32)E.Z / S16_MAX;
     return P;
+}
+
+internal u32
+Mesh_EncodeNormal(v3r32 N)
+{
+    N = V3r32_Clamp(N, -1, 1);
+    N = V3r32_MulS(N, 511);
+    v3s32 I = V3r32_ToV3s32(N);
+    u32 E = (1<<30)|((I.Z&0x3FF)<<20)|((I.Y&0x3FF)<<10)|(I.X&0x3FF);
+    return E;
+}
+
+internal v3r32
+Mesh_UnencodeNormal(u32 E)
+{
+    v3r32 N;
+    N.X = (r32)((E >>  0) & 0x3FF) / 511;
+    N.Y = (r32)((E >> 10) & 0x3FF) / 511;
+    N.Z = (r32)((E >> 20) & 0x3FF) / 511;
+    return N;
 }
 
 internal void
@@ -42,6 +60,9 @@ Mesh_Bind(mesh *Mesh)
     
     OpenGL_BindBuffer(GL_SHADER_STORAGE_BUFFER, Mesh->MatrixSSBO);
     OpenGL_BindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, Mesh->MatrixSSBO);
+    
+    OpenGL_BindBuffer(GL_SHADER_STORAGE_BUFFER, Mesh->MaterialSSBO);
+    OpenGL_BindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, Mesh->MaterialSSBO);
     
     if(Mesh->Flags & MESH_HAS_TEXTURES) {
         OpenGL_BindBuffer(GL_SHADER_STORAGE_BUFFER, Mesh->TextureSSBO);
@@ -98,10 +119,14 @@ Mesh_Init(mesh *Mesh,
         }
     }
     
+    if(FLAG_SET(Flags, MESH_HAS_MATERIALS)) {
+        Mesh->Materials = Heap_Allocate(Heap, 0);
+        OpenGL_GenBuffers(1, &Mesh->MaterialSSBO);
+    }
+    
     Mesh_Bind(Mesh);
     
     u64 Offset = 0;
-    // u32 Stride = sizeof(u32);
     u32 Stride;
     if(Mesh->Flags & MESH_IS_FOR_UI)
         Stride = sizeof(u32);
@@ -111,8 +136,12 @@ Mesh_Init(mesh *Mesh,
         Stride += sizeof(u32);
     if(Mesh->Flags & MESH_HAS_TEXTURES)
         Stride += sizeof(u32);
-    if(Mesh->Flags & MESH_HAS_COLORS)
-        Stride += sizeof(v4u08);
+    if(Mesh->Flags & MESH_HAS_COLORS) {
+        if((Mesh->Flags & MESH_HAS_MATERIALS) == MESH_HAS_MATERIALS)
+            Stride += sizeof(u32);
+        else
+            Stride += sizeof(v4u08);
+    }
     Mesh->VertexSize = Stride;
     
     OpenGL_EnableVertexAttribArray(0);
@@ -120,8 +149,6 @@ Mesh_Init(mesh *Mesh,
         OpenGL_VertexAttribPointer(0, 2, GL_SHORT, TRUE, Stride, (vptr)Offset);
         Offset += sizeof(u32);
     } else {
-        // OpenGL_VertexAttribPointer(0, 4, GL_INT_2_10_10_10_REV, TRUE, Stride, (vptr)Offset);
-        // Offset += sizeof(u32);
         OpenGL_VertexAttribPointer(0, 4, GL_SHORT, TRUE, Stride, (vptr)Offset);
         Offset += sizeof(v4s16);
     }
@@ -140,8 +167,13 @@ Mesh_Init(mesh *Mesh,
     
     if(Mesh->Flags & MESH_HAS_COLORS) {
         OpenGL_EnableVertexAttribArray(3);
-        OpenGL_VertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, TRUE, Stride, (vptr)Offset);
-        Offset += sizeof(v4u08);
+        if((Mesh->Flags & MESH_HAS_MATERIALS) == MESH_HAS_MATERIALS) {
+            OpenGL_VertexAttribIPointer(3, 1, GL_UNSIGNED_INT, Stride, (vptr)Offset);
+            Offset += sizeof(u32);
+        } else {
+            OpenGL_VertexAttribPointer(3, 4, GL_UNSIGNED_BYTE, TRUE, Stride, (vptr)Offset);
+            Offset += sizeof(v4u08);
+        }
     }
     
     Assert(Offset == Stride);
@@ -396,9 +428,11 @@ Mesh_DrawPartial(mesh *Mesh, u32 DrawMode, u32 ObjectOffset, u32 ObjectCount)
     if(!Mesh->Program) return;
     if(ObjectCount == 0) return;
     if(Mesh->ObjectCount < ObjectOffset + ObjectCount) return;
-    Assert(!(Mesh->Flags & MESH_IS_DIRTY));
     
-    Mesh_Bind(Mesh);
+    if(Mesh->Flags & MESH_IS_DIRTY)
+        Mesh_Update(Mesh);
+    else
+        Mesh_Bind(Mesh);
     
     s32 *VertexCounts = (s32*)Mesh->VertexCounts->Data + ObjectOffset;
     s32 *VertexOffsets = (s32*)Mesh->VertexOffsets->Data + ObjectOffset;
