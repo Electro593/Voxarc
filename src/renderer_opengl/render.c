@@ -7,6 +7,75 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#ifdef INCLUDE_HEADER
+
+typedef enum shader_id {
+    ShaderID_P3,
+    ShaderID_PC2,
+    ShaderID_PC3,
+    ShaderID_PT3,
+    ShaderID_Glyph,
+    ShaderID_PNM3,
+    
+    Shader_Count
+} shader_id;
+
+c08 *ShaderPaths[] = {
+    SHADERS_DIR "p.vert",
+    SHADERS_DIR "p.frag",
+    SHADERS_DIR "pc2.vert",
+    SHADERS_DIR "pc2.frag",
+    SHADERS_DIR "pc3.vert",
+    SHADERS_DIR "pc3.frag",
+    SHADERS_DIR "pt.vert",
+    SHADERS_DIR "pt.frag",
+    SHADERS_DIR "glyph.vert",
+    SHADERS_DIR "glyph.frag",
+    SHADERS_DIR "pnc3.vert",
+    SHADERS_DIR "pnc3.frag",
+};
+
+typedef struct shader {
+    mesh Mesh;
+    
+    datetime VertLastModified;
+    datetime FragLastModified;
+    
+    u32 Program;
+    b08 Initialized;
+} shader;
+
+typedef struct renderer_state {
+    u32 VAO;
+    u32 VBO;
+    u32 EBO;
+    
+    shader Shaders[Shader_Count];
+    
+    m4x4r32 OrthographicMatrix;
+    m4x4r32 PerspectiveMatrix;
+    m4x4r32 ViewMatrix;
+    
+    v2u32 WindowSize;
+    
+    heap *Heap;
+    
+    assetpack Assetpack;
+    
+    ui_font Font;
+    ui_style Style;
+    u32 ObjectIndex;
+} renderer_state;
+
+#define RENDER_FUNCS \
+    EXPORT(void, Renderer_Init, heap *Heap, v2u32 WindowSize) \
+
+#endif
+
+
+
+#ifdef INCLUDE_SOURCE
+
 internal void API_ENTRY
 OpenGL_DebugCallback(u32 Source,
                      u32 Type,
@@ -137,7 +206,7 @@ Renderer_LoadShader(renderer_state *Renderer, shader_id ShaderID, mesh_flags Fla
                     (v3u08){200, 200, 200},
                     2,
                 };
-                ((Mat0 >> 16) & 0xFF) / 255.0d
+                // ((Mat0 >> 16) & 0xFF) / 255.0d
                 Heap_Resize(Shader->Mesh.Materials, sizeof(material));
                 ((material*)Shader->Mesh.Materials->Data)[0] = Material;
                 OpenGL_BindBuffer(GL_SHADER_STORAGE_BUFFER, Shader->Mesh.MaterialSSBO);
@@ -222,67 +291,9 @@ Renderer_Resize(v2u32 NewSize, m4x4r32 *OrthographicMatrix, m4x4r32 *Perspective
 }
 
 internal void
-Renderer_Init(renderer_state *Renderer,
-              heap *Heap,
-              v2u32 WindowSize)
+Renderer_Init(heap *Heap, v2u32 WindowSize)
 {
-    Renderer->Heap = Heap;
     
-    #if defined(_DEBUG)
-        OpenGL_Enable(GL_DEBUG_OUTPUT);
-        OpenGL_DebugMessageCallback(OpenGL_DebugCallback, NULL);
-        u32 ID = 131185;
-        OpenGL_DebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DONT_CARE, 1, &ID, FALSE);
-        ID = 131218;
-        OpenGL_DebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_PERFORMANCE, GL_DONT_CARE, 1, &ID, FALSE);
-    #endif
-    
-    OpenGL_Enable(GL_DEPTH_TEST);
-    OpenGL_Enable(GL_SCISSOR_TEST);
-    
-    OpenGL_Enable(GL_CULL_FACE);
-    OpenGL_CullFace(GL_BACK);
-    
-    OpenGL_Enable(GL_BLEND);
-    OpenGL_BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    
-    OpenGL_ClearColor(.2,.2,.2,1);
-    
-    Renderer->OrthographicMatrix = M4x4r32_I;
-    Renderer->PerspectiveMatrix = M4x4r32_I;
-    Renderer->ViewMatrix = M4x4r32_I;
-    Renderer->WindowSize = WindowSize;
-    
-    Renderer_LoadShader(Renderer, ShaderID_P3,    0);
-    Renderer_LoadShader(Renderer, ShaderID_PC2,   MESH_HAS_ELEMENTS|MESH_HAS_COLORS);
-    Renderer_LoadShader(Renderer, ShaderID_PC3,   MESH_HAS_ELEMENTS|MESH_HAS_COLORS|MESH_HAS_PERSPECTIVE);
-    Renderer_LoadShader(Renderer, ShaderID_PT3,   MESH_HAS_ELEMENTS|MESH_HAS_TEXTURES|MESH_HAS_PERSPECTIVE);
-    Renderer_LoadShader(Renderer, ShaderID_Glyph, MESH_HAS_ELEMENTS|MESH_HAS_TEXTURES|MESH_IS_FOR_UI|MESH_SHARED_TEXTURE_BUFFER);
-    Renderer_LoadShader(Renderer, ShaderID_PNM3,  MESH_HAS_ELEMENTS|MESH_HAS_NORMALS|MESH_HAS_MATERIALS|MESH_HAS_PERSPECTIVE);
-    
-    Mem_Set(&Renderer->Font, 0, sizeof(ui_font));
-    Renderer->Font.Assetpack = Renderer->Assetpack;
-    
-    ui_style Style;
-    Style.Font = &Renderer->Font;
-    Style.ZIndex = 0;
-    Style.TabSize = 80.0f;
-    Style.FontSize = 30.0f;
-    Style.Size = (v2u32){800, 800};
-    Style.StringOffset = (v2u32){20, 20};
-    
-    Renderer->Style = Style;
-    
-    ui_string UIString = MakeUIString(Renderer->Heap, CString("Position (X,Y,Z): "), Style);
-    mesh_object Object = MakeUIStringObject(Renderer->Heap, UIString, (v2u32){10, 0}, WindowSize);
-    
-    mesh *GlyphMesh = &Renderer->Shaders[ShaderID_Glyph].Mesh;
-    mesh_object *Objects[] = {&Object};
-    Mesh_AddObjects(GlyphMesh, 1, Objects);
-    
-    Mesh_Update(GlyphMesh);
-    
-    Renderer->ObjectIndex = Object.Index;
 }
 
 internal void
@@ -396,3 +407,5 @@ Renderer_Load(opengl_funcs *OpenGLFuncs)
         #include <x.h>
     }
 }
+
+#endif

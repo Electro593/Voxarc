@@ -7,6 +7,46 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#ifdef INCLUDE_HEADER
+
+typedef struct ui_font {
+    assetpack_asset *CharCache[95];
+    
+    assetpack Assetpack;
+} ui_font;
+
+typedef struct ui_style {
+    v2u32 Size;
+    v2u32 StringOffset;
+    u32 ZIndex;
+    r32 FontSize;
+    r32 TabSize;
+    ui_font *Font;
+} ui_style;
+
+typedef struct ui_string {
+    ui_style Style;
+    
+    string String;
+    HEAP(u32) Lines;
+    
+    u32 PrintableCount;
+    u32 LineCount;
+    
+    v2r32 Size;
+} ui_string;
+
+#define UI_FUNCS \
+    EXPORT(ui_string, MakeUIString, heap *Heap, string String, ui_style Style) \
+    EXPORT(mesh_object, MakeUIStringObject, heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize) \
+    EXPORT(void, FreeUIString, ui_string String) \
+
+#endif
+
+
+
+#ifdef INCLUDE_SOURCE
+
 internal assetpack_asset *
 GetGlyph(ui_font *Font, c08 Codepoint)
 {
@@ -238,3 +278,5 @@ FreeUIString(ui_string String)
 {
     Heap_Free(String.Lines);
 }
+
+#endif

@@ -7,6 +7,8 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#ifdef INCLUDE_HEADER
+
 #define GL_ZERO                   0x0000
 #define GL_ONE                    0x0001
 #define GL_LINES                  0x0001
@@ -157,16 +159,18 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
 #define X OPENGL_FUNCS
 #include <x.h>
 
-struct opengl_funcs {
+typedef struct opengl_funcs {
     #define IMPORT(ReturnType, Name, ...) \
         func_OpenGL_##Name *OpenGL_##Name;
     #define X OPENGL_FUNCS
     #include <x.h>
-};
+} opengl_funcs;
 
 #if defined(_RENDERER_MODULE)
     #define IMPORT(ReturnType, Name, ...) \
         global func_OpenGL_##Name *OpenGL_##Name;
     #define X OPENGL_FUNCS
     #include <x.h>
+#endif
+
 #endif

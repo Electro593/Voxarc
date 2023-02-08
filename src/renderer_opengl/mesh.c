@@ -7,6 +7,8 @@
 **                                                                         **
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#ifdef INCLUDE_SOURCE
+
 internal v4s16
 Mesh_EncodePosition(v3r32 P)
 {
@@ -483,3 +485,5 @@ Mesh_FreeObject(mesh_object Object)
     Heap_Free(Object.Vertices);
     Heap_Free(Object.Indices);
 }
+
+#endif
