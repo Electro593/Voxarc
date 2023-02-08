@@ -1,6 +1,6 @@
 # Voxarc
 
-A 3D voxel game.
+A 3D survival and factory building game. The name is a holdover from a previous idea.
 
 ## Usage
 
@@ -8,4 +8,4 @@ You can't yet.
 
 ## License
 
-[MIT](https://choosealicense.com/licenses/mit/)
+[Unlicense](https://unlicense.org/)
