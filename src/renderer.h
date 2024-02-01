@@ -122,12 +122,26 @@
    #define MESH_FUNCS \
       EXPORT(v4s16, Mesh_EncodePosition, v3r32 P) \
       EXPORT(u32, Mesh_EncodeNormal, v3r32 N) \
+      EXPORT(vptr, Mesh_GetVertices, mesh *Mesh, u32 ObjectIndex) \
+      EXPORT(m4x4r32*, Mesh_GetMatrix, mesh *Mesh, u32 ObjectIndex) \
+      EXPORT(u32, Mesh_ReserveObject, mesh *Mesh, u32 VertexCount, u32 IndexCount) \
       EXPORT(void, Mesh_AddObjects, mesh *Mesh, u32 ObjectCount, mesh_object **Objects) \
+      EXPORT(void, Mesh_Update, mesh *Mesh) \
       EXPORT(void, Mesh_FreeObject, mesh_object Object) \
+   
+   typedef struct game_state game_state;
+   typedef struct renderer_state renderer_state;
+   
+   #define RENDER_FUNCS \
+       EXPORT(void, Renderer_Resize, v2u32 NewSize, m4x4r32 *OrthographicMatrix, m4x4r32 *PerspectiveMatrix) \
+       EXPORT(void, Renderer_SetUniform_V3r32, struct renderer_state *Renderer, u32 ShaderID, u32 Uniform, v3r32 Value) \
+       EXPORT(void, Renderer_SetUniform_M4x4r32, struct renderer_state *Renderer, u32 ShaderID, u32 Uniform, u32 Count, b08 Transpose, m4x4r32 Value) \
+       EXPORT(void, Renderer_Init, heap *Heap, v2u32 WindowSize) \
+       EXPORT(void, Renderer_Draw, struct platform_state *Platform, struct game_state *Game, struct renderer_state *Renderer, r32 FPS) \
    
    #define RENDERER_FUNCS \
       MESH_FUNCS \
-      // RENDER_FUNCS \
+      RENDER_FUNCS \
    
    typedef struct renderer_funcs {
       #define EXPORT(R, N, ...) \

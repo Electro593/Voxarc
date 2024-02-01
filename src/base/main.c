@@ -82,8 +82,6 @@
          v2s32 PrevCursorPos;
          
          u32 TimeOfDay;
-         
-         c08 *RendererName;
       } game_state;
       
       typedef struct game_funcs {
@@ -91,6 +89,12 @@
          #define X GAME_FUNCS
          #include <x.h>
       } game_funcs;
+      
+      #if defined(_OPENGL)
+         #define RENDERER_NAME "renderer_opengl"
+      #else
+         #define RENDERER_NAME "renderer"
+      #endif
       
       #if defined(_BASE_MODULE)
          #define EXPORT(R, N, ...) \
@@ -106,36 +110,14 @@
    #endif
    
    #ifdef INCLUDE_SOURCE
+      global platform_module *RendererModule;
+      global renderer_state *Renderer;
       global game_state _G;
       global game_funcs _F;
-      
-      internal platform_module *
-      Game_LoadRenderer(c08 *Name)
-      {
-         _G.RendererName = Name;
-         
-         platform_module *RendererModule = Platform_GetModule(Name);
-         renderer_funcs RendererFuncs = *(renderer_funcs*)RendererModule->Funcs;
-         #define EXPORT(R, N, ...) N = RendererFuncs.N;
-         #define X RENDERER_FUNCS
-         #include <x.h>
-         
-         return RendererModule;
-      }
       
       external API_EXPORT void
       Load(platform_state *Platform, platform_module *Module)
       {
-         #define EXPORT(R, S, N, ...) S##_##N = Platform->Functions.S##_##N;
-         #define X PLATFORM_FUNCS
-         #include <x.h>
-         
-         platform_module *UtilModule = Platform_GetModule("util");
-         util_funcs UtilFuncs = *(util_funcs*)UtilModule->Funcs;
-         #define EXPORT(R, N, ...) N = UtilFuncs.N;
-         #define X UTIL_FUNCS
-         #include <x.h>
-         
          _F = (game_funcs){
             #define EXPORT(R, N, ...) N,
             #define X GAME_FUNCS
@@ -144,22 +126,33 @@
          
          Module->Data = &_G;
          Module->Funcs = &_F;
+         
+         #define EXPORT(R, S, N, ...) S##_##N = Platform->Functions.S##_##N;
+         #define X PLATFORM_FUNCS
+         #include <x.h>
+         
+         platform_module *UtilModule = Platform_LoadModule("util");
+         util_funcs *UtilFuncs = UtilModule->Funcs;
+         #define EXPORT(R, N, ...) N = UtilFuncs->N;
+         #define X UTIL_FUNCS
+         #include <x.h>
+         
+         RendererModule = Platform_LoadModule(RENDERER_NAME);
+         Renderer = RendererModule->Data;
+         renderer_funcs *RendererFuncs = RendererModule->Funcs;
+         #define EXPORT(R, N, ...) N = RendererFuncs->N;
+         #define X RENDERER_FUNCS
+         #include <x.h>
       }
       
       external API_EXPORT void
       Init(platform_state *Platform)
       {
          game_state *Game = &_G;
-         platform_module *RendererModule = Game_LoadRenderer("renderer_opengl");
-         renderer_state *Renderer = RendererModule->Data;
          
-         u64 StackSize        = 32*1024*1024;
          u64 RendererHeapSize = 32*1024*1024;
          u64 WorldHeapSize    = 32*1024*1024;
-         vptr MemBase = Platform_AllocateMemory(StackSize+RendererHeapSize+WorldHeapSize);
-         
-         Stack_Init(MemBase, StackSize);
-         (u08*)MemBase += StackSize;
+         vptr MemBase = Platform_AllocateMemory(RendererHeapSize+WorldHeapSize);
          
          heap *RendererHeap = Heap_Init(MemBase, RendererHeapSize);
          (u08*)MemBase += RendererHeapSize;
@@ -181,9 +174,9 @@
          Renderer->Heap = RendererHeap;
          RendererModule->Init(Platform);
          
-         OpenGL_UseProgram(Renderer->Shaders[ShaderID_PNM3].Program);
-         OpenGL_Uniform3f(Renderer->Shaders[ShaderID_PNM3].Mesh.CameraPos, Game->Pos.X, Game->Pos.Y, Game->Pos.Z);
-         OpenGL_Uniform3f(Renderer->Shaders[ShaderID_PNM3].Mesh.LightPos, -10000*R32_cos((r32)Game->TimeOfDay/TICKS_PER_DAY*2*R32_PI), 10000*R32_sin((r32)Game->TimeOfDay/TICKS_PER_DAY*2*R32_PI), 0);
+         Renderer_SetUniform_V3r32(Renderer, ShaderID_PNM3, Renderer->Shaders[ShaderID_PNM3].Mesh.CameraPos, Game->Pos);
+         Renderer_SetUniform_V3r32(Renderer, ShaderID_PNM3, Renderer->Shaders[ShaderID_PNM3].Mesh.LightPos,
+            (v3r32){-10000*R32_cos((r32)Game->TimeOfDay/TICKS_PER_DAY*2*R32_PI), 10000*R32_sin((r32)Game->TimeOfDay/TICKS_PER_DAY*2*R32_PI), 0});
          
          Stack_Push();
          
@@ -264,20 +257,18 @@
             Mesh_FreeObject(Object);
          }
          
+         Platform->ExecutionState = EXECUTION_RUNNING;
+         
          Stack_Pop();
       }
       
       external API_EXPORT void
       Update(platform_state *Platform, game_state *Game)
       {
-         game_state *Game = &_G;
-         renderer_state *Renderer = Platform_GetModule(Game->RendererName)->State;
-         
          if(Platform->Updates & WINDOW_RESIZED) {
             Renderer_Resize(Platform->WindowSize, &Renderer->OrthographicMatrix, &Renderer->PerspectiveMatrix);
             
-            OpenGL_UseProgram(Renderer->Shaders[ShaderID_PC2].Program);
-            OpenGL_UniformMatrix4fv(Renderer->Shaders[ShaderID_PC2].Mesh.VPMatrix,  1, FALSE, Renderer->OrthographicMatrix);
+            Renderer_SetUniform_M4x4r32(Renderer, ShaderID_PC2, Renderer->Shaders[ShaderID_PC2].Mesh.VPMatrix, 1, FALSE, Renderer->OrthographicMatrix);
             
             Renderer->WindowSize = Platform->WindowSize;
          }
@@ -292,8 +283,8 @@
          
          if(Platform->CursorIsDisabled) {
             Game->TimeOfDay = (Game->TimeOfDay+1) % TICKS_PER_DAY;
-            OpenGL_UseProgram(Renderer->Shaders[ShaderID_PNM3].Program);
-            OpenGL_Uniform3f(Renderer->Shaders[ShaderID_PNM3].Mesh.LightPos, -10000*R32_cos((r32)Game->TimeOfDay/TICKS_PER_DAY*2*R32_PI), 10000*R32_sin((r32)Game->TimeOfDay/TICKS_PER_DAY*2*R32_PI), 0);
+            Renderer_SetUniform_V3r32(Renderer, ShaderID_PNM3, Renderer->Shaders[ShaderID_PNM3].Mesh.LightPos,
+               (v3r32){-10000*R32_cos((r32)Game->TimeOfDay/TICKS_PER_DAY*2*R32_PI), 10000*R32_sin((r32)Game->TimeOfDay/TICKS_PER_DAY*2*R32_PI), 0});
             
             if(Platform->Keys[ScanCode_1] == PRESSED) {
                if(!Game->Key1WasDown) {
@@ -538,8 +529,8 @@
          }
          
          if(Moved) {
-            OpenGL_UseProgram(Renderer->Shaders[ShaderID_PNM3].Program);
-            OpenGL_Uniform3f(Renderer->Shaders[ShaderID_PNM3].Mesh.CameraPos, Game->Pos.X, Game->Pos.Y, Game->Pos.Z);
+            Renderer_SetUniform_V3r32(Renderer, ShaderID_PNM3, Renderer->Shaders[ShaderID_PNM3].Mesh.CameraPos,
+               (v3r32){Game->Pos.X, Game->Pos.Y, Game->Pos.Z});
          }
          
          if((Platform->Updates & WINDOW_RESIZED) ||
@@ -569,8 +560,7 @@
             
             for(u32 I = 0; I < Shader_Count; I++) {
                if(Renderer->Shaders[I].Mesh.Flags & MESH_HAS_PERSPECTIVE) {
-                  OpenGL_UseProgram(Renderer->Shaders[I].Program);
-                  OpenGL_UniformMatrix4fv(Renderer->Shaders[I].Mesh.VPMatrix,  1, FALSE, VPMatrix);
+                  Renderer_SetUniform_M4x4r32(Renderer, I, Renderer->Shaders[I].Mesh.VPMatrix, 1, FALSE, VPMatrix);
                }
             }
             

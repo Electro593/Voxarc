@@ -39,22 +39,6 @@
       external API_EXPORT void
       Load(platform_state *Platform, platform_module *Module)
       {
-         #define EXPORT(R, S, N, ...) S##_##N = Platform->Functions.S##_##N;
-         #define X PLATFORM_FUNCS
-         #include <x.h>
-         
-         platform_module *UtilModule = Platform_GetModule("util");
-         util_funcs UtilFuncs = *(util_funcs*)UtilModule->Funcs;
-         #define EXPORT(R, N, ...) N = UtilFuncs.N;
-         #define X UTIL_FUNCS
-         #include <x.h>
-         
-         platform_module *GameModule = Platform_GetModule("base");
-         game_funcs GameFuncs = *(game_funcs*)GameModule->Funcs;
-         #define EXPORT(R, N, ...) N = GameFuncs.N;
-         #define X GAME_FUNCS
-         #include <x.h>
-         
          _F = (renderer_funcs){
             #define EXPORT(R, N, ...) N,
             #define X RENDERER_FUNCS
@@ -63,6 +47,28 @@
          
          Module->Data = &_G;
          Module->Funcs = &_F;
+         
+         #define EXPORT(R, S, N, ...) S##_##N = Platform->Functions.S##_##N;
+         #define X PLATFORM_FUNCS
+         #include <x.h>
+         
+         platform_module *UtilModule = Platform_LoadModule("util");
+         util_funcs *UtilFuncs = UtilModule->Funcs;
+         #define EXPORT(R, N, ...) N = UtilFuncs->N;
+         #define X UTIL_FUNCS
+         #include <x.h>
+         
+         platform_module *GameModule = Platform_LoadModule("base");
+         game_funcs *GameFuncs = GameModule->Funcs;
+         #define EXPORT(R, N, ...) N = GameFuncs->N;
+         #define X GAME_FUNCS
+         #include <x.h>
+         
+         Platform_CreateWindow();
+         opengl_funcs *OpenGLFuncs = Platform_LoadOpenGL();
+         #define IMPORT(R, N, ...) OpenGL_##N = OpenGLFuncs->OpenGL_##N;
+         #define X OPENGL_FUNCS
+         #include <x.h>
       }
       
       external API_EXPORT void

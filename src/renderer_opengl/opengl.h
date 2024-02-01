@@ -164,6 +164,8 @@ typedef struct opengl_funcs {
         func_OpenGL_##Name *OpenGL_##Name;
     #define X OPENGL_FUNCS
     #include <x.h>
+    
+    b08 Initialized;
 } opengl_funcs;
 
 #if defined(_RENDERER_MODULE)

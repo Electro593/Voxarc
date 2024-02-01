@@ -67,9 +67,6 @@ typedef struct renderer_state {
     u32 ObjectIndex;
 } renderer_state;
 
-#define RENDER_FUNCS \
-    EXPORT(void, Renderer_Init, heap *Heap, v2u32 WindowSize) \
-
 #endif
 
 
@@ -291,9 +288,23 @@ Renderer_Resize(v2u32 NewSize, m4x4r32 *OrthographicMatrix, m4x4r32 *Perspective
 }
 
 internal void
+Renderer_SetUniform_V3r32(renderer_state *Renderer, u32 ShaderID, u32 Uniform, v3r32 Value)
+{
+   OpenGL_UseProgram(Renderer->Shaders[ShaderID].Program);
+   OpenGL_Uniform3f(Uniform, Value.X, Value.Y, Value.Z);
+}
+
+internal void
+Renderer_SetUniform_M4x4r32(renderer_state *Renderer, u32 ShaderID, u32 Uniform, u32 Count, b08 Transpose, m4x4r32 Value)
+{
+   OpenGL_UseProgram(Renderer->Shaders[ShaderID].Program);
+   OpenGL_UniformMatrix4fv(Uniform, Count, Transpose, Value);
+}
+
+internal void
 Renderer_Init(heap *Heap, v2u32 WindowSize)
 {
-    
+   
 }
 
 internal void
@@ -380,15 +391,15 @@ Renderer_Draw(platform_state *Platform,
     
     OpenGL_Clear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
     
-    Mesh_Draw(&Renderer->Shaders[ShaderID_PT3].Mesh,  GL_TRIANGLES);
-    Mesh_Draw(&Renderer->Shaders[ShaderID_PC3].Mesh,  GL_TRIANGLES);
-    Mesh_Draw(&Renderer->Shaders[ShaderID_PNM3].Mesh, GL_TRIANGLES);
+   //  Mesh_Draw(&Renderer->Shaders[ShaderID_PT3].Mesh,  GL_TRIANGLES);
+   //  Mesh_Draw(&Renderer->Shaders[ShaderID_PC3].Mesh,  GL_TRIANGLES);
+   //  Mesh_Draw(&Renderer->Shaders[ShaderID_PNM3].Mesh, GL_TRIANGLES);
     
-    if(Game->AimBlockValid)
-        Mesh_DrawPartial(&Renderer->Shaders[ShaderID_P3].Mesh, GL_LINES, Game->AimBlockObjectIndex, 1);
-    
-    if(Platform->CursorIsDisabled)
-        Mesh_DrawPartial(&Renderer->Shaders[ShaderID_PC2].Mesh, GL_TRIANGLES, Game->CrosshairObjectIndex, 1);
+   //  if(Game->AimBlockValid)
+   //      Mesh_DrawPartial(&Renderer->Shaders[ShaderID_P3].Mesh, GL_LINES, Game->AimBlockObjectIndex, 1);
+   //  
+   //  if(Platform->CursorIsDisabled)
+   //      Mesh_DrawPartial(&Renderer->Shaders[ShaderID_PC2].Mesh, GL_TRIANGLES, Game->CrosshairObjectIndex, 1);
     
     OpenGL_Disable(GL_DEPTH_TEST);
     Mesh_Draw(GlyphMesh, GL_TRIANGLES);
