@@ -91,7 +91,11 @@ global u32 CubePositions[] = {
 };
 
 internal mesh_object
-MakePTBlockObject(mesh *Mesh, heap *Heap, v3r32 Pos, u32 BytesFromFirstAsset)
+MakePTBlockObject(
+   mesh *Mesh,
+   heap *Heap,
+   v3r32 Pos,
+   u32 BytesFromFirstAsset)
 {
    persist u32 Indices[] = {
        0, 1, 2,   0, 2, 3,
@@ -154,7 +158,10 @@ MakePTBlockObject(mesh *Mesh, heap *Heap, v3r32 Pos, u32 BytesFromFirstAsset)
 }
 
 internal b08
-GetChunk(region *Region, v3s32 Pos, u32 *ChunkIndexOut)
+GetChunk(
+   region *Region,
+   v3s32 Pos,
+   u32 *ChunkIndexOut)
 {
    v3u32 Start = {0};
    v3u32 Dims = RegionDims;
@@ -185,7 +192,9 @@ GetChunk(region *Region, v3s32 Pos, u32 *ChunkIndexOut)
 }
 
 internal chunk *
-AddChunkToRegion(region *Region, v3s32 ChunkPos)
+AddChunkToRegion(
+   region *Region,
+   v3s32 ChunkPos)
 {
    chunk *Chunk;
    
@@ -235,7 +244,12 @@ AddChunkToRegion(region *Region, v3s32 ChunkPos)
 }
 
 internal void
-MakeChunk(heap *Heap, region *Region, mesh *Mesh, v3s32 ChunkPos, u32 *TextureBytes)
+MakeChunk(
+   heap *Heap,
+   region *Region,
+   mesh *Mesh,
+   v3s32 ChunkPos,
+   u32 *TextureBytes)
 {
    chunk *Chunk = AddChunkToRegion(Region, ChunkPos);
    
@@ -455,7 +469,11 @@ MakeChunk(heap *Heap, region *Region, mesh *Mesh, v3s32 ChunkPos, u32 *TextureBy
 }
 
 internal b08
-CollidesWithBlock(chunk Chunk, v3u32 BlockPos, v3r32 PlayerPos, v3r32 PlayerSize)
+CollidesWithBlock(
+   chunk Chunk,
+   v3u32 BlockPos,
+   v3r32 PlayerPos,
+   v3r32 PlayerSize)
 {
    v3r32 PosInChunk;
    PosInChunk.X = PlayerPos.X - Chunk.Pos.X * ChunkDims.X + ChunkDims.X/2;
@@ -488,8 +506,13 @@ CollidesWithBlock(chunk Chunk, v3u32 BlockPos, v3r32 PlayerPos, v3r32 PlayerSize
 
 
 internal void
-MakeNonVoxelChunk(heap *Heap, random *Random, region *Region,
-                  mesh *Mesh, v3s32 ChunkPos, u32 *TextureBytes)
+MakeNonVoxelChunk(
+   heap *Heap,
+   random *Random,
+   region *Region,
+   mesh *Mesh,
+   v3s32 ChunkPos,
+   u32 *TextureBytes)
 {
    chunk *Chunk = AddChunkToRegion(Region, ChunkPos);
    

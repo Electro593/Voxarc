@@ -116,7 +116,9 @@
       global game_funcs _F;
       
       external API_EXPORT void
-      Load(platform_state *Platform, platform_module *Module)
+      Load(
+         platform_state *Platform,
+         platform_module *Module)
       {
          _F = (game_funcs){
             #define EXPORT(R, N, ...) N,
@@ -146,7 +148,8 @@
       }
       
       external API_EXPORT void
-      Init(platform_state *Platform)
+      Init(
+         platform_state *Platform)
       {
          game_state *Game = &_G;
          
@@ -163,7 +166,7 @@
          random Random = Rand_Init(0);
          // random Random = Rand_Init(Asm_ReadTimeStampCounter());
          
-         // File_CreateAssetpack("assets\\0.pack", RendererHeap, 60.0f);
+         File_CreateAssetpack("assets\\0.pack", RendererHeap, 64.0f);
          Renderer->Assetpack = File_LoadAssetpack("assets\\0.pack", RendererHeap);
          
          Game->Flying = TRUE;
@@ -263,7 +266,9 @@
       }
       
       external API_EXPORT void
-      Update(platform_state *Platform, game_state *Game)
+      Update(
+         platform_state *Platform,
+         game_state *Game)
       {
          if(Platform->Updates & WINDOW_RESIZED) {
             Renderer_Resize(Platform->WindowSize, &Renderer->OrthographicMatrix, &Renderer->PerspectiveMatrix);
@@ -731,7 +736,8 @@
       }
       
       external API_EXPORT void
-      Unload(platform_state *Platform)
+      Unload(
+         platform_state *Platform)
       {
          
       }

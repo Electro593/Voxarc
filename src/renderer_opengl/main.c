@@ -37,7 +37,9 @@
    
    #ifdef INCLUDE_SOURCE
       external API_EXPORT void
-      Load(platform_state *Platform, platform_module *Module)
+      Load(
+         platform_state *Platform,
+         platform_module *Module)
       {
          _F = (renderer_funcs){
             #define EXPORT(R, N, ...) N,
@@ -72,7 +74,8 @@
       }
       
       external API_EXPORT void
-      Init(platform_state *Platform)
+      Init(
+         platform_state *Platform)
       {
          renderer_state *Renderer = &_G;
          heap *Heap = Renderer->Heap;
@@ -96,7 +99,7 @@
          OpenGL_Enable(GL_BLEND);
          OpenGL_BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
          
-         OpenGL_ClearColor(.2,.2,.2,1);
+         OpenGL_ClearColor(.5,.5,.5,1);
          
          Renderer->OrthographicMatrix = M4x4r32_I;
          Renderer->PerspectiveMatrix = M4x4r32_I;
@@ -117,7 +120,7 @@
          Style.Font = &Renderer->Font;
          Style.ZIndex = 0;
          Style.TabSize = 80.0f;
-         Style.FontSize = 30.0f;
+         Style.FontSize = 180.0f;
          Style.Size = (v2u32){800, 800};
          Style.StringOffset = (v2u32){20, 20};
          
@@ -136,13 +139,15 @@
       }
       
       external API_EXPORT void
-      Update(platform_state *Platform)
+      Update(
+         platform_state *Platform)
       {
          
       }
       
       external API_EXPORT void
-      Unload(platform_state *Platform)
+      Unload(
+         platform_state *Platform)
       {
          
       }
