@@ -41,17 +41,13 @@
        - User input
          - Mouse
          - Keys
+         - File data
        - User output
          - No matching graphics modes
          - Missing hardware
       */
       
       #define TICKS_PER_DAY 480
-      
-      typedef struct collision_pole {
-         u32 IntersectionCount;
-         r32 *Intersections;
-      } collision_pole;
       
       typedef struct game_state {
 			r64 LastTime;

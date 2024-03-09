@@ -88,8 +88,9 @@
          
          assetpack Assetpack;
          
+         HEAP(ui_component) Components;
+         
          ui_font Font;
-         ui_style Style;
          u32 ObjectIndex;
       } renderer_state;
    #endif
@@ -452,7 +453,11 @@
          String = String_Cat(String, R32_ToString(FPS, 1));
          String = String_Cat(String, CString("\n"));
          
-         ui_string UIString = MakeUIString(Renderer->Heap, String, Renderer->Style);
+         ui_component *Componenet = (ui_component*)Renderer->Components->Data + 1;
+         Componenet->String = String;
+         ui_style InheritedStyle = GetInheritedStyle(Componenet);
+         
+         ui_string UIString = MakeUIString(Renderer->Heap, String, InheritedStyle);
          mesh_object Object = MakeUIStringObject(Renderer->Heap, UIString, (v2u32){10, 0}, Renderer->WindowSize);
          FreeUIString(UIString);
          
@@ -528,15 +533,24 @@
          Mem_Set(&Renderer->Font, 0, sizeof(ui_font));
          Renderer->Font.Assetpack = Renderer->Assetpack;
          
-         ui_style Style;
-         Style.Font = &Renderer->Font;
-         Style.ZIndex = 0;
-         Style.TabSize = 80.0f;
-         Style.FontSize = 30.0f;
-         Style.Size = (v2u32){800, 800};
-         Style.StringOffset = (v2u32){20, 20};
+         Renderer->Components = Heap_Allocate(Heap, sizeof(ui_component) * 2);
+         ui_component *Components = Renderer->Components->Data;
          
-         Renderer->Style = Style;
+         ui_component *Root = Components+0;
+         *Root = DEFAULT_COMPONENT;
+         Root->Style.Visible = FALSE;
+         Root->Style.Padding = (v4u32){20, 20, 20, 20};
+         Root->Style.ZIndex = 0;
+         Root->Style.FontSize = 30;
+         Root->Style.TabSize = 80;
+         Root->Style.BackgroundColor = (v4u08){100, 100, 100, 255};
+         Root->Style.BorderColor = (v4u08){20, 20, 20, 255};
+         Root->Style.BorderSize = (v4u32){2, 2, 2, 2};
+         Root->Style.Font = &Renderer->Font;
+         
+         ui_component *DebugText = Components+1;
+         *DebugText = DEFAULT_COMPONENT;
+         DebugText->Parent = Root;
          
          Renderer->ObjectIndex = Mesh_ReserveObject(&Renderer->Shaders[ShaderID_Glyph].Mesh, 0, 0);
       }

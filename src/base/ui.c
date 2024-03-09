@@ -16,13 +16,33 @@ typedef struct ui_font {
 } ui_font;
 
 typedef struct ui_style {
+   b08 Enabled;
+   b08 Visible;
    v2u32 Size;
-   v2u32 StringOffset;
+   v4u32 Padding;
    u32 ZIndex;
    r32 FontSize;
    r32 TabSize;
+   v4u08 BackgroundColor;
+   v4u08 BorderColor;
+   v4u32 BorderSize;
    ui_font *Font;
 } ui_style;
+
+#define DEFAULT_STYLE                         \
+   (ui_style){                                \
+      TRUE,                                   \
+      TRUE,                                   \
+      { (u32)-1, (u32)-1 },                   \
+      { (u32)-1, (u32)-1, (u32)-1, (u32)-1 }, \
+      (u32)-1,                                \
+      R32_NINF,                               \
+      R32_NINF,                               \
+      { (u08)-1, (u08)-1, (u08)-1, 0 },       \
+      { (u08)-1, (u08)-1, (u08)-1, 0 },       \
+      { (u32)-1, (u32)-1, (u32)-1, (u32)-1 }, \
+      NULL                                    \
+   }
 
 typedef struct ui_string {
    ui_style Style;
@@ -37,10 +57,26 @@ typedef struct ui_string {
    r32 OffsetX;
 } ui_string;
 
+typedef struct ui_component {
+   struct ui_component *Parent;
+   ui_style Style;
+   m4x4r32 Matrix;
+   string String;
+} ui_component;
+
+#define DEFAULT_COMPONENT \
+   (ui_component){        \
+      NULL,               \
+      DEFAULT_STYLE,      \
+      M4x4r32_I,          \
+      EString()           \
+   }
+
 #define UI_FUNCS \
    EXPORT(ui_string, MakeUIString, heap *Heap, string String, ui_style Style) \
    EXPORT(mesh_object, MakeUIStringObject, heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize) \
    EXPORT(void, FreeUIString, ui_string String) \
+   EXPORT(ui_style, GetInheritedStyle, ui_component *Component) \
 
 #endif
 
@@ -65,6 +101,38 @@ GetGlyph(
    }
    
    return Asset;
+}
+
+internal ui_style
+GetInheritedStyle(
+   ui_component *Component)
+{
+   if(!Component) return DEFAULT_STYLE;
+   
+   ui_style Style = Component->Style;
+   while(Component = Component->Parent) {
+      ui_style CStyle = Component->Style;
+      
+      if(Style.Enabled                     == DEFAULT_STYLE.Enabled)          Style.Enabled         = CStyle.Enabled;
+      if(Style.Size.X                      == DEFAULT_STYLE.Size.X)           Style.Size.X          = CStyle.Size.X;
+      if(Style.Size.Y                      == DEFAULT_STYLE.Size.Y)           Style.Size.Y          = CStyle.Size.Y;
+      if(Style.Padding.X                   == DEFAULT_STYLE.Padding.X)        Style.Padding.X       = CStyle.Padding.X;
+      if(Style.Padding.Y                   == DEFAULT_STYLE.Padding.Y)        Style.Padding.Y       = CStyle.Padding.Y;
+      if(Style.Padding.Z                   == DEFAULT_STYLE.Padding.Z)        Style.Padding.Z       = CStyle.Padding.Z;
+      if(Style.Padding.W                   == DEFAULT_STYLE.Padding.W)        Style.Padding.W       = CStyle.Padding.W;
+      if(Style.ZIndex                      == DEFAULT_STYLE.ZIndex)           Style.ZIndex          = CStyle.ZIndex;
+      if(Style.FontSize                    == DEFAULT_STYLE.FontSize)         Style.FontSize        = CStyle.FontSize;
+      if(Style.TabSize                     == DEFAULT_STYLE.TabSize)          Style.TabSize         = CStyle.TabSize;
+      if(V4u08_IsEqual(Style.BackgroundColor, DEFAULT_STYLE.BackgroundColor)) Style.BackgroundColor = CStyle.BackgroundColor;
+      if(V4u08_IsEqual(Style.BorderColor,     DEFAULT_STYLE.BorderColor))     Style.BorderColor     = CStyle.BorderColor;
+      if(Style.BorderSize.X                == DEFAULT_STYLE.BorderSize.X)     Style.BorderSize.X    = CStyle.BorderSize.X;
+      if(Style.BorderSize.Y                == DEFAULT_STYLE.BorderSize.Y)     Style.BorderSize.Y    = CStyle.BorderSize.Y;
+      if(Style.BorderSize.Z                == DEFAULT_STYLE.BorderSize.Z)     Style.BorderSize.Z    = CStyle.BorderSize.Z;
+      if(Style.BorderSize.W                == DEFAULT_STYLE.BorderSize.W)     Style.BorderSize.W    = CStyle.BorderSize.W;
+      if(Style.Font                        == DEFAULT_STYLE.Font)             Style.Font            = CStyle.Font;
+   }
+   
+   return Style;
 }
 
 internal ui_string
@@ -280,8 +348,8 @@ MakeUIStringObject(
    P.Y -= -FontData.Descent * Style.FontSize;
    
    Object.TranslationMatrix = M4x4r32_Translation(
-     -1 + (Style.StringOffset.X + Pos.X + UIStr.OffsetX + UIStr.Size.X) / ViewSize.X,
-      1 - (Style.StringOffset.Y + Pos.Y + UIStr.Size.Y) / ViewSize.Y,
+     -1 + (Style.Padding.X + Pos.X + UIStr.OffsetX + UIStr.Size.X) / ViewSize.X,
+      1 - (Style.Padding.Y + Pos.Y + UIStr.Size.Y) / ViewSize.Y,
       0
    );
    
