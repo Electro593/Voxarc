@@ -166,7 +166,7 @@
          random Random = Rand_Init(0);
          // random Random = Rand_Init(Asm_ReadTimeStampCounter());
          
-         File_CreateAssetpack("assets\\0.pack", RendererHeap, 64.0f);
+         // File_CreateAssetpack("assets\\0.pack", RendererHeap, 64.0f);
          Renderer->Assetpack = File_LoadAssetpack("assets\\0.pack", RendererHeap);
          
          Game->Flying = TRUE;
@@ -366,9 +366,11 @@
 					Force.Z += CosY*DeltaFront + SinY*DeltaRight;
 					
 					// Jumping
-               if(Platform->Keys[ScanCode_Space]) Game->KeySpaceWasDown = TRUE;
                if(Game->TouchingGround) {
-						Force.Y += -Game->Gravity * Game->Mass;
+                  Force.Y += -Game->Gravity * Game->Mass;
+						
+                  if(Platform->Keys[ScanCode_Space])
+                     Game->KeySpaceWasDown = TRUE;
 						
                   if(!Platform->Keys[ScanCode_Space] && Game->KeySpaceWasDown) {
                      Game->KeySpaceWasDown = FALSE;
