@@ -360,14 +360,18 @@ Renderer_Draw(
    String = String_Cat(String, R32_ToString(Game->Velocity.Z, 4));
    String = String_Cat(String, CString("\n"));
    
+   String = String_Cat(String, CString("Acceleration (X, Y, Z): "));
+   String = String_Cat(String, R32_ToString(Game->Acceleration.X, 4));
+   String = String_Cat(String, CString(", "));
+   String = String_Cat(String, R32_ToString(Game->Acceleration.Y, 4));
+   String = String_Cat(String, CString(", "));
+   String = String_Cat(String, R32_ToString(Game->Acceleration.Z, 4));
+   String = String_Cat(String, CString("\n"));
+   
    String = String_Cat(String, CString("WalkStep (X, Z): "));
    String = String_Cat(String, S32_ToString(Game->WalkStep.X));
    String = String_Cat(String, CString(", "));
    String = String_Cat(String, S32_ToString(Game->WalkStep.Z));
-   String = String_Cat(String, CString("\n"));
-   
-   String = String_Cat(String, CString("Jump Charge: "));
-   String = String_Cat(String, R32_ToString(Game->JumpCharge, 2));
    String = String_Cat(String, CString("\n"));
    
    String = String_Cat(String, CString("Looking At: "));

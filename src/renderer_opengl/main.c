@@ -120,7 +120,7 @@
          Style.Font = &Renderer->Font;
          Style.ZIndex = 0;
          Style.TabSize = 80.0f;
-         Style.FontSize = 180.0f;
+         Style.FontSize = 30.0f;
          Style.Size = (v2u32){800, 800};
          Style.StringOffset = (v2u32){20, 20};
          

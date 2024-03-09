@@ -54,12 +54,12 @@
       } collision_pole;
       
       typedef struct game_state {
+			r64 LastTime;
+			
          b08 Key1WasDown;
          b08 KeySpaceWasDown;
          b08 TouchingGround;
          v3s32 WalkStep;
-         r32 JumpTime;
-         r32 JumpCharge;
          
          heap *WorldHeap;
          region Region;
@@ -174,6 +174,8 @@
          Game->Pos = (v3r32){0,0,0};
          Game->TimeOfDay = TICKS_PER_DAY/4;
          Game->Velocity = (v3r32){0,0,0};
+         Game->Acceleration = (v3r32){0,0,0};
+			Game->LastTime = Platform_GetTime();
          Renderer->Heap = RendererHeap;
          RendererModule->Init(Platform);
          
@@ -264,12 +266,17 @@
          
          Stack_Pop();
       }
-      
+		
       external API_EXPORT void
       Update(
-         platform_state *Platform,
-         game_state *Game)
+         platform_state *Platform)
       {
+         game_state *Game = &_G;
+			
+			r64 CurrentTime = Platform_GetTime();
+			r64 DeltaTime = CurrentTime - Game->LastTime;
+			Game->LastTime = CurrentTime;
+         
          if(Platform->Updates & WINDOW_RESIZED) {
             Renderer_Resize(Platform->WindowSize, &Renderer->OrthographicMatrix, &Renderer->PerspectiveMatrix);
             
@@ -312,25 +319,19 @@
             
             if(Game->Flying) {
                v2r32 MoveXZ = {0};
-               if(Platform->Keys[ScanCode_D] != RELEASED)
-                  MoveXZ.X++;
-               if(Platform->Keys[ScanCode_A] != RELEASED)
-                  MoveXZ.X--;
-               if(Platform->Keys[ScanCode_W] != RELEASED)
-                  MoveXZ.Y++;
-               if(Platform->Keys[ScanCode_S] != RELEASED)
-                  MoveXZ.Y--;
+               if(Platform->Keys[ScanCode_D]) MoveXZ.X++;
+               if(Platform->Keys[ScanCode_A]) MoveXZ.X--;
+               if(Platform->Keys[ScanCode_W]) MoveXZ.Y++;
+               if(Platform->Keys[ScanCode_S]) MoveXZ.Y--;
                
                r32 MoveY = 0;
-               if(Platform->Keys[ScanCode_Space] != RELEASED)
-                  MoveY++;
-               if(Platform->Keys[ScanCode_ShiftLeft]  != RELEASED ||
-                  Platform->Keys[ScanCode_ShiftRight] != RELEASED)
+               if(Platform->Keys[ScanCode_Space]) MoveY++;
+               if(Platform->Keys[ScanCode_ShiftLeft] || Platform->Keys[ScanCode_ShiftRight])
                   MoveY--;
                
                b08 MoveHoriz = MoveXZ.X != 0 || MoveXZ.Y != 0;
                if(MoveHoriz)
-                  MoveXZ = V2r32_Norm(MoveXZ);
+						MoveXZ = V2r32_Norm(MoveXZ);
                
                if(MoveHoriz || MoveY != 0) {
                   r32 Step = 0.1;
@@ -344,191 +345,83 @@
                   Moved = TRUE;
                }
             } else {
-               r32 TicksPerSecond = 60;
-               r32 WalkTiming[3] = {0.3, 0.05};
-               r32 WalkVelocityX = 0.1;
-               r32 WalkVelocityZ = 0.1;
-               
-               s32 State = 0;
-               if(Platform->Keys[ScanCode_W] != RELEASED &&
-                  Platform->Keys[ScanCode_S] == RELEASED &&
-                  Game->WalkStep.Z >= 0)
-                  State = 1;
-               else if(Platform->Keys[ScanCode_W] == RELEASED &&
-                       Platform->Keys[ScanCode_S] != RELEASED &&
-                       Game->WalkStep.Z <= 0)
-                  State = -1;
-               
-               if(State == 0 && Game->WalkStep.Z != 0) {
-                  Game->WalkStep.Z -= S32_Sign(Game->WalkStep.Z);
-                  Game->Velocity.Z *= 4.0f/5;
-               } else if(State == 1 && Game->WalkStep.Z < TicksPerSecond*WalkTiming[0]) {
-                  Game->WalkStep.Z++;
-                  Game->Velocity.Z = WalkVelocityZ * Game->WalkStep.Z/(TicksPerSecond*WalkTiming[0]);
-               } else if(State == -1 && Game->WalkStep.Z > -TicksPerSecond*WalkTiming[0]) {
-                  Game->WalkStep.Z--;
-                  Game->Velocity.Z = WalkVelocityZ * Game->WalkStep.Z/(TicksPerSecond*WalkTiming[0]);
-               } else if(S32_Abs(Game->WalkStep.Z) == TicksPerSecond*WalkTiming[0]) {
-                  Game->Velocity.Z = S32_Sign(Game->WalkStep.Z) * WalkVelocityZ;
-               } else if(Game->WalkStep.Z == 0)
-                  Game->Velocity.Z = 0;
-               
-               State = 0;
-               if(Platform->Keys[ScanCode_D] != RELEASED &&
-                  Platform->Keys[ScanCode_A] == RELEASED &&
-                  Game->WalkStep.X >= 0)
-                  State = 1;
-               else if(Platform->Keys[ScanCode_D] == RELEASED &&
-                       Platform->Keys[ScanCode_A] != RELEASED &&
-                       Game->WalkStep.X <= 0)
-                  State = -1;
-               
-               if(State == 0 && Game->WalkStep.X != 0) {
-                  Game->WalkStep.X -= S32_Sign(Game->WalkStep.X);
-                  Game->Velocity.X *= 1.0f/2;
-               } else if(State == 1 && Game->WalkStep.X < TicksPerSecond*WalkTiming[1]) {
-                  Game->WalkStep.X++;
-                  Game->Velocity.X = WalkVelocityX * Game->WalkStep.X/(TicksPerSecond*WalkTiming[1]);
-               } else if(State == -1 && Game->WalkStep.X > -TicksPerSecond*WalkTiming[1]) {
-                  Game->WalkStep.X--;
-                  Game->Velocity.X = WalkVelocityX * Game->WalkStep.X/(TicksPerSecond*WalkTiming[1]);
-               } else if(S32_Abs(Game->WalkStep.X) == TicksPerSecond*WalkTiming[1]) {
-                  Game->Velocity.X = S32_Sign(Game->WalkStep.X) * WalkVelocityX;
-               } else if(Game->WalkStep.X == 0)
-                  Game->Velocity.X = 0;
-               
                Game->Mass = 75; // kg
                Game->Gravity = -9.807; // m/s^2
-               
-               r32 MaxCharge = 0.5 * TicksPerSecond;
-               r32 ReleaseTicks = 0.2 * TicksPerSecond;
-               r32 JumpVelocity = 5;// realistic: 2.9;
-               
-               r32 ForceY = Game->Gravity * Game->Mass;
-               
-               if(Platform->Keys[ScanCode_Space] != RELEASED) {
-                  Game->KeySpaceWasDown = TRUE;
-                  
-                  if(Game->JumpCharge < (MaxCharge/2) * (Game->TouchingGround+1))
-                     Game->JumpCharge++;
-               }
-               
+					r32 WalkForce = 1 * Game->Mass;
+					r32 GroundFriction = -15 * Game->Mass;
+					r32 AirFriction = -0.05 * Game->Mass;
+					
+					v3r32 Force = {0};
+					
+					r32 SinY = R32_sin(Game->Dir.Y);
+               r32 CosY = R32_cos(Game->Dir.Y);
+					
+					// Gravity
+					Force.Y += Game->Gravity * Game->Mass;
+					
+					// Walking
+					r32 DeltaFront = (!!Platform->Keys[ScanCode_W] - !!Platform->Keys[ScanCode_S]) * WalkForce * Game->Mass;
+					r32 DeltaRight = (!!Platform->Keys[ScanCode_D] - !!Platform->Keys[ScanCode_A]) * WalkForce * Game->Mass;
+					Force.X += -SinY*DeltaFront + CosY*DeltaRight;
+					Force.Z += CosY*DeltaFront + SinY*DeltaRight;
+					
+					// Jumping
+               if(Platform->Keys[ScanCode_Space]) Game->KeySpaceWasDown = TRUE;
                if(Game->TouchingGround) {
-                  if(Platform->Keys[ScanCode_Space] == RELEASED) {
-                     if(Game->KeySpaceWasDown) {
-                        Game->JumpTime = Game->JumpCharge;
-                        Game->KeySpaceWasDown = FALSE;
-                     }
-                     
-                     if(Game->JumpTime > 0) {
-                        Game->JumpTime -= MaxCharge / ReleaseTicks;
-                        //TODO: Change camera pos here
-                        
-                        if(Game->JumpTime <= 0) {
-                           Game->Velocity.Y = (0.8*Game->JumpCharge/MaxCharge + 0.2) * JumpVelocity / TicksPerSecond;
-                           Game->JumpCharge = 0;
-                        } else
-                           ForceY += Game->Gravity * Game->Mass;
-                     }
-                  } else
-                     ForceY += Game->Gravity * Game->Mass;
-               }
+						Force.Y += -Game->Gravity * Game->Mass;
+						
+                  if(!Platform->Keys[ScanCode_Space] && Game->KeySpaceWasDown) {
+                     Game->KeySpaceWasDown = FALSE;
+							Force.Y += 6 / DeltaTime * Game->Mass;
+						}
+					}
+					
+					// Friction
+					Force = V3r32_Add(Force, V3r32_MulS(Game->Velocity, AirFriction));
+					Force = V3r32_Add(Force, (v3r32){
+						Game->Velocity.X * GroundFriction,
+						Game->Velocity.Y,
+						Game->Velocity.Z * GroundFriction
+					});
                
-               //TODO: Terminal velocity
-               
-               Game->Acceleration.Y = ForceY / Game->Mass / (TicksPerSecond*TicksPerSecond);
-               Game->Velocity.Y += Game->Acceleration.Y;
+               Game->Acceleration = V3r32_DivS(Force, Game->Mass);
+               Game->Velocity = V3r32_Add(Game->Velocity, V3r32_MulS(Game->Acceleration, DeltaTime));
                
                if(!V3r32_IsEqual(Game->Velocity, (v3r32){0})) {
-                  r32 SinY = R32_sin(Game->Dir.Y);
-                  r32 CosY = R32_cos(Game->Dir.Y);
-                  v3r32 DeltaPos = {
-                     Game->Velocity.X*CosY - Game->Velocity.Z*SinY,
-                     Game->Velocity.Y,
-                     Game->Velocity.Z*CosY + Game->Velocity.X*SinY
-                  };
-                  
-                  v3r32 NewPos = V3r32_Add(Game->Pos, DeltaPos);
-                  
-                  // Stack_Push();
-                  // r32 DPLen = V3r32_Len(DeltaPos);
-                  
-                  // r32 PlayerRadius = 0.3;
-                  // r32 PlayerTotalHeight = 1.8;
-                  // r32 PlayerLegHeight   = 0.8;
-                  // u32 PoleGenRadius = 6;
-                  // u32 PolesPerMeter = 8;
-                  
-                  // u32 MaxZ = R32_Abs(DeltaPos.Z)*PolesPerMeter + 2*PoleGenRadius;
-                  // u32 MaxX = R32_Abs(DeltaPos.X)*PolesPerMeter + 2*PoleGenRadius;
-                  // u32 PoleCount = MaxX * MaxZ;
-                  // collision_pole *Poles = Stack_Allocate(PoleCount*sizeof(collision_pole));
-                  // for(u32 X = 0; X < MaxX; X++) {
-                  //    for(u32 Z = 0; Z < MaxZ; Z++) {
-                  //       collision_pole *Pole = Poles+INDEX_2D(X, Z, MaxX);
-                  //       Pole->IntersectionCount = 0;
-                  //       Pole->Intersections = Stack_Allocate(8 * sizeof(r32));
-                        
-                  //       u32 IndexCount = Renderer->PTMesh.Indices->Size / sizeof(u32);
-                  //       u32 VertexCount = Renderer->PTMesh.Vertices->Size / sizeof(pt_vertex);
-                  //       u32 *Index = Renderer->PTMesh.Indices->Data;
-                  //       pt_vertex *Vertices = Renderer->PTMesh.Vertices->Data;
-                        
-                  //       for(u32 I = 0; I < IndexCount; I += 3) {
-                  //          v3r32 P0 = Mesh_UnencodePosition(Vertices[I+0].Position);
-                  //          v3r32 P1 = Mesh_UnencodePosition(Vertices[I+1].Position);
-                  //          v3r32 P2 = Mesh_UnencodePosition(Vertices[I+2].Position);
-                           
-                  //          v2r32 P = {X, Z};
-                  //          v2r32 P20 = {P0.X, P0.Z};
-                  //          v2r32 P21 = {P1.X, P1.Z};
-                  //          v2r32 P22 = {P2.X, P2.Z};
-                           
-                  //          r32 E0 = V2r32_Cross(V2r32_Sub(P21, P20), V2r32_Sub(P, P20));
-                  //          r32 E1 = V2r32_Cross(V2r32_Sub(P22, P21), V2r32_Sub(P, P21));
-                  //          r32 E2 = V2r32_Cross(V2r32_Sub(P20, P22), V2r32_Sub(P, P22));
-                           
-                  //          if(E0 >= 0 && E1 >= 0 && E2 >= 0) {
-                              
-                  //          }
-                  //       }
-                  //    }
-                  // }
-                  
-                  // Stack_Pop();
-                  
-                  
-                  Game->Pos = NewPos;
+                  Game->Pos = V3r32_Add(Game->Pos, V3r32_MulS(Game->Velocity, DeltaTime));
                   Moved = TRUE;
                   
                   Game->TouchingGround = FALSE;
                   chunk *Chunks = Game->Region.Chunks->Data;
                   v3r32 PlayerSize = {.6,1.8,.6};
                   v3s32 ChunkPos = {
-                     Game->Pos.X / ChunkDims.X,
-                     Game->Pos.Y / ChunkDims.Y,
-                     Game->Pos.Z / ChunkDims.Z
+                     R32_Floor(Game->Pos.X / ChunkDims.X + 0.5f),
+                     R32_Floor(Game->Pos.Y / ChunkDims.Y + 0.5f),
+                     R32_Floor(Game->Pos.Z / ChunkDims.Z + 0.5f)
                   };
                   v3r32 PosInChunk = {
-                     Game->Pos.X - ChunkPos.X*ChunkDims.X,
-                     Game->Pos.Y - ChunkPos.Y*ChunkDims.Y,
-                     Game->Pos.Z - ChunkPos.Z*ChunkDims.Z
-                  };
-                  chunk Chunk = Chunks[0];
-                  //TODO: Fix this for multiple chunks
-                  for(s32 X = (s32)PosInChunk.X; X <= (s32)(PosInChunk.X + PlayerSize.X); X++) {
-                     for(s32 Z = (s32)PosInChunk.Z; Z <= (s32)(PosInChunk.Z + PlayerSize.Z); Z++) {
-                        b08 R = CollidesWithBlock(Chunk, (v3u32){X, (u32)PosInChunk.Y, Z}, Game->Pos, PlayerSize);
-                        Game->TouchingGround |= R;
-                     }
-                  }
-                  
-                  if(Game->TouchingGround) {
-                     if(PosInChunk.Y > (s32)PosInChunk.Y)
-                        Game->Pos.Y = (r32)((s32)PosInChunk.Y+1) + Chunk.Pos.Y*ChunkDims.Y - ChunkDims.Y/2;
-                     
-                     Game->Velocity.Y = 0;
-                  }
+							Game->Pos.X - ChunkPos.X * ChunkDims.X + ChunkDims.X/2,
+							Game->Pos.Y - ChunkPos.Y * ChunkDims.Y + ChunkDims.Y/2,
+							Game->Pos.Z - ChunkPos.Z * ChunkDims.Z + ChunkDims.Z/2
+						};
+						u32 ChunkIndex;
+						if (GetChunk(&Game->Region, ChunkPos, &ChunkIndex)) {
+							chunk Chunk = Chunks[ChunkIndex];
+	                  //TODO: Fix this for multiple chunks
+	                  for(s32 X = (s32)PosInChunk.X; X <= (s32)(PosInChunk.X + PlayerSize.X); X++) {
+	                     for(s32 Z = (s32)PosInChunk.Z; Z <= (s32)(PosInChunk.Z + PlayerSize.Z); Z++) {
+	                        b08 R = CollidesWithBlock(Chunk, (v3u32){X, (u32)(PosInChunk.Y-0.01f), Z}, PosInChunk, PlayerSize);
+	                        Game->TouchingGround |= R;
+	                     }
+	                  }
+	                  
+	                  if(Game->TouchingGround) {
+	                     if(PosInChunk.Y > (s32)PosInChunk.Y)
+	                        Game->Pos.Y = (r32)((s32)PosInChunk.Y+1) + Chunk.Pos.Y*ChunkDims.Y - ChunkDims.Y/2;
+	                     
+	                     Game->Velocity.Y = 0;
+	                  }
+						}
                }
             }
          }
@@ -665,16 +558,15 @@
                   else             Z++;
                }
                
-               v3s32 ChunkDimsS = V3u32_ToV3s32(ChunkDims);
-               v3s32 Offset = V3s32_Add((v3s32){X, Y, Z}, ChunkDimsS);
-               v3s32 Dir = V3s32_SubS(V3s32_Div(Offset, ChunkDimsS), 1);
+               v3s32 Offset = V3s32_Add((v3s32){X, Y, Z}, ChunkDims);
+               v3s32 Dir = V3s32_SubS(V3s32_Div(Offset, ChunkDims), 1);
                if(!V3s32_IsEqual(Dir, (v3s32){0})) {
                   ChunkPos = V3s32_Add(ChunkPos, Dir);
                   UpdateChunkPos = TRUE;
                   
-                  AimBase.X -= Dir.X * ChunkDimsS.X;
-                  AimBase.Y -= Dir.Y * ChunkDimsS.Y;
-                  AimBase.Z -= Dir.Z * ChunkDimsS.Z;
+                  AimBase.X -= Dir.X * ChunkDims.X;
+                  AimBase.Y -= Dir.Y * ChunkDims.Y;
+                  AimBase.Z -= Dir.Z * ChunkDims.Z;
                   
                   X = Offset.X % ChunkDims.X;
                   Y = Offset.Y % ChunkDims.Y;

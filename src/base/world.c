@@ -54,7 +54,7 @@ typedef struct region {
    HEAP(region_node) Nodes;
 } region;
 
-global v3u32 ChunkDims = {16, 16, 16};
+global v3s32 ChunkDims = {16, 16, 16};
 global v3u32 RegionDims = {16, 16, 16};
 
 #define WORLD_FUNCS \
@@ -256,7 +256,7 @@ MakeChunk(
    // NOTE: Must be <= the 'repeat' max in the pt shaders
    
    Chunk->Pos = ChunkPos;
-   Chunk->Blocks = Heap_Allocate(Heap, V3u32_Volume(ChunkDims)*sizeof(block_type));
+   Chunk->Blocks = Heap_Allocate(Heap, V3s32_Volume(ChunkDims)*sizeof(block_type));
    block_type *Blocks = Chunk->Blocks->Data;
    Mem_Set(Blocks, BLOCK_NONE, Chunk->Blocks->Size);
    
@@ -290,7 +290,7 @@ MakeChunk(
    
    Stack_Push();
    
-   u32 Size = V3u32_Volume(ChunkDims)*sizeof(u08);
+   u32 Size = V3s32_Volume(ChunkDims)*sizeof(u08);
    u08 *Consumed = Stack_Allocate(Size);
    Mem_Set(Consumed, 0, Size);
    
@@ -326,7 +326,7 @@ MakeChunk(
    // the area and if including the smaller row (and decreasing
    // its length) would end up increasing it, we'd do that.
    // Not sure if it's more efficient though. 
-   v3u32 C = ChunkDims;
+   v3s32 C = ChunkDims;
    for(u32 Z = 0; Z < C.Z; Z++) {
       for(u32 Y = 0; Y < C.Y; Y++) {
          for(u32 X = 0; X < C.X; X++) {
@@ -472,14 +472,9 @@ internal b08
 CollidesWithBlock(
    chunk Chunk,
    v3u32 BlockPos,
-   v3r32 PlayerPos,
+   v3r32 PosInChunk,
    v3r32 PlayerSize)
 {
-   v3r32 PosInChunk;
-   PosInChunk.X = PlayerPos.X - Chunk.Pos.X * ChunkDims.X + ChunkDims.X/2;
-   PosInChunk.Y = PlayerPos.Y - Chunk.Pos.Y * ChunkDims.Y + ChunkDims.Y/2;
-   PosInChunk.Z = PlayerPos.Z - Chunk.Pos.Z * ChunkDims.Z + ChunkDims.Z/2;
-   
    if(PosInChunk.X + PlayerSize.X <= BlockPos.X) return FALSE;
    if(PosInChunk.Y + PlayerSize.Y <  BlockPos.Y) return FALSE;
    if(PosInChunk.Z + PlayerSize.Z <= BlockPos.Z) return FALSE;
@@ -487,6 +482,8 @@ CollidesWithBlock(
    if(PosInChunk.Y >  BlockPos.Y+1) return FALSE;
    if(PosInChunk.Z >= BlockPos.Z+1) return FALSE;
    
+	if(!Chunk.Blocks) return FALSE;
+	
    block_type *Blocks = Chunk.Blocks->Data;
    block_type Type = Blocks[INDEX_3D(BlockPos.X, BlockPos.Y, BlockPos.Z, ChunkDims.X, ChunkDims.Y)];
    
