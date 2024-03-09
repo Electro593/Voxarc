@@ -34,6 +34,7 @@ typedef struct ui_string {
    u32 LineCount;
    
    v2r32 Size;
+   r32 OffsetX;
 } ui_string;
 
 #define UI_FUNCS \
@@ -74,6 +75,7 @@ MakeUIString(
 {
    ui_string UIStr;
    UIStr.Size = (v2r32){0};
+   UIStr.OffsetX = R32_INF;
    UIStr.Style = Style;
    UIStr.String = String;
    UIStr.LineCount = 1;
@@ -89,7 +91,6 @@ MakeUIString(
    assetpack_font FontData = FindFirstAssetFromExactTag(Font->Assetpack, TAG_FONT_DESC, &(u32){0})->Font;
    
    v2r32 P = {0, Style.FontSize * (FontData.Ascent-FontData.Descent)};
-   r32 MaxX = 0;
    
    r32 AdvanceY = Style.FontSize * (FontData.Ascent-FontData.Descent+FontData.LineGap);
    
@@ -108,6 +109,9 @@ MakeUIString(
          Assert(Asset);
          
          AdvanceX = Style.FontSize * Asset->Glyph.AdvanceX;
+         r32 BearingX = Style.FontSize * Asset->Glyph.Bearing.X;
+         if(!P.X && BearingX < UIStr.OffsetX) UIStr.OffsetX = BearingX;
+         
          UIStr.PrintableCount++;
       } else if(C == ' ') {
          assetpack_asset *Asset = GetGlyph(Style.Font, ' ');
@@ -123,6 +127,7 @@ MakeUIString(
             break;
          
          P.Y += AdvanceY;
+         if(UIStr.Size.X < P.X) UIStr.Size.X = P.X;
          P.X = 0;
          
          if((UIStr.LineCount+1) * sizeof(u32) > UIStr.Lines->Size)
@@ -172,14 +177,16 @@ MakeUIString(
          BrokeOnCurrentLine = TRUE;
       }
       
-      if(MaxX < P.X) MaxX = P.X;
+      if(UIStr.Size.X < P.X) UIStr.Size.X = P.X;
    }
    
    if((UIStr.LineCount+1) * sizeof(u32) > UIStr.Lines->Size)
       Heap_Resize(UIStr.Lines, UIStr.Lines->Size + 4*sizeof(u32));
    ((u32*)UIStr.Lines->Data)[UIStr.LineCount] = I;
    
-   UIStr.Size.X = MaxX;
+   if(UIStr.OffsetX == R32_INF) UIStr.OffsetX = 0;
+   if(UIStr.Size.X < P.X) UIStr.Size.X = P.X;
+   UIStr.Size.X -= UIStr.OffsetX;
    UIStr.Size.Y = P.Y;
    
    return UIStr;
@@ -232,7 +239,9 @@ MakeUIStringObject(
             u32 Bytes = (u64)Asset - (u64)Style.Font->Assetpack.Assets;
             
             v2r32 Q = V2r32_Add(P, V2r32_MulS(Asset->Glyph.Bearing, Style.FontSize));
+            Q.X -= UIStr.OffsetX;
             v2r32 S = V2r32_MulS(Asset->Glyph.SizeR, Style.FontSize);
+            if(!P.X) S.X += UIStr.OffsetX;
             
             s16 PXL = ((Q.X    )*2/UIStr.Size.X - 1) * 0x7FFF;
             s16 PXR = ((Q.X+S.X)*2/UIStr.Size.X - 1) * 0x7FFF;
@@ -271,8 +280,8 @@ MakeUIStringObject(
    P.Y -= -FontData.Descent * Style.FontSize;
    
    Object.TranslationMatrix = M4x4r32_Translation(
-     -1 + (Style.StringOffset.X + Pos.X + UIStr.Size.X)/ViewSize.X,
-      1 - (Style.StringOffset.Y + Pos.Y + UIStr.Size.Y)/ViewSize.Y,
+     -1 + (Style.StringOffset.X + Pos.X + UIStr.OffsetX + UIStr.Size.X) / ViewSize.X,
+      1 - (Style.StringOffset.Y + Pos.Y + UIStr.Size.Y) / ViewSize.Y,
       0
    );
    
