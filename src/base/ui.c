@@ -33,7 +33,7 @@ typedef struct ui_style {
    (ui_style){                                \
       TRUE,                                   \
       TRUE,                                   \
-      { (u32)-1, (u32)-1 },                   \
+      { 0, 0 },                               \
       { (u32)-1, (u32)-1, (u32)-1, (u32)-1 }, \
       (u32)-1,                                \
       R32_NINF,                               \
@@ -59,17 +59,26 @@ typedef struct ui_string {
 
 typedef struct ui_component {
    struct ui_component *Parent;
+   
    ui_style Style;
-   m4x4r32 Matrix;
    string String;
+   
+   mesh_object RenderedString;
+   mesh_object RenderedComponent;
+   
+   b08 DirtyString;
+   b08 DirtyComponent;
 } ui_component;
 
 #define DEFAULT_COMPONENT \
    (ui_component){        \
       NULL,               \
       DEFAULT_STYLE,      \
-      M4x4r32_I,          \
-      EString()           \
+      EString(),          \
+      {0},                \
+      {0},                \
+      TRUE,               \
+      TRUE                \
    }
 
 #define UI_FUNCS \

@@ -55,7 +55,6 @@
          b08 Key1WasDown;
          b08 KeySpaceWasDown;
          b08 TouchingGround;
-         v3s32 WalkStep;
          
          heap *WorldHeap;
          region Region;

@@ -395,63 +395,24 @@
          Renderer_LoadShader(Renderer, ShaderID_PNM3,  0);
          
          Stack_Push();
-         string String = CString("");
-         
-         String = String_Cat(String, CString("Position (X, Y, Z): "));
-         String = String_Cat(String, R32_ToString(Game->Pos.X, 4));
-         String = String_Cat(String, CString(", "));
-         String = String_Cat(String, R32_ToString(Game->Pos.Y, 4));
-         String = String_Cat(String, CString(", "));
-         String = String_Cat(String, R32_ToString(Game->Pos.Z, 4));
-         String = String_Cat(String, CString("\n"));
-         
-         String = String_Cat(String, CString("Velocity (X, Y, Z): "));
-         String = String_Cat(String, R32_ToString(Game->Velocity.X, 4));
-         String = String_Cat(String, CString(", "));
-         String = String_Cat(String, R32_ToString(Game->Velocity.Y, 4));
-         String = String_Cat(String, CString(", "));
-         String = String_Cat(String, R32_ToString(Game->Velocity.Z, 4));
-         String = String_Cat(String, CString("\n"));
-         
-         String = String_Cat(String, CString("Acceleration (X, Y, Z): "));
-         String = String_Cat(String, R32_ToString(Game->Acceleration.X, 4));
-         String = String_Cat(String, CString(", "));
-         String = String_Cat(String, R32_ToString(Game->Acceleration.Y, 4));
-         String = String_Cat(String, CString(", "));
-         String = String_Cat(String, R32_ToString(Game->Acceleration.Z, 4));
-         String = String_Cat(String, CString("\n"));
-         
-         String = String_Cat(String, CString("WalkStep (X, Z): "));
-         String = String_Cat(String, S32_ToString(Game->WalkStep.X));
-         String = String_Cat(String, CString(", "));
-         String = String_Cat(String, S32_ToString(Game->WalkStep.Z));
-         String = String_Cat(String, CString("\n"));
-         
-         String = String_Cat(String, CString("Looking At: "));
-         if(Game->AimBlockValid) {
-            String = String_Cat(String, S32_ToString(Game->AimBlock.X));
-            String = String_Cat(String, CString(", "));
-            String = String_Cat(String, S32_ToString(Game->AimBlock.Y));
-            String = String_Cat(String, CString(", "));
-            String = String_Cat(String, S32_ToString(Game->AimBlock.Z));
-            String = String_Cat(String, CString("\n"));
-         } else {
-            String = String_Cat(String, CString("None\n"));
-         }
-         
-         String = String_Cat(String, CString("Direction (Pitch, Yaw): "));
-         String = String_Cat(String, R32_ToString(Game->Dir.X, 4));
-         String = String_Cat(String, CString(", "));
-         String = String_Cat(String, R32_ToString(Game->Dir.Y, 4));
-         String = String_Cat(String, CString("\n"));
-         
-         String = String_Cat(String, CString("Time of Day: "));
-         String = String_Cat(String, U32_ToString(Game->TimeOfDay, 10));
-         String = String_Cat(String, CString("\n"));
-         
-         String = String_Cat(String, CString("FPS: "));
-         String = String_Cat(String, R32_ToString(FPS, 1));
-         String = String_Cat(String, CString("\n"));
+         string String = CFStringL(
+            "Position (X, Y, Z): %f, %f, %f\n"
+            "Velocity (X, Y, Z): %f, %f, %f\n"
+            "Acceleration (X, Y, Z): %f, %f, %f\n"
+            "Looking At: %s\n"
+            "Direction (Pitch, Yaw): %f, %f\n"
+            "Time of Day: %u\n"
+            "FPS: %f\n",
+            Game->Pos.X, Game->Pos.Y, Game->Pos.Z,
+            Game->Velocity.X, Game->Velocity.Y, Game->Velocity.Z,
+            Game->Acceleration.X, Game->Acceleration.Y, Game->Acceleration.Z,
+            Game->AimBlockValid
+               ? CFStringL("%d, %d, %d", Game->AimBlock.X, Game->AimBlock.Y, Game->AimBlock.Z)
+               : CLStringL("None"),
+            Game->Dir.X, Game->Dir.Y,
+            Game->TimeOfDay,
+            FPS
+         );
          
          ui_component *Componenet = (ui_component*)Renderer->Components->Data + 1;
          Componenet->String = String;
@@ -539,6 +500,7 @@
          ui_component *Root = Components+0;
          *Root = DEFAULT_COMPONENT;
          Root->Style.Visible = FALSE;
+         Root->Style.Size = (v2u32){(u32)-1, (u32)-1};
          Root->Style.Padding = (v4u32){20, 20, 20, 20};
          Root->Style.ZIndex = 0;
          Root->Style.FontSize = 30;
