@@ -478,6 +478,7 @@
          OpenGL_BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
          
          OpenGL_ClearColor(.5,.5,.5,1);
+         OpenGL_PolygonMode(GL_FRONT_AND_BACK, GL_FILL);
          
          Renderer->OrthographicMatrix = M4x4r32_I;
          Renderer->PerspectiveMatrix = M4x4r32_I;

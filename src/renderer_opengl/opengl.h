@@ -39,6 +39,7 @@
 #define GL_INVERT                 0x150A
 #define GL_RGBA                   0x1908
 #define GL_LINE                   0x1B01
+#define GL_FILL                   0x1B02
 #define GL_NEAREST                0x2600
 #define GL_LINEAR                 0x2601
 #define GL_TEXTURE_MAG_FILTER     0x2800
