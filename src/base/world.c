@@ -54,7 +54,7 @@ typedef struct region {
    HEAP(region_node) Nodes;
 } region;
 
-global v3s32 ChunkDims = {16, 16, 16};
+global v3u32 ChunkDims = {16, 16, 16};
 global v3u32 RegionDims = {16, 16, 16};
 
 #define WORLD_FUNCS \
@@ -142,10 +142,10 @@ MakePTBlockObject(
    // *Vertex++ = (pt_vertex){Positions[5], BytesFromFirstAsset | 0b01};
    // *Vertex++ = (pt_vertex){Positions[1], BytesFromFirstAsset | 0b11};
    // *Vertex++ = (pt_vertex){Positions[0], BytesFromFirstAsset | 0b10};
-   *Vertex++ = (pt_vertex){CubePositions[0], (0<<28) | (2<<24) | BytesFromFirstAsset | 0b00};
-   *Vertex++ = (pt_vertex){CubePositions[1], (0<<28) | (2<<24) | BytesFromFirstAsset | 0b01};
-   *Vertex++ = (pt_vertex){CubePositions[2], (0<<28) | (2<<24) | BytesFromFirstAsset | 0b11};
-   *Vertex++ = (pt_vertex){CubePositions[3], (0<<28) | (2<<24) | BytesFromFirstAsset | 0b10};
+   *Vertex++ = (pt_vertex){{.E = CubePositions[0]}, (0<<28) | (2<<24) | BytesFromFirstAsset | 0b00};
+   *Vertex++ = (pt_vertex){{.E = CubePositions[1]}, (0<<28) | (2<<24) | BytesFromFirstAsset | 0b01};
+   *Vertex++ = (pt_vertex){{.E = CubePositions[2]}, (0<<28) | (2<<24) | BytesFromFirstAsset | 0b11};
+   *Vertex++ = (pt_vertex){{.E = CubePositions[3]}, (0<<28) | (2<<24) | BytesFromFirstAsset | 0b10};
    
    // Mem_Cpy(Object.Indices->Data, Indices, sizeof(Indices));
    Mem_Cpy(Object.Indices->Data, Indices, sizeof(u32)*6);
@@ -256,7 +256,7 @@ MakeChunk(
    // NOTE: Must be <= the 'repeat' max in the pt shaders
    
    Chunk->Pos = ChunkPos;
-   Chunk->Blocks = Heap_Allocate(Heap, V3s32_Volume(ChunkDims)*sizeof(block_type));
+   Chunk->Blocks = Heap_Allocate(Heap, V3u32_Volume(ChunkDims)*sizeof(block_type));
    block_type *Blocks = Chunk->Blocks->Data;
    Mem_Set(Blocks, BLOCK_NONE, Chunk->Blocks->Size);
    
@@ -290,7 +290,7 @@ MakeChunk(
    
    Stack_Push();
    
-   u32 Size = V3s32_Volume(ChunkDims)*sizeof(u08);
+   u32 Size = V3u32_Volume(ChunkDims)*sizeof(u08);
    u08 *Consumed = Stack_Allocate(Size);
    Mem_Set(Consumed, 0, Size);
    
@@ -326,7 +326,7 @@ MakeChunk(
    // the area and if including the smaller row (and decreasing
    // its length) would end up increasing it, we'd do that.
    // Not sure if it's more efficient though. 
-   v3s32 C = ChunkDims;
+   v3u32 C = ChunkDims;
    for(u32 Z = 0; Z < C.Z; Z++) {
       for(u32 Y = 0; Y < C.Y; Y++) {
          for(u32 X = 0; X < C.X; X++) {

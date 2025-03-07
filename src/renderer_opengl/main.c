@@ -267,6 +267,7 @@
                      (v3u08){170, 170, 170},
                      (v3u08){200, 200, 200},
                      2,
+                     0
                   };
                   // ((Mat0 >> 16) & 0xFF) / 255.0d
                   Heap_Resize(Shader->Mesh.Materials, sizeof(material));

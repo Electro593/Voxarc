@@ -119,7 +119,7 @@ GetInheritedStyle(
    if(!Component) return DEFAULT_STYLE;
    
    ui_style Style = Component->Style;
-   while(Component = Component->Parent) {
+   while((Component = Component->Parent)) {
       ui_style CStyle = Component->Style;
       
       if(Style.Enabled                     == DEFAULT_STYLE.Enabled)          Style.Enabled         = CStyle.Enabled;

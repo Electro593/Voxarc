@@ -109,16 +109,18 @@ typedef struct assetpack_atlas {
    u32 Count;
 } assetpack_atlas;
 
+typedef struct assetpack_asset_header {
+   v2u32 Pos;
+   v2u32 Size;
+   u16 AtlasIndex;
+   u16 _Unused;
+} assetpack_asset_header;
+
 //NOTE: sizeof(assetpack_asset) MUST be a multiple of 4
 //TODO: Shouldn't AtlasIndex be specific to glyph and texture?
 //TODO: Actually implement the hash
 typedef struct assetpack_asset {
-   struct assetpack_asset_header {
-      v2u32 Pos;
-      v2u32 Size;
-      u16 AtlasIndex;
-      u16 _Unused;
-   };
+   assetpack_asset_header Header;
    union {
       assetpack_glyph Glyph;
       assetpack_font  Font;
@@ -164,7 +166,7 @@ typedef struct assetpack {
 typedef struct asset_node {
    asset_type Type;
    font_glyph Glyph;
-   file_handle FileHandle;
+   file_handle *FileHandle;
    u16 BitmapOffset;
    v2u32 Size;
    assetpack_asset *Asset;
@@ -228,7 +230,7 @@ FindTagRegistry(
    assetpack_tag_id TagID)
 {
    type Type = MakeMemberType(TYPEID_U32, 0, sizeof(assetpack_registry));
-   return BinarySearchArray(&Assetpack.Registries, 0, Assetpack.Header->RegistryCount, &TagID, Type, NULL, NULL, NULL);
+   return BinarySearchArray((vptr*) &Assetpack.Registries, 0, Assetpack.Header->RegistryCount, &TagID, Type, NULL, NULL, NULL);
 }
 
 internal assetpack_tag *
@@ -246,29 +248,29 @@ FindTagEntry(
    if(Registry->Type.ID == TYPEID_STR)
       Func = CompareAssetpackTagString;
    
-   return BinarySearchArray(&Registry->Tags, 0, Registry->TagCount, TagValue, Type, Func, &Param, NULL);
+   return BinarySearchArray((vptr*) &Registry->Tags, 0, Registry->TagCount, TagValue, Type, Func, &Param, NULL);
 }
 
 internal assetpack_asset **
 FindAssetsFromPartialTags(
-   assetpack Assetpack,
+   assetpack *Assetpack,
    u32 TypeCount,
    assetpack_tag_id *TagIDs,
    vptr *TagValues,
    u32 *MatchedCountOut)
 {
    if(TypeCount == 0) {
-      if(MatchedCountOut) *MatchedCountOut = Assetpack.Header->AssetCount;
-      return &Assetpack.Assets;
+      if(MatchedCountOut) *MatchedCountOut = Assetpack->Header->AssetCount;
+      return &Assetpack->Assets;
    } else if(TypeCount == 1) {
-      assetpack_tag *Entry = FindTagEntry(Assetpack, TagIDs[0], TagValues[0]);
+      assetpack_tag *Entry = FindTagEntry(*Assetpack, TagIDs[0], TagValues[0]);
       if(MatchedCountOut) *MatchedCountOut = Entry->AssetCount;
       return Entry->Assets;
    } else {
    	// Get the tag entries for each registry.
    	assetpack_tag **SelectedTags = Stack_Allocate(TypeCount * sizeof(assetpack_tag*));
    	for(u32 I = 0; I < TypeCount; I++) {
-   		SelectedTags[I] = FindTagEntry(Assetpack, TagIDs[I], TagValues[I]);
+   		SelectedTags[I] = FindTagEntry(*Assetpack, TagIDs[I], TagValues[I]);
    	}
    	
    	// Find the tag with the fewest assets.
@@ -291,7 +293,7 @@ FindAssetsFromPartialTags(
    			assetpack_tag *CurrTag = SelectedTags[J];
    			if(CurrTag == StartTag) continue;
    			
-   			assetpack_asset *Match = BinarySearchArray((vptr*)&CurrTag->Assets, 0, CurrTag->AssetCount, &Asset, TYPE_VPTR, NULL, NULL, NULL);
+   			assetpack_asset *Match = BinarySearchArray((vptr*) &CurrTag->Assets, 0, CurrTag->AssetCount, &Asset, TYPE_VPTR, NULL, NULL, NULL);
    			if(!Match) break;
    		}
    		
@@ -314,7 +316,7 @@ FindFirstAssetFromPartialTags(
    Stack_Push();
    
    u32 MatchedCount;
-   assetpack_asset **Matches = FindAssetsFromPartialTags(Assetpack, TypeCount, TagIDs, TagValues, &MatchedCount);
+   assetpack_asset **Matches = FindAssetsFromPartialTags(&Assetpack, TypeCount, TagIDs, TagValues, &MatchedCount);
    assetpack_asset *Result = MatchedCount ? Matches[0] : NULL;
    
    Stack_Pop();
@@ -381,20 +383,20 @@ File_LoadAssetpack(
    for(u32 R = 0; R < Assetpack.Header->RegistryCount; R++) {
       assetpack_registry *Registry = Assetpack.Registries+R;
       
-      (u08*)Registry->Tags += (u64)Assetpack.Tags;
+      Registry->Tags = (vptr) ((u08*) Registry->Tags + (u64) Assetpack.Tags);
       
       for(u32 T = 0; T < Registry->TagCount; T++) {
          assetpack_tag *Tag = Registry->Tags+T;
          
          switch(Registry->Type.ID) {
             case TYPEID_VPTR: {
-               (u08*)Tag->ValueP += (u64)Assetpack.TagData;
+               Tag->ValueP = (u08*) Tag->ValueP + (u64) Assetpack.TagData;
             } break;
             
             case TYPEID_STR: {
-               (u08*)Tag->ValueP += (u64)Assetpack.TagData;
+               Tag->ValueP = (u08*) Tag->ValueP + (u64) Assetpack.TagData;
                string *String = (string*)Tag->ValueP;
-               (u08*)String->Text += (u64)Assetpack.TagData;
+               String->Text = (vptr) ((u08*) String->Text + (u64) Assetpack.TagData);
             } break;
             
             case TYPEID_U32: break;
@@ -404,10 +406,10 @@ File_LoadAssetpack(
             }
          }
          
-         (u08*)Tag->Assets += (u64)Assetpack.TagData;
+         Tag->Assets = (vptr) ((u08*) Tag->Assets + (u64) Assetpack.TagData);
          
          for(u32 A = 0; A < Tag->AssetCount; A++)
-            (u08*)(Tag->Assets[A]) += (u64)Assetpack.Assets;
+            Tag->Assets[A] = (vptr) ((u08*) Tag->Assets[A] + (u64) Assetpack.Assets);
       }
    }
    
@@ -551,7 +553,7 @@ DefineRegistry(
    u32 Index;
    u32 Count = Assetpack->Header.RegistryCount;
    type Type = MakeMemberType(TYPEID_U32, 0, sizeof(assetpack_registry));
-   BinarySearchArray(&Registries, 0, Count, &TagType, Type, NULL, NULL, &Index);
+   BinarySearchArray((vptr*) &Registries, 0, Count, &TagType, Type, NULL, NULL, &Index);
    
    Mem_Cpy(Registries+Index+1, Registries+Index, (Count-Index)*sizeof(assetpack_registry));
    
@@ -653,7 +655,7 @@ AddTag(
             Heap_Resize(Assetpack->TagData, PrevSize + sizeof(string) + Str.Length);
             u08 *TagData = (u08*)Assetpack->TagData->Data + PrevSize;
             Mem_Cpy(TagData+sizeof(string), Str.Text, Str.Length);
-            Str.Text = TagData+sizeof(string) - (u64)Assetpack->TagData->Data;
+            Str.Text = (c08*) (TagData + sizeof(string) - (u64) Assetpack->TagData->Data);
             Str.Capacity = Str.Length;
             Mem_Cpy(TagData, &Str, sizeof(string));
             Tag->ValueI = (u64)TagData - (u64)Assetpack->TagData->Data;
@@ -691,7 +693,7 @@ AddToAtlas(
    assetpack_asset *Asset,
    asset_type Type,
    font_glyph *Glyph,
-   file_handle FileHandle,
+   file_handle *FileHandle,
    u32 BitmapOffset)
 {
    asset_node *AssetNode = Stack_Allocate(sizeof(asset_node));
@@ -701,8 +703,8 @@ AddToAtlas(
    AssetNode->FileHandle = FileHandle;
    AssetNode->BitmapOffset = BitmapOffset;
    AssetNode->Size = (v2u32){
-      Asset->Size.X + Assetpack->Padding.X,
-      Asset->Size.Y + Assetpack->Padding.Y
+      Asset->Header.Size.X + Assetpack->Padding.X,
+      Asset->Header.Size.Y + Assetpack->Padding.Y
    };
    AssetNode->Asset = (vptr)((u64)Asset - (u64)Assetpack->Assets->Data);
    AssetNode->Prev = Assetpack->NullAssetNode;
@@ -795,31 +797,31 @@ MakeAtlas(
       // Asset was serialized since its handle was probably resized,
       // so we need to turn it back into a pointer.
       assetpack_asset *Asset = (vptr)((u64)AssetNode->Asset + (u64)Assetpack->Assets->Data);
-      Asset->AtlasIndex = Node->AtlasIndex;
+      Asset->Header.AtlasIndex = Node->AtlasIndex;
       
       v4u08 *Bitmap = (v4u08*)(Atlases + Node->AtlasIndex*AtlasSize);
       Bitmap += INDEX_2D(Node->Pos.X, Node->Pos.Y, AtlasDims.X);
-      Asset->Pos = Node->Pos;
+      Asset->Header.Pos = Node->Pos;
       
       Stack_Push();
       switch(AssetNode->Type) {
          case ASSET_GLYPH: {
-            MSDF_DrawShape(AssetNode->Glyph.Shape, &Asset->Pos, &Asset->Size, Bitmap, Node->Pos, Node->AtlasIndex, AtlasDims);
+            MSDF_DrawShape(AssetNode->Glyph.Shape, &Asset->Header.Pos, &Asset->Header.Size, Bitmap, Node->Pos, Node->AtlasIndex, AtlasDims);
          } break;
          
          case ASSET_TEXTURE: {
-            u32 Size = Asset->Size.X*Asset->Size.Y*sizeof(v4u08);
+            u32 Size = Asset->Header.Size.X*Asset->Header.Size.Y*sizeof(v4u08);
             v4u08 *Src = Stack_Allocate(Size);
             //TODO: Async read?
-            Platform_ReadFile(AssetNode->FileHandle, Src, Size, AssetNode->BitmapOffset);
-            for(u32 Y = 0; Y < Asset->Size.Y; Y++) {
-               for(u32 X = 0; X < Asset->Size.X; X++) {
+            Platform_ReadFile(*AssetNode->FileHandle, Src, Size, AssetNode->BitmapOffset);
+            for(u32 Y = 0; Y < Asset->Header.Size.Y; Y++) {
+               for(u32 X = 0; X < Asset->Header.Size.X; X++) {
                   v4u08 Color = {Src->Z, Src->Y, Src->X, 255};
                   Bitmap[INDEX_2D(X, Y, AtlasDims.X)] = Color;
                   Src++;
                }
             }
-            Platform_CloseFile(AssetNode->FileHandle);
+            Platform_CloseFile(*AssetNode->FileHandle);
          } break;
          
          default: {
@@ -833,7 +835,7 @@ MakeAtlas(
       Node = NullNode;
       while(Node->Next != NullNode) {
          Node = Node->Next;
-         if(Node->AtlasIndex != Asset->AtlasIndex) continue;
+         if(Node->AtlasIndex != Asset->Header.AtlasIndex) continue;
          
          binpacker_node *NewNode = NULL;
          v2u32 NodePos2 = V2u32_Add(Node->Pos, Node->Size);
@@ -935,7 +937,7 @@ File_CreateAssetpack(
    font_style FontStyle = FONT_MONOSPACE;
    string _FontName = CString("arial");
    string *FontName = &_FontName;
-   u08 *FontData = File_Read("assets\\fonts\\arial.ttf", 0, 0).Text;
+   u08 *FontData = (u08*) File_Read("assets\\fonts\\arial.ttf", 0, 0).Text;
    font Font = Font_Init(FontData);
    
    r32 UnitScale = 1.0f/(Font.hhea->Ascent-Font.hhea->Descent);
@@ -968,13 +970,13 @@ File_CreateAssetpack(
          font_glyph Glyph = Font_GetGlyph(Font, Codepoint, UnitScale);
          
          Asset = AddAsset(&Assetpack, ASSET_GLYPH);
-         Asset->Size = (v2u32){Glyph.Size.X*FontSize, Glyph.Size.Y*FontSize};
+         Asset->Header.Size = (v2u32){Glyph.Size.X*FontSize, Glyph.Size.Y*FontSize};
          Asset->Glyph.AdvanceX = Glyph.Advance;
          Asset->Glyph.Bearing = Glyph.Bearing;
          Asset->Glyph.SizeR = Glyph.Size;
          
          if(Codepoint != ' ')
-             AddToAtlas(&Assetpack, Asset, ASSET_GLYPH, &Glyph, 0, 0);
+            AddToAtlas(&Assetpack, Asset, ASSET_GLYPH, &Glyph, 0, 0);
          
          AddTag(&Assetpack, Asset, TAG_CODEPOINT, &Codepoint);
          AddTag(&Assetpack, Asset, TAG_FONT_NAME, &FontName);
@@ -988,10 +990,10 @@ File_CreateAssetpack(
          Platform_ReadFile(Handle, &BitmapHeader, sizeof(bitmap_header), 0);
          
          Asset = AddAsset(&Assetpack, ASSET_TEXTURE);
-         Asset->Size = (v2u32){BitmapHeader.Width, BitmapHeader.Height};
+         Asset->Header.Size = (v2u32){BitmapHeader.Width, BitmapHeader.Height};
          
          u32 HandleIndex = 0;
-         AddToAtlas(&Assetpack, Asset, ASSET_TEXTURE, NULL, Handle, BitmapHeader.DataOffset);
+         AddToAtlas(&Assetpack, Asset, ASSET_TEXTURE, NULL, &Handle, BitmapHeader.DataOffset);
          
          AddTag(&Assetpack, Asset, TAG_BLOCK_TEXTURE, &I);
       }
@@ -1003,10 +1005,10 @@ File_CreateAssetpack(
          Platform_ReadFile(Handle, &BitmapHeader, sizeof(bitmap_header), 0);
          
          Asset = AddAsset(&Assetpack, ASSET_TEXTURE);
-         Asset->Size = (v2u32){BitmapHeader.Width, BitmapHeader.Height};
+         Asset->Header.Size = (v2u32){BitmapHeader.Width, BitmapHeader.Height};
          
          u32 HandleIndex = 0;
-         AddToAtlas(&Assetpack, Asset, ASSET_TEXTURE, NULL, Handle, BitmapHeader.DataOffset);
+         AddToAtlas(&Assetpack, Asset, ASSET_TEXTURE, NULL, &Handle, BitmapHeader.DataOffset);
          
          AddTag(&Assetpack, Asset, TAG_UI_TEXTURE, &I);
       }

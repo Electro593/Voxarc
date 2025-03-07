@@ -47,7 +47,6 @@
       v3u08 DiffuseColor;
       v3u08 SpecularColor;
       u08 Shininess;
-      
       u08 _Unused[2];
    } material;
    

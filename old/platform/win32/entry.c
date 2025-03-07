@@ -19,7 +19,7 @@ global platform_state *Platform;
 internal void
 Platform_LoadWin32(void)
 {
-    win32_teb *TEB = (win32_teb*)Asm_ReadGSQWord(48);
+    win32_teb *TEB = (win32_teb*)Intrin_ReadGSQWord(48);
     win32_list_entry *Entry = TEB->PEB->Ldr->MemoryOrderList.Next;
     u32 Offset = OFFSET_OF(win32_ldr_data_table_entry, MemoryOrderLinks);
     Entry = Entry->Next->Next;

@@ -153,13 +153,13 @@
          vptr MemBase = Platform_AllocateMemory(RendererHeapSize+WorldHeapSize);
          
          heap *RendererHeap = Heap_Init(MemBase, RendererHeapSize);
-         (u08*)MemBase += RendererHeapSize;
+         MemBase = (u08*) MemBase + RendererHeapSize;
          
          Game->WorldHeap = Heap_Init(MemBase, WorldHeapSize);
-         (u08*)MemBase += WorldHeapSize;
+         MemBase = (u08*) MemBase + WorldHeapSize;
          
          random Random = Rand_Init(0);
-         // random Random = Rand_Init(Asm_ReadTimeStampCounter());
+         // random Random = Rand_Init(Intrin_ReadTimeStampCounter());
          
          // File_CreateAssetpack("assets\\0.pack", RendererHeap, 64.0f);
          Renderer->Assetpack = File_LoadAssetpack("assets\\0.pack", RendererHeap);
@@ -555,8 +555,9 @@
                   else             Z++;
                }
                
-               v3s32 Offset = V3s32_Add((v3s32){X, Y, Z}, ChunkDims);
-               v3s32 Dir = V3s32_SubS(V3s32_Div(Offset, ChunkDims), 1);
+               v3s32 SignedDims = V3u32_ToV3s32(ChunkDims);
+               v3s32 Offset = V3s32_Add((v3s32){X, Y, Z}, SignedDims);
+               v3s32 Dir = V3s32_SubS(V3s32_Div(Offset, SignedDims), 1);
                if(!V3s32_IsEqual(Dir, (v3s32){0})) {
                   ChunkPos = V3s32_Add(ChunkPos, Dir);
                   UpdateChunkPos = TRUE;
