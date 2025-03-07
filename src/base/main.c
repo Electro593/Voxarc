@@ -22,6 +22,11 @@
       #include "main.c"
    #undef INCLUDE_SOURCE
 #else
+   #ifdef INCLUDE_SOURCE
+      extern game_state _G;
+      extern game_funcs _F;
+   #endif
+   
    #include <base/file.c>
    #include <base/world.c>
    #include <base/ui.c>
@@ -107,8 +112,8 @@
    #ifdef INCLUDE_SOURCE
       global platform_module *RendererModule;
       global renderer_state *Renderer;
-      global game_state _G;
-      global game_funcs _F;
+      game_state _G;
+      game_funcs _F;
       
       external API_EXPORT void
       Load(
