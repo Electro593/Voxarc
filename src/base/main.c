@@ -31,7 +31,7 @@
    #include <base/world.c>
    #include <base/ui.c>
    
-   #ifdef INCLUDE_HEADER
+   #if defined(INCLUDE_HEADER) && !defined(NO_SYMBOLS)
       #define GAME_FUNCS \
          GAME_FILE_FUNCS \
          WORLD_FUNCS \

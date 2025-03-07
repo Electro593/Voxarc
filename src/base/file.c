@@ -353,7 +353,7 @@ File_LoadAssetpack(
 {
    assetpack Assetpack;
    
-   file_handle FileHandle;
+   file_handle *FileHandle;
    Platform_OpenFile(&FileHandle, FileName, FILE_READ);
    u32 Length = Platform_GetFileLength(FileHandle);
    u08 *FileBase = Heap_AllocateA(Heap, Length+1);
@@ -499,7 +499,7 @@ EndAssetpack(
    BitmapHeader.ImageSize = AtlasSize;
    
    //TODO: This doesn't work with additional asset data
-   file_handle FileHandle;
+   file_handle *FileHandle;
    Platform_OpenFile(&FileHandle, "assets\\pack.bmp", FILE_WRITE);
    {
       Platform_WriteFile(FileHandle, &BitmapHeader, sizeof(bitmap_header), 0);
@@ -813,7 +813,7 @@ MakeAtlas(
             u32 Size = Asset->Header.Size.X*Asset->Header.Size.Y*sizeof(v4u08);
             v4u08 *Src = Stack_Allocate(Size);
             //TODO: Async read?
-            Platform_ReadFile(*AssetNode->FileHandle, Src, Size, AssetNode->BitmapOffset);
+            Platform_ReadFile(AssetNode->FileHandle, Src, Size, AssetNode->BitmapOffset);
             for(u32 Y = 0; Y < Asset->Header.Size.Y; Y++) {
                for(u32 X = 0; X < Asset->Header.Size.X; X++) {
                   v4u08 Color = {Src->Z, Src->Y, Src->X, 255};
@@ -821,7 +821,7 @@ MakeAtlas(
                   Src++;
                }
             }
-            Platform_CloseFile(*AssetNode->FileHandle);
+            Platform_CloseFile(AssetNode->FileHandle);
          } break;
          
          default: {
@@ -985,7 +985,7 @@ File_CreateAssetpack(
       
       for(u32 I = 1; I < BLOCK_Count; I++) {
          bitmap_header BitmapHeader;
-         file_handle Handle;
+         file_handle *Handle;
          Platform_OpenFile(&Handle, BlockTexturePaths[I], FILE_READ);
          Platform_ReadFile(Handle, &BitmapHeader, sizeof(bitmap_header), 0);
          
@@ -993,14 +993,14 @@ File_CreateAssetpack(
          Asset->Header.Size = (v2u32){BitmapHeader.Width, BitmapHeader.Height};
          
          u32 HandleIndex = 0;
-         AddToAtlas(&Assetpack, Asset, ASSET_TEXTURE, NULL, &Handle, BitmapHeader.DataOffset);
+         AddToAtlas(&Assetpack, Asset, ASSET_TEXTURE, NULL, Handle, BitmapHeader.DataOffset);
          
          AddTag(&Assetpack, Asset, TAG_BLOCK_TEXTURE, &I);
       }
       
       for(u32 I = 0; I < GUI_TEXTURE_Count; I++) {
          bitmap_header BitmapHeader;
-         file_handle Handle;
+         file_handle *Handle;
          Platform_OpenFile(&Handle, GUITexturePaths[I], FILE_READ);
          Platform_ReadFile(Handle, &BitmapHeader, sizeof(bitmap_header), 0);
          
@@ -1008,7 +1008,7 @@ File_CreateAssetpack(
          Asset->Header.Size = (v2u32){BitmapHeader.Width, BitmapHeader.Height};
          
          u32 HandleIndex = 0;
-         AddToAtlas(&Assetpack, Asset, ASSET_TEXTURE, NULL, &Handle, BitmapHeader.DataOffset);
+         AddToAtlas(&Assetpack, Asset, ASSET_TEXTURE, NULL, Handle, BitmapHeader.DataOffset);
          
          AddTag(&Assetpack, Asset, TAG_UI_TEXTURE, &I);
       }

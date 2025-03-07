@@ -34,7 +34,7 @@
    #include "opengl.h"
    #include "mesh.c"
    
-   #ifdef INCLUDE_HEADER
+   #if defined(INCLUDE_HEADER) && !defined(NO_SYMBOLS)
       typedef enum shader_id {
          ShaderID_P3,
          ShaderID_PC2,
