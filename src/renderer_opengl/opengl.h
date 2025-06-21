@@ -76,16 +76,15 @@
 #define GL_STENICL_BUFFER_BIT 0x00000400
 #define GL_COLOR_BUFFER_BIT   0x00004000
 
-
-
-
-
-
-typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32 Severity, s32 Length, c08 *Message, vptr UserParam);
-
-
-
-
+typedef void(API_ENTRY func_OpenGL_DebugProc)(
+	u32	 Source,
+	u32	 Type,
+	u32	 ID,
+	u32	 Severity,
+	s32	 Length,
+	c08 *Message,
+	vptr UserParam
+);
 
 #define OPENGL_FUNCS_TYPE_1 \
    IMPORT(void, BindTexture,   u32 Target, u32 Texture) \
@@ -104,7 +103,7 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
    IMPORT(void, PolygonMode,   u32 Face, u32 Mode) \
    IMPORT(void, Scissor,       s32 X, s32 Y, s32 Width, s32 Height) \
    IMPORT(void, TexParameteri, u32 Target, u32 Name, s32 Param) \
-   IMPORT(void, Viewport,      s32 X, s32 Y, s32 Width, s32 Height) \
+   IMPORT(void, Viewport,      s32 X, s32 Y, s32 Width, s32 Height)
 
 #define OPENGL_FUNCS_TYPE_2 \
    IMPORT(void, ActiveTexture,               u32 Texture) \
@@ -150,7 +149,7 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
    IMPORT(void, UniformMatrix4fv,            s32 Location, u32 Count, b08 Transpose, m4x4r32 Matrix) \
    IMPORT(void, UseProgram,                  u32 Program) \
    IMPORT(void, VertexAttribPointer,         u32 Index, s32 Size, u32 Type, b08 Normalized, s32 Stride, vptr Offset) \
-   IMPORT(void, VertexAttribIPointer,        u32 Index, s32 Size, u32 Type, s32 Stride, vptr Offset) \
+   IMPORT(void, VertexAttribIPointer,        u32 Index, s32 Size, u32 Type, s32 Stride, vptr Offset)
 
 #define OPENGL_FUNCS OPENGL_FUNCS_TYPE_1 OPENGL_FUNCS_TYPE_2
 
@@ -160,19 +159,19 @@ typedef void (API_ENTRY func_OpenGL_DebugProc)(u32 Source, u32 Type, u32 ID, u32
 #include <x.h>
 
 typedef struct opengl_funcs {
-   #define IMPORT(ReturnType, Name, ...) \
+#define IMPORT(ReturnType, Name, ...) \
       func_OpenGL_##Name *OpenGL_##Name;
-   #define X OPENGL_FUNCS
-   #include <x.h>
-   
-   b08 Initialized;
+#define X OPENGL_FUNCS
+#include <x.h>
+
+	b08 Initialized;
 } opengl_funcs;
 
 #if defined(_RENDERER_MODULE)
-   #define IMPORT(ReturnType, Name, ...) \
+#define IMPORT(ReturnType, Name, ...) \
       global func_OpenGL_##Name *OpenGL_##Name;
-   #define X OPENGL_FUNCS
-   #include <x.h>
+#define X OPENGL_FUNCS
+#include <x.h>
 #endif
 
 #endif
