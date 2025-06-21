@@ -19,6 +19,7 @@
 #include <platform/platform.h>
 #include <renderer.h>
 #include <base/main.c>
+#include <wayland/main.c>
 #include "main.c"
 #undef INCLUDE_HEADER
 
@@ -99,11 +100,11 @@ typedef struct renderer_state {
 external API_EXPORT void
 Load(platform_state *Platform, platform_module *Module)
 {
-	_F = (renderer_funcs){
+	_F = (renderer_funcs) {
 #define EXPORT(R, N, ...) N,
 #define X RENDERER_FUNCS
 #include <x.h>
-         };
+	};
 
 	Module->Data  = &_G;
 	Module->Funcs = &_F;
@@ -124,11 +125,17 @@ Load(platform_state *Platform, platform_module *Module)
 #define X GAME_FUNCS
 #include <x.h>
 
-	Platform_CreateWindow();
-	opengl_funcs *OpenGLFuncs = Platform_LoadOpenGL();
-#define IMPORT(R, N, ...) OpenGL_##N = OpenGLFuncs->OpenGL_##N;
-#define X OPENGL_FUNCS
+	platform_module *WaylandModule = Platform_LoadModule("wayland", (vptr) 0x7DB300000000);
+	wayland_funcs	*WaylandFuncs  = WaylandModule->Funcs;
+#define EXPORT(R, N, ...) N = WaylandFuncs->N;
+#define X WAYLAND_FUNCS
 #include <x.h>
+
+	// 	Platform_CreateWindow();
+	// 	opengl_funcs *OpenGLFuncs = Platform_LoadOpenGL();
+	// #define IMPORT(R, N, ...) OpenGL_##N = OpenGLFuncs->OpenGL_##N;
+	// #define X OPENGL_FUNCS
+	// #include <x.h>
 }
 
 internal void API_ENTRY

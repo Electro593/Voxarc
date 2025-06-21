@@ -121,11 +121,11 @@ game_funcs				_F;
 external API_EXPORT void
 Load(platform_state *Platform, platform_module *Module)
 {
-	_F = (game_funcs){
+	_F = (game_funcs) {
 #define EXPORT(R, N, ...) N,
 #define X GAME_FUNCS
 #include <x.h>
-			};
+	};
 
 	Module->Data  = &_G;
 	Module->Funcs = &_F;
