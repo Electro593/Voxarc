@@ -136,13 +136,13 @@
 			#define X PLATFORM_FUNCS
 			#include <x.h>
 
-			platform_module *UtilModule = Platform_LoadModule("util");
+			platform_module *UtilModule = Platform_LoadModule("util", (vptr) 0x7DB000000000);
 			util_funcs *UtilFuncs = UtilModule->Funcs;
 			#define EXPORT(R, N, ...) N = UtilFuncs->N;
 			#define X UTIL_FUNCS
 			#include <x.h>
 
-			RendererModule = Platform_LoadModule(RENDERER_NAME);
+			RendererModule = Platform_LoadModule(RENDERER_NAME, (vptr) 0x7DB200000000);
 			Renderer = RendererModule->Data;
 			renderer_funcs *RendererFuncs = RendererModule->Funcs;
 			#define EXPORT(R, N, ...) N = RendererFuncs->N;
