@@ -36,6 +36,9 @@ global renderer_funcs _F;
 #include "mesh.c"
 
 #if defined(INCLUDE_HEADER) && !defined(NO_SYMBOLS)
+
+#define RENDERER_OPENGL_MODULE_NAME CStringL("renderer_opengl")
+
 typedef enum shader_id {
 	ShaderID_P3,
 	ShaderID_PC2,
@@ -113,25 +116,24 @@ Load(platform_state *Platform, platform_module *Module)
 #define X PLATFORM_FUNCS
 #include <x.h>
 
-	platform_module *UtilModule = Platform_LoadModule("util");
+	platform_module *UtilModule = Platform_LoadModule(UTIL_MODULE_NAME);
 	util_funcs		*UtilFuncs	= UtilModule->Funcs;
 #define EXPORT(R, N, ...) N = UtilFuncs->N;
 #define X UTIL_FUNCS
 #include <x.h>
 
-	platform_module *GameModule = Platform_LoadModule("base");
+	platform_module *GameModule = Platform_LoadModule(BASE_MODULE_NAME);
 	game_funcs		*GameFuncs	= GameModule->Funcs;
 #define EXPORT(R, N, ...) N = GameFuncs->N;
 #define X GAME_FUNCS
 #include <x.h>
 
-	platform_module *WaylandModule = Platform_LoadModule("wayland");
+	platform_module *WaylandModule = Platform_LoadModule(WAYLAND_MODULE_NAME);
 	wayland_funcs	*WaylandFuncs  = WaylandModule->Funcs;
 #define EXPORT(R, N, ...) N = WaylandFuncs->N;
 #define X WAYLAND_FUNCS
 #include <x.h>
 
-	// 	Platform_CreateWindow();
 	// 	opengl_funcs *OpenGLFuncs = Platform_LoadOpenGL();
 	// #define IMPORT(R, N, ...) OpenGL_##N = OpenGLFuncs->OpenGL_##N;
 	// #define X OPENGL_FUNCS
@@ -468,6 +470,9 @@ Init(platform_state *Platform)
 	renderer_state *Renderer   = &_G;
 	heap		   *Heap	   = Renderer->Heap;
 	v2u32			WindowSize = Platform->WindowSize;
+
+	STOP;
+	Wayland_CreateWindow("Voxarc", 800, 600);
 
 #if defined(_DEBUG)
 	OpenGL_Enable(GL_DEBUG_OUTPUT);

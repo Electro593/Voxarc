@@ -32,6 +32,9 @@ extern game_funcs _F;
 #include <base/ui.c>
 
 #if defined(INCLUDE_HEADER) && !defined(NO_SYMBOLS)
+
+#define BASE_MODULE_NAME CStringL("base")
+
 #define GAME_FUNCS \
 			GAME_FILE_FUNCS \
 			WORLD_FUNCS \
@@ -93,12 +96,6 @@ typedef struct game_funcs {
 #include <x.h>
 } game_funcs;
 
-#if defined(_OPENGL)
-#define RENDERER_NAME "renderer_opengl"
-#else
-#define RENDERER_NAME "renderer"
-#endif
-
 #if defined(_BASE_MODULE)
 #define EXPORT(R, N, ...) \
 				internal R N(__VA_ARGS__);
@@ -134,13 +131,13 @@ Load(platform_state *Platform, platform_module *Module)
 #define X PLATFORM_FUNCS
 #include <x.h>
 
-	platform_module *UtilModule = Platform_LoadModule("util");
+	platform_module *UtilModule = Platform_LoadModule(UTIL_MODULE_NAME);
 	util_funcs		*UtilFuncs	= UtilModule->Funcs;
 #define EXPORT(R, N, ...) N = UtilFuncs->N;
 #define X UTIL_FUNCS
 #include <x.h>
 
-	RendererModule				  = Platform_LoadModule(RENDERER_NAME);
+	RendererModule				  = Platform_LoadModule(RENDERER_OPENGL_MODULE_NAME);
 	Renderer					  = RendererModule->Data;
 	renderer_funcs *RendererFuncs = RendererModule->Funcs;
 #define EXPORT(R, N, ...) N = RendererFuncs->N;

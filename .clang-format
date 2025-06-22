@@ -100,7 +100,7 @@ DisableFormat: false
 # EmptyLineAfterAccessModifier:
 # EmptyLineBeforeAccessModifier:
 # FixNamespaceComments:
-# ForEachMacros:
+ForEachMacros: [HASHMAP_FOREACH]
 # IfMacros:
 IncludeBlocks: Preserve
 # IncludeCategories:
