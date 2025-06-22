@@ -234,9 +234,9 @@ FindTagEntry(assetpack Assetpack, assetpack_tag_id TagID, vptr TagValue)
 	assetpack_registry *Registry = FindTagRegistry(Assetpack, TagID);
 	if (!Registry) return NULL;
 
-	cmp_func *Func	= NULL;
-	u64		  Param = 0;
-	type	  Type	= MakeMemberType(Registry->Type.ID, 0, sizeof(assetpack_tag));
+	cmp_func Func  = NULL;
+	usize	 Param = 0;
+	type	 Type  = MakeMemberType(Registry->Type.ID, 0, sizeof(assetpack_tag));
 	if (Registry->Type.ID == TYPEID_STR) Func = CompareAssetpackTagString;
 
 	return BinarySearchArray(
@@ -611,7 +611,7 @@ AddTag(assetpack_gen *Assetpack, assetpack_asset *Asset, assetpack_tag_id TagID,
 	u32			   Index;
 	u32			   Count = Registry->TagCount;
 	assetpack_tag *Tag;
-	cmp_func	  *Func	 = NULL;
+	cmp_func	   Func	 = NULL;
 	vptr		   Param = &Assetpack->TagData->Data;
 	type		   Type	 = MakeMemberType(Registry->Type.ID, 0, sizeof(assetpack_tag));
 	if (Registry->Type.ID == TYPEID_STR) Func = CompareAssetpackTagString;

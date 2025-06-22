@@ -54,7 +54,25 @@ AlwaysBreakBeforeMultilineStrings: true
 BinPackArguments: false
 BinPackParameters: OnePerLine
 BitFieldColonSpacing: Both
-# BraceWrapping:
+BraceWrapping:
+  AfterCaseLabel: false
+  # AfterClass:
+  AfterControlStatement: MultiLine
+  AfterEnum: false
+  AfterFunction: true
+  # AfterNamespace:
+  # AfterObjCDeclaration:
+  AfterStruct: false
+  AfterUnion: false
+  # AfterExternBlock:
+  # BeforeCatch:
+  BeforeElse: false
+  # BeforeLambdaBody:
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  # SplitEmptyNamespace:
 BracedInitializerIndentWidth: 4
 BreakAdjacentStringLiterals: true
 # BreakAfterAttributes:
@@ -62,7 +80,7 @@ BreakAdjacentStringLiterals: true
 BreakAfterReturnType: AllDefinitions
 # BreakArrays:
 BreakBeforeBinaryOperators: All
-BreakBeforeBraces: Linux
+BreakBeforeBraces: Custom
 # BreakBeforeConceptDeclarations:
 BreakBeforeInlineASMColon: OnlyMultiline
 BreakBeforeTernaryOperators: true

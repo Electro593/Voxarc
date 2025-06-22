@@ -113,19 +113,19 @@ Load(platform_state *Platform, platform_module *Module)
 #define X PLATFORM_FUNCS
 #include <x.h>
 
-	platform_module *UtilModule = Platform_LoadModule("util", (vptr) 0x7DB000000000);
+	platform_module *UtilModule = Platform_LoadModule("util");
 	util_funcs		*UtilFuncs	= UtilModule->Funcs;
 #define EXPORT(R, N, ...) N = UtilFuncs->N;
 #define X UTIL_FUNCS
 #include <x.h>
 
-	platform_module *GameModule = Platform_LoadModule("base", (vptr) 0x7DB100000000);
+	platform_module *GameModule = Platform_LoadModule("base");
 	game_funcs		*GameFuncs	= GameModule->Funcs;
 #define EXPORT(R, N, ...) N = GameFuncs->N;
 #define X GAME_FUNCS
 #include <x.h>
 
-	platform_module *WaylandModule = Platform_LoadModule("wayland", (vptr) 0x7DB300000000);
+	platform_module *WaylandModule = Platform_LoadModule("wayland");
 	wayland_funcs	*WaylandFuncs  = WaylandModule->Funcs;
 #define EXPORT(R, N, ...) N = WaylandFuncs->N;
 #define X WAYLAND_FUNCS
@@ -213,7 +213,8 @@ Renderer_LoadShader(renderer_state *Renderer, shader_id ShaderID, mesh_flags Fla
 
 	if (!Shader->Initialized
 		|| Platform_CmpFileTime(Shader->VertLastModified, VertTime) == LESS
-		|| Platform_CmpFileTime(Shader->FragLastModified, FragTime) == LESS) {
+		|| Platform_CmpFileTime(Shader->FragLastModified, FragTime) == LESS)
+	{
 		Shader->VertLastModified = VertTime;
 		Shader->FragLastModified = FragTime;
 
@@ -417,7 +418,7 @@ Renderer_Draw(platform_state *Platform, game_state *Game, renderer_state *Render
 		Game->Acceleration.Y,
 		Game->Acceleration.Z,
 		Game->AimBlockValid ? CFStringL("%d, %d, %d", Game->AimBlock.X, Game->AimBlock.Y, Game->AimBlock.Z)
-							: CLStringL("None"),
+							: CStringL("None"),
 		Game->Dir.X,
 		Game->Dir.Y,
 		Game->TimeOfDay,
@@ -537,12 +538,10 @@ Init(platform_state *Platform)
 
 external API_EXPORT void
 Update(platform_state *Platform)
-{
-}
+{ }
 
 external API_EXPORT void
 Unload(platform_state *Platform)
-{
-}
+{ }
 #endif
 #endif
