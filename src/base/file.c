@@ -17,7 +17,7 @@ typedef enum asset_type {
 	ASSET_ATLAS,
 } asset_type;
 
-#define GUI_TEXTURE_PREFIX "assets\\gui\\"
+#define GUI_TEXTURE_PREFIX "assets/gui/"
 
 #define GUI_TEXTURES \
    ENUM(BLOCK_HIGHLIGHT, block_highlight)
@@ -491,7 +491,7 @@ EndAssetpack(assetpack_gen *Assetpack, c08 *FileName)
 
 	// TODO: This doesn't work with additional asset data
 	file_handle FileHandle;
-	Platform_OpenFile(&FileHandle, "assets\\pack.bmp", FILE_WRITE);
+	Platform_OpenFile(&FileHandle, "assets/pack.bmp", FILE_WRITE);
 	{
 		Platform_WriteFile(FileHandle, &BitmapHeader, sizeof(bitmap_header), 0);
 		Platform_WriteFile(
@@ -892,7 +892,8 @@ MakeAtlas(assetpack_gen *Assetpack, v4u08 BorderColor)
 				if (Node1->Pos.X <= Node2->Pos.X
 					&& Node2Pos2.X <= Node1Pos2.X
 					&& Node1->Pos.Y <= Node2->Pos.Y
-					&& Node2Pos2.Y <= Node1Pos2.Y) {
+					&& Node2Pos2.Y <= Node1Pos2.Y)
+				{
 					Node2->Prev->Next = Node2->Next;
 					Node2->Next->Prev = Node2->Prev;
 				}
@@ -922,8 +923,8 @@ File_CreateAssetpack(c08 *FileName, heap *Heap, r32 FontSize)
 	font_style FontStyle = FONT_MONOSPACE;
 	string	   _FontName = CString("arial");
 	string	  *FontName	 = &_FontName;
-	u08		  *FontData	 = (u08 *) File_Read("assets\\fonts\\arial.ttf", 0, 0).Text;
-	font	   Font		 = Font_Init(FontData);
+	u08 *FontData = (u08 *) File_Read("assets/fonts/arial.ttf", 0, 0).Text;
+	font Font	  = Font_Init(FontData);
 
 	r32 UnitScale = 1.0f / (Font.hhea->Ascent - Font.hhea->Descent);
 

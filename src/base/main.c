@@ -164,8 +164,8 @@ Init(platform_state *Platform)
 	random Random = Rand_Init(0);
 	// random Random = Rand_Init(Intrin_ReadTimeStampCounter());
 
-	// File_CreateAssetpack("assets\\0.pack", RendererHeap, 64.0f);
-	Renderer->Assetpack = File_LoadAssetpack("assets\\0.pack", RendererHeap);
+	// File_CreateAssetpack("assets/0.pack", RendererHeap, 64.0f);
+	// Renderer->Assetpack = File_LoadAssetpack("assets/0.pack", RendererHeap);
 
 	Game->Flying	   = TRUE;
 	Game->Dir		   = (v3r32) {0, 0, 0};

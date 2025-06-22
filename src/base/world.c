@@ -9,7 +9,7 @@
 
 #ifdef INCLUDE_HEADER
 
-#define BLOCK_TEXTURE_PREFIX "assets\\blocks\\"
+#define BLOCK_TEXTURE_PREFIX "assets/blocks/"
 
 #define BLOCK_TYPES \
    ENUM(TEST,  test) \
