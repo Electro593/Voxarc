@@ -471,7 +471,6 @@ Init(platform_state *Platform)
 	heap		   *Heap	   = Renderer->Heap;
 	v2u32			WindowSize = Platform->WindowSize;
 
-	STOP;
 	Wayland_CreateWindow("Voxarc", 800, 600);
 
 #if defined(_DEBUG)
