@@ -51,18 +51,10 @@ typedef enum shader_id {
 } shader_id;
 
 c08 *ShaderPaths[] = {
-	SHADERS_DIR "p.vert",
-	SHADERS_DIR "p.frag",
-	SHADERS_DIR "pc2.vert",
-	SHADERS_DIR "pc2.frag",
-	SHADERS_DIR "pc3.vert",
-	SHADERS_DIR "pc3.frag",
-	SHADERS_DIR "pt.vert",
-	SHADERS_DIR "pt.frag",
-	SHADERS_DIR "glyph.vert",
-	SHADERS_DIR "glyph.frag",
-	SHADERS_DIR "pnc3.vert",
-	SHADERS_DIR "pnc3.frag",
+	SHADERS_DIR "p.vert",	  SHADERS_DIR "p.frag",	   SHADERS_DIR "pc2.vert",
+	SHADERS_DIR "pc2.frag",	  SHADERS_DIR "pc3.vert",  SHADERS_DIR "pc3.frag",
+	SHADERS_DIR "pt.vert",	  SHADERS_DIR "pt.frag",   SHADERS_DIR "glyph.vert",
+	SHADERS_DIR "glyph.frag", SHADERS_DIR "pnc3.vert", SHADERS_DIR "pnc3.frag",
 };
 
 typedef struct shader {
@@ -129,10 +121,12 @@ Load(platform_state *Platform, platform_module *Module)
 #include <x.h>
 
 	platform_module *WaylandModule = Platform_LoadModule(WAYLAND_MODULE_NAME);
-	wayland_funcs	*WaylandFuncs  = WaylandModule->Funcs;
+	if (WaylandModule && WaylandModule->Funcs) {
+		wayland_funcs *WaylandFuncs = WaylandModule->Funcs;
 #define EXPORT(R, N, ...) N = WaylandFuncs->N;
 #define X WAYLAND_FUNCS
 #include <x.h>
+	}
 
 	// 	opengl_funcs *OpenGLFuncs = Platform_LoadOpenGL();
 	// #define IMPORT(R, N, ...) OpenGL_##N = OpenGLFuncs->OpenGL_##N;
@@ -141,7 +135,15 @@ Load(platform_state *Platform, platform_module *Module)
 }
 
 internal void API_ENTRY
-OpenGL_DebugCallback(u32 Source, u32 Type, u32 ID, u32 Severity, s32 Length, c08 *Message, vptr UserParam)
+OpenGL_DebugCallback(
+	u32	 Source,
+	u32	 Type,
+	u32	 ID,
+	u32	 Severity,
+	s32	 Length,
+	c08 *Message,
+	vptr UserParam
+)
 {
 	Error(Message);
 	// Assert(FALSE);
@@ -224,8 +226,8 @@ Renderer_LoadShader(renderer_state *Renderer, shader_id ShaderID, mesh_flags Fla
 
 		Shader->Program = Renderer_LoadProgram(VertName, FragName);
 
-		assetpack_atlas Atlas
-			= FindFirstAssetFromExactTag(Renderer->Assetpack, TAG_ATLAS_DESC, &(u32) {0})->Atlas;
+		assetpack_atlas Atlas =
+			FindFirstAssetFromExactTag(Renderer->Assetpack, TAG_ATLAS_DESC, &(u32) { 0 })->Atlas;
 		m4x4r32 VPMatrix = M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
 
 		if (!Shader->Initialized) {
@@ -235,10 +237,26 @@ Renderer_LoadShader(renderer_state *Renderer, shader_id ShaderID, mesh_flags Fla
 			Shader->Initialized = TRUE;
 
 			if (T && !UI) {
-				OpenGL_SamplerParameteri(Shader->Mesh.SamplerObject, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-				OpenGL_SamplerParameteri(Shader->Mesh.SamplerObject, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-				OpenGL_SamplerParameteri(Shader->Mesh.SamplerObject, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-				OpenGL_SamplerParameteri(Shader->Mesh.SamplerObject, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+				OpenGL_SamplerParameteri(
+					Shader->Mesh.SamplerObject,
+					GL_TEXTURE_WRAP_T,
+					GL_CLAMP_TO_EDGE
+				);
+				OpenGL_SamplerParameteri(
+					Shader->Mesh.SamplerObject,
+					GL_TEXTURE_WRAP_S,
+					GL_CLAMP_TO_EDGE
+				);
+				OpenGL_SamplerParameteri(
+					Shader->Mesh.SamplerObject,
+					GL_TEXTURE_MIN_FILTER,
+					GL_NEAREST
+				);
+				OpenGL_SamplerParameteri(
+					Shader->Mesh.SamplerObject,
+					GL_TEXTURE_MAG_FILTER,
+					GL_NEAREST
+				);
 				OpenGL_TexImage3D(
 					GL_TEXTURE_2D_ARRAY,
 					0,
@@ -254,24 +272,44 @@ Renderer_LoadShader(renderer_state *Renderer, shader_id ShaderID, mesh_flags Fla
 				OpenGL_BindSampler(0, Shader->Mesh.SamplerObject);
 
 				Heap_Resize(Shader->Mesh.Storage, Renderer->Assetpack.Header->AssetsSize);
-				Mem_Cpy(Shader->Mesh.Storage->Data, Renderer->Assetpack.Assets, Shader->Mesh.Storage->Size);
+				Mem_Cpy(
+					Shader->Mesh.Storage->Data,
+					Renderer->Assetpack.Assets,
+					Shader->Mesh.Storage->Size
+				);
 				Shader->Mesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
 			} else if (UI) {
 				Shader->Mesh.TextureSSBO = Renderer->Shaders[ShaderID_PT3].Mesh.TextureSSBO;
 				Shader->Mesh.Atlases	 = Renderer->Shaders[ShaderID_PT3].Mesh.Atlases;
 				Shader->Mesh.Storage	 = Renderer->Shaders[ShaderID_PT3].Mesh.Storage;
 
-				OpenGL_SamplerParameteri(Shader->Mesh.SamplerObject, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-				OpenGL_SamplerParameteri(Shader->Mesh.SamplerObject, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-				OpenGL_SamplerParameteri(Shader->Mesh.SamplerObject, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-				OpenGL_SamplerParameteri(Shader->Mesh.SamplerObject, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				OpenGL_SamplerParameteri(
+					Shader->Mesh.SamplerObject,
+					GL_TEXTURE_WRAP_T,
+					GL_CLAMP_TO_EDGE
+				);
+				OpenGL_SamplerParameteri(
+					Shader->Mesh.SamplerObject,
+					GL_TEXTURE_WRAP_S,
+					GL_CLAMP_TO_EDGE
+				);
+				OpenGL_SamplerParameteri(
+					Shader->Mesh.SamplerObject,
+					GL_TEXTURE_MIN_FILTER,
+					GL_LINEAR
+				);
+				OpenGL_SamplerParameteri(
+					Shader->Mesh.SamplerObject,
+					GL_TEXTURE_MAG_FILTER,
+					GL_LINEAR
+				);
 			}
 
 			if (FLAG_SET(Flags, MESH_HAS_MATERIALS)) {
 				material Material = {
-					(v3u08) {150, 150, 160},
-					(v3u08) {170, 170, 170},
-					(v3u08) {200, 200, 200},
+					(v3u08) { 150, 150, 160 },
+					(v3u08) { 170, 170, 170 },
+					(v3u08) { 200, 200, 200 },
 					2,
 					0
 				};
@@ -346,24 +384,13 @@ Renderer_Resize(v2u32 NewSize, m4x4r32 *OrthographicMatrix, m4x4r32 *Perspective
 	r32 FarZ		= 256;
 	r32 ZRange		= NearZ - FarZ;
 
-	*PerspectiveMatrix = (m4x4r32) {CotHalfFOV / AspectRatio,
-									0,
-									0,
-									0,
-									0,
-									CotHalfFOV,
-									0,
-									0,
-									0,
-									0,
-									(-NearZ - FarZ) / ZRange,
-									2 * FarZ * NearZ / ZRange,
-									0,
-									0,
-									1,
-									0};
+	*PerspectiveMatrix = (m4x4r32) {
+		CotHalfFOV / AspectRatio,  0, 0, 0, 0, CotHalfFOV, 0, 0, 0, 0, (-NearZ - FarZ) / ZRange,
+		2 * FarZ * NearZ / ZRange, 0, 0, 1, 0
+	};
 
-	*OrthographicMatrix = (m4x4r32) {1 / AspectRatio, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+	*OrthographicMatrix =
+		(m4x4r32) { 1 / AspectRatio, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 };
 
 	OpenGL_Viewport(Pos.X, Pos.Y, Size.X, Size.Y);
 	OpenGL_Scissor(Pos.X, Pos.Y, Size.X, Size.Y);
@@ -419,8 +446,9 @@ Renderer_Draw(platform_state *Platform, game_state *Game, renderer_state *Render
 		Game->Acceleration.X,
 		Game->Acceleration.Y,
 		Game->Acceleration.Z,
-		Game->AimBlockValid ? CFStringL("%d, %d, %d", Game->AimBlock.X, Game->AimBlock.Y, Game->AimBlock.Z)
-							: CStringL("None"),
+		Game->AimBlockValid
+			? CFStringL("%d, %d, %d", Game->AimBlock.X, Game->AimBlock.Y, Game->AimBlock.Z)
+			: CStringL("None"),
 		Game->Dir.X,
 		Game->Dir.Y,
 		Game->TimeOfDay,
@@ -432,7 +460,8 @@ Renderer_Draw(platform_state *Platform, game_state *Game, renderer_state *Render
 	ui_style InheritedStyle	 = GetInheritedStyle(Componenet);
 
 	ui_string	UIString = MakeUIString(Renderer->Heap, String, InheritedStyle);
-	mesh_object Object = MakeUIStringObject(Renderer->Heap, UIString, (v2u32) {10, 0}, Renderer->WindowSize);
+	mesh_object Object =
+		MakeUIStringObject(Renderer->Heap, UIString, (v2u32) { 10, 0 }, Renderer->WindowSize);
 	FreeUIString(UIString);
 
 	Object.Index	= Renderer->ObjectIndex;
@@ -452,10 +481,20 @@ Renderer_Draw(platform_state *Platform, game_state *Game, renderer_state *Render
 	Mesh_Draw(&Renderer->Shaders[ShaderID_PNM3].Mesh, GL_TRIANGLES);
 
 	if (Game->AimBlockValid)
-		Mesh_DrawPartial(&Renderer->Shaders[ShaderID_P3].Mesh, GL_LINES, Game->AimBlockObjectIndex, 1);
+		Mesh_DrawPartial(
+			&Renderer->Shaders[ShaderID_P3].Mesh,
+			GL_LINES,
+			Game->AimBlockObjectIndex,
+			1
+		);
 
 	if (Platform->CursorIsDisabled)
-		Mesh_DrawPartial(&Renderer->Shaders[ShaderID_PC2].Mesh, GL_TRIANGLES, Game->CrosshairObjectIndex, 1);
+		Mesh_DrawPartial(
+			&Renderer->Shaders[ShaderID_PC2].Mesh,
+			GL_TRIANGLES,
+			Game->CrosshairObjectIndex,
+			1
+		);
 
 	OpenGL_Disable(GL_DEPTH_TEST);
 	Mesh_Draw(GlyphMesh, GL_TRIANGLES);
@@ -477,9 +516,23 @@ Init(platform_state *Platform)
 	OpenGL_Enable(GL_DEBUG_OUTPUT);
 	OpenGL_DebugMessageCallback(OpenGL_DebugCallback, NULL);
 	u32 ID = 131185;
-	OpenGL_DebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DONT_CARE, 1, &ID, FALSE);
+	OpenGL_DebugMessageControl(
+		GL_DEBUG_SOURCE_API,
+		GL_DEBUG_TYPE_OTHER,
+		GL_DONT_CARE,
+		1,
+		&ID,
+		FALSE
+	);
 	ID = 131218;
-	OpenGL_DebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_PERFORMANCE, GL_DONT_CARE, 1, &ID, FALSE);
+	OpenGL_DebugMessageControl(
+		GL_DEBUG_SOURCE_API,
+		GL_DEBUG_TYPE_PERFORMANCE,
+		GL_DONT_CARE,
+		1,
+		&ID,
+		FALSE
+	);
 #endif
 
 	OpenGL_Enable(GL_DEPTH_TEST);
@@ -501,8 +554,16 @@ Init(platform_state *Platform)
 
 	Renderer_LoadShader(Renderer, ShaderID_P3, 0);
 	Renderer_LoadShader(Renderer, ShaderID_PC2, MESH_HAS_ELEMENTS | MESH_HAS_COLORS);
-	Renderer_LoadShader(Renderer, ShaderID_PC3, MESH_HAS_ELEMENTS | MESH_HAS_COLORS | MESH_HAS_PERSPECTIVE);
-	Renderer_LoadShader(Renderer, ShaderID_PT3, MESH_HAS_ELEMENTS | MESH_HAS_TEXTURES | MESH_HAS_PERSPECTIVE);
+	Renderer_LoadShader(
+		Renderer,
+		ShaderID_PC3,
+		MESH_HAS_ELEMENTS | MESH_HAS_COLORS | MESH_HAS_PERSPECTIVE
+	);
+	Renderer_LoadShader(
+		Renderer,
+		ShaderID_PT3,
+		MESH_HAS_ELEMENTS | MESH_HAS_TEXTURES | MESH_HAS_PERSPECTIVE
+	);
 	Renderer_LoadShader(
 		Renderer,
 		ShaderID_Glyph,
@@ -523,14 +584,14 @@ Init(platform_state *Platform)
 	ui_component *Root			= Components + 0;
 	*Root						= DEFAULT_COMPONENT;
 	Root->Style.Visible			= FALSE;
-	Root->Style.Size			= (v2u32) {(u32) -1, (u32) -1};
-	Root->Style.Padding			= (v4u32) {20, 20, 20, 20};
+	Root->Style.Size			= (v2u32) { (u32) -1, (u32) -1 };
+	Root->Style.Padding			= (v4u32) { 20, 20, 20, 20 };
 	Root->Style.ZIndex			= 0;
 	Root->Style.FontSize		= 30;
 	Root->Style.TabSize			= 80;
-	Root->Style.BackgroundColor = (v4u08) {100, 100, 100, 255};
-	Root->Style.BorderColor		= (v4u08) {20, 20, 20, 255};
-	Root->Style.BorderSize		= (v4u32) {2, 2, 2, 2};
+	Root->Style.BackgroundColor = (v4u08) { 100, 100, 100, 255 };
+	Root->Style.BorderColor		= (v4u08) { 20, 20, 20, 255 };
+	Root->Style.BorderSize		= (v4u32) { 2, 2, 2, 2 };
 	Root->Style.Font			= &Renderer->Font;
 
 	ui_component *DebugText = Components + 1;
