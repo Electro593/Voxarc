@@ -11,8 +11,8 @@ struct material {
 	float Shininess;
 };
 
-layout(std430, binding = 1) readonly buffer MatrixStorage { mat4 Matrices[]; }
-layout(std430, binding = 2) readonly buffer MaterialStorage { uint Materials[]; }
+layout(std430, binding = 1) readonly buffer MatrixStorage { mat4 Matrices[]; };
+layout(std430, binding = 2) readonly buffer MaterialStorage { uint Materials[]; };
 
 uniform mat4 VPMatrix;
 

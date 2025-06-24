@@ -11,8 +11,8 @@ struct texture_data {
 	uint  AtlasIndex;
 };
 
-layout(std430, binding = 0) readonly buffer TextureStorage { uint Assets[]; }
-layout(std430, binding = 1) readonly buffer MatrixStorage { mat4 Matrices[]; }
+layout(std430, binding = 0) readonly buffer TextureStorage { uint Assets[]; };
+layout(std430, binding = 1) readonly buffer MatrixStorage { mat4 Matrices[]; };
 
 uniform uvec2 AtlasSize;
 uniform mat4  VPMatrix;

@@ -15,7 +15,7 @@ Mesh_EncodePosition(v3r32 P)
 	P		= V3r32_Clamp(P, -1, 1);
 	P		= V3r32_MulS(P, S16_MAX);
 	v3s32 I = V3r32_ToV3s32(P);
-	v4s16 E = {I.X, I.Y, I.Z, S16_MAX};
+	v4s16 E = { I.X, I.Y, I.Z, S16_MAX };
 	return E;
 }
 
@@ -304,6 +304,7 @@ Mesh_UpdateVertices(mesh *Mesh, mesh_object Object)
 	if (DeltaSize > 0) {
 		u08	 *PrevData = Mesh->Vertices->Data;
 		heap *Heap	   = Heap_GetHeap(Mesh->Vertices);
+		// TODO: Can this overwrite itself?
 		Heap_FreeBlock(Heap, Mesh->Vertices);
 		Heap_AllocateBlock(Heap, Mesh->Vertices, Mesh->Vertices->Size + DeltaSize);
 		Mem_Cpy(Mesh->Vertices->Data, PrevData, CurrOffset);
@@ -335,7 +336,12 @@ Mesh_UpdateVertices(mesh *Mesh, mesh_object Object)
 	} else {
 		s32 Size;
 		OpenGL_GetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &Size);
-		OpenGL_BufferSubData(GL_ARRAY_BUFFER, CurrOffset, NewSize, (u08 *) Mesh->Vertices->Data + CurrOffset);
+		OpenGL_BufferSubData(
+			GL_ARRAY_BUFFER,
+			CurrOffset,
+			NewSize,
+			(u08 *) Mesh->Vertices->Data + CurrOffset
+		);
 	}
 }
 
@@ -388,11 +394,18 @@ Mesh_UpdateIndices(mesh *Mesh, mesh_object Object)
 internal void
 Mesh_UpdateMatrix(mesh *Mesh, mesh_object Object)
 {
-	m4x4r32 Matrix
-		= M4x4r32_Mul(M4x4r32_Mul(Object.TranslationMatrix, Object.RotationMatrix), Object.ScalingMatrix);
+	m4x4r32 Matrix = M4x4r32_Mul(
+		M4x4r32_Mul(Object.TranslationMatrix, Object.RotationMatrix),
+		Object.ScalingMatrix
+	);
 	((m4x4r32 *) Mesh->Matrices->Data)[Object.Index] = Matrix;
 	OpenGL_BindBuffer(GL_SHADER_STORAGE_BUFFER, Mesh->MatrixSSBO);
-	OpenGL_BufferSubData(GL_SHADER_STORAGE_BUFFER, Object.Index * sizeof(m4x4r32), sizeof(m4x4r32), Matrix.E);
+	OpenGL_BufferSubData(
+		GL_SHADER_STORAGE_BUFFER,
+		Object.Index * sizeof(m4x4r32),
+		sizeof(m4x4r32),
+		Matrix.E
+	);
 }
 
 // TODO: Make this a per-object update for shrinking
@@ -412,24 +425,57 @@ Mesh_Update(mesh *Mesh)
 
 	if (Mesh->Flags & MESH_HAS_ELEMENTS) {
 		if (Mesh->Flags & MESH_GROW_INDEX_BUFFER) {
-			OpenGL_BufferData(GL_ELEMENT_ARRAY_BUFFER, Mesh->Indices->Size, Mesh->Indices->Data, DrawType);
+			OpenGL_BufferData(
+				GL_ELEMENT_ARRAY_BUFFER,
+				Mesh->Indices->Size,
+				Mesh->Indices->Data,
+				DrawType
+			);
 			Mesh->Flags &= ~MESH_GROW_INDEX_BUFFER;
-		} else OpenGL_BufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, Mesh->Indices->Size, Mesh->Indices->Data);
+		} else
+			OpenGL_BufferSubData(
+				GL_ELEMENT_ARRAY_BUFFER,
+				0,
+				Mesh->Indices->Size,
+				Mesh->Indices->Data
+			);
 	}
 
 	if (Mesh->Flags & MESH_HAS_TEXTURES) {
 		OpenGL_BindBuffer(GL_SHADER_STORAGE_BUFFER, Mesh->TextureSSBO);
 		if (Mesh->Flags & MESH_GROW_TEXTURE_BUFFER) {
-			OpenGL_BufferData(GL_SHADER_STORAGE_BUFFER, Mesh->Storage->Size, Mesh->Storage->Data, DrawType);
+			OpenGL_BufferData(
+				GL_SHADER_STORAGE_BUFFER,
+				Mesh->Storage->Size,
+				Mesh->Storage->Data,
+				DrawType
+			);
 			Mesh->Flags &= ~MESH_GROW_TEXTURE_BUFFER;
-		} else OpenGL_BufferSubData(GL_SHADER_STORAGE_BUFFER, 0, Mesh->Storage->Size, Mesh->Storage->Data);
+		} else
+			OpenGL_BufferSubData(
+				GL_SHADER_STORAGE_BUFFER,
+				0,
+				Mesh->Storage->Size,
+				Mesh->Storage->Data
+			);
 	}
 
 	OpenGL_BindBuffer(GL_SHADER_STORAGE_BUFFER, Mesh->MatrixSSBO);
 	if (Mesh->Flags & MESH_GROW_MATRIX_BUFFER) {
-		OpenGL_BufferData(GL_SHADER_STORAGE_BUFFER, Mesh->Matrices->Size, Mesh->Matrices->Data, DrawType);
+		OpenGL_BufferData(
+			GL_SHADER_STORAGE_BUFFER,
+			Mesh->Matrices->Size,
+			Mesh->Matrices->Data,
+			DrawType
+		);
 		Mesh->Flags &= ~MESH_GROW_MATRIX_BUFFER;
-	} else OpenGL_BufferSubData(GL_SHADER_STORAGE_BUFFER, 0, Mesh->Matrices->Size, Mesh->Matrices->Data);
+	} else
+		OpenGL_BufferSubData(
+			GL_SHADER_STORAGE_BUFFER,
+			0,
+			Mesh->Matrices->Size,
+			Mesh->Matrices->Data
+		);
 
 	Mesh->Flags &= ~MESH_IS_DIRTY;
 }
@@ -459,6 +505,7 @@ Mesh_DrawPartial(mesh *Mesh, u32 DrawMode, u32 ObjectOffset, u32 ObjectCount)
 
 		// TODO: Isn't this a bug? IndexOffsets accumulates, but it's put into
 		//  the 'count' section.
+		// OpenGL_DrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, Mesh->Indices->Data);
 		OpenGL_MultiDrawElementsBaseVertex(
 			DrawMode,
 			IndexCounts,

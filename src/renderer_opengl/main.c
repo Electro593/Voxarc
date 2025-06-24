@@ -128,25 +128,24 @@ Load(platform_state *Platform, platform_module *Module)
 #include <x.h>
 	}
 
-	// 	opengl_funcs *OpenGLFuncs = Platform_LoadOpenGL();
-	// #define IMPORT(R, N, ...) OpenGL_##N = OpenGLFuncs->OpenGL_##N;
-	// #define X OPENGL_FUNCS
-	// #include <x.h>
+	opengl_funcs *OpenGLFuncs = Platform_LoadOpenGL();
+#define IMPORT(R, N, ...) OpenGL_##N = OpenGLFuncs->OpenGL_##N;
+#define X OPENGL_FUNCS
+#include <x.h>
 }
 
 internal void API_ENTRY
 OpenGL_DebugCallback(
-	u32	 Source,
-	u32	 Type,
-	u32	 ID,
-	u32	 Severity,
-	s32	 Length,
-	c08 *Message,
-	vptr UserParam
+	opengl_debug_source	  Source,
+	opengl_debug_type	  Type,
+	opengl_error		  ID,
+	opengl_debug_severity Severity,
+	s32					  Length,
+	c08					 *Message,
+	vptr				  UserParam
 )
 {
-	Error(Message);
-	// Assert(FALSE);
+	// if (Severity != OPENGL_DEBUG_SEVERITY_NOTIFICATION) Error(Message);
 }
 
 internal u32
@@ -455,9 +454,9 @@ Renderer_Draw(platform_state *Platform, game_state *Game, renderer_state *Render
 		FPS
 	);
 
-	ui_component *Componenet = (ui_component *) Renderer->Components->Data + 1;
-	Componenet->String		 = String;
-	ui_style InheritedStyle	 = GetInheritedStyle(Componenet);
+	ui_component *Component = (ui_component *) Renderer->Components->Data + 1;
+	Component->String		= String;
+	ui_style InheritedStyle = GetInheritedStyle(Component);
 
 	ui_string	UIString = MakeUIString(Renderer->Heap, String, InheritedStyle);
 	mesh_object Object =
@@ -510,29 +509,11 @@ Init(platform_state *Platform)
 	heap		   *Heap	   = Renderer->Heap;
 	v2u32			WindowSize = Platform->WindowSize;
 
-	Wayland_CreateWindow("Voxarc", 800, 600);
+	// Wayland_CreateWindow("Voxarc", 800, 600);
 
 #if defined(_DEBUG)
 	OpenGL_Enable(GL_DEBUG_OUTPUT);
 	OpenGL_DebugMessageCallback(OpenGL_DebugCallback, NULL);
-	u32 ID = 131185;
-	OpenGL_DebugMessageControl(
-		GL_DEBUG_SOURCE_API,
-		GL_DEBUG_TYPE_OTHER,
-		GL_DONT_CARE,
-		1,
-		&ID,
-		FALSE
-	);
-	ID = 131218;
-	OpenGL_DebugMessageControl(
-		GL_DEBUG_SOURCE_API,
-		GL_DEBUG_TYPE_PERFORMANCE,
-		GL_DONT_CARE,
-		1,
-		&ID,
-		FALSE
-	);
 #endif
 
 	OpenGL_Enable(GL_DEPTH_TEST);
@@ -600,13 +581,5 @@ Init(platform_state *Platform)
 
 	Renderer->ObjectIndex = Mesh_ReserveObject(&Renderer->Shaders[ShaderID_Glyph].Mesh, 0, 0);
 }
-
-external API_EXPORT void
-Update(platform_state *Platform)
-{ }
-
-external API_EXPORT void
-Unload(platform_state *Platform)
-{ }
 #endif
 #endif
