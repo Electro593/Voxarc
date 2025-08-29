@@ -640,7 +640,6 @@ AddTag(assetpack_gen *Assetpack, assetpack_asset *Asset, assetpack_tag_id TagID,
 				u08 *TagData = (u08 *) Assetpack->TagData->Data + PrevSize;
 				Mem_Cpy(TagData + sizeof(string), Str.Text, Str.Length);
 				Str.Text	 = (c08 *) (TagData + sizeof(string) - (u64) Assetpack->TagData->Data);
-				Str.Capacity = Str.Length;
 				Mem_Cpy(TagData, &Str, sizeof(string));
 				Tag->ValueI = (u64) TagData - (u64) Assetpack->TagData->Data;
 			} break;
