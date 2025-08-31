@@ -581,5 +581,12 @@ Init(platform_state *Platform)
 
 	Renderer->ObjectIndex = Mesh_ReserveObject(&Renderer->Shaders[ShaderID_Glyph].Mesh, 0, 0);
 }
+
+external API_EXPORT void
+Deinit(platform_state *Platform)
+{
+	for (usize I = 0; I < Shader_Count; I++)
+		if (_G.Shaders[I].Initialized) Mesh_Free(&_G.Shaders[I].Mesh);
+}
 #endif
 #endif

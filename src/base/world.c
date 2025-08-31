@@ -87,63 +87,6 @@ global u32 CubePositions[]
 	   0b01011111111101111111110111111111,
 	   0b01011111111101111111111000000001};
 
-internal mesh_object
-MakePTBlockObject(mesh *Mesh, heap *Heap, v3r32 Pos, u32 BytesFromFirstAsset)
-{
-	persist u32 Indices[] = {0,	 1,	 2,	 0,	 2,	 3,	 4,	 5,	 6,	 4,	 6,	 7,	 8,	 9,	 10, 8,	 10, 11,
-							 12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23};
-
-	mesh_object Object;
-
-	// Object.Vertices = Heap_Allocate(Heap, sizeof(pt_vertex)*4*6);
-	Object.Vertices = Heap_Allocate(Heap, sizeof(pt_vertex) * 4);
-	// Object.Indices  = Heap_Allocate(Heap, sizeof(Indices));
-	Object.Indices	= Heap_Allocate(Heap, sizeof(u32) * 6);
-
-	pt_vertex *Vertex = (vptr) Object.Vertices->Data;
-	u32		  *Index  = (vptr) Object.Indices->Data;
-
-	Assert((BytesFromFirstAsset & 3) == 0 && BytesFromFirstAsset <= 0xFFFFFF);
-
-	// *Vertex++ = (pt_vertex){Positions[0], BytesFromFirstAsset | 0b00};
-	// *Vertex++ = (pt_vertex){Positions[1], BytesFromFirstAsset | 0b01};
-	// *Vertex++ = (pt_vertex){Positions[2], BytesFromFirstAsset | 0b11};
-	// *Vertex++ = (pt_vertex){Positions[3], BytesFromFirstAsset | 0b10};
-	// *Vertex++ = (pt_vertex){Positions[1], BytesFromFirstAsset | 0b00};
-	// *Vertex++ = (pt_vertex){Positions[5], BytesFromFirstAsset | 0b01};
-	// *Vertex++ = (pt_vertex){Positions[6], BytesFromFirstAsset | 0b11};
-	// *Vertex++ = (pt_vertex){Positions[2], BytesFromFirstAsset | 0b10};
-	// *Vertex++ = (pt_vertex){Positions[5], BytesFromFirstAsset | 0b00};
-	// *Vertex++ = (pt_vertex){Positions[4], BytesFromFirstAsset | 0b01};
-	// *Vertex++ = (pt_vertex){Positions[7], BytesFromFirstAsset | 0b11};
-	// *Vertex++ = (pt_vertex){Positions[6], BytesFromFirstAsset | 0b10};
-	// *Vertex++ = (pt_vertex){Positions[4], BytesFromFirstAsset | 0b00};
-	// *Vertex++ = (pt_vertex){Positions[0], BytesFromFirstAsset | 0b01};
-	// *Vertex++ = (pt_vertex){Positions[3], BytesFromFirstAsset | 0b11};
-	// *Vertex++ = (pt_vertex){Positions[7], BytesFromFirstAsset | 0b10};
-	// *Vertex++ = (pt_vertex){Positions[3], BytesFromFirstAsset | 0b00};
-	// *Vertex++ = (pt_vertex){Positions[2], BytesFromFirstAsset | 0b01};
-	// *Vertex++ = (pt_vertex){Positions[6], BytesFromFirstAsset | 0b11};
-	// *Vertex++ = (pt_vertex){Positions[7], BytesFromFirstAsset | 0b10};
-	// *Vertex++ = (pt_vertex){Positions[4], BytesFromFirstAsset | 0b00};
-	// *Vertex++ = (pt_vertex){Positions[5], BytesFromFirstAsset | 0b01};
-	// *Vertex++ = (pt_vertex){Positions[1], BytesFromFirstAsset | 0b11};
-	// *Vertex++ = (pt_vertex){Positions[0], BytesFromFirstAsset | 0b10};
-	*Vertex++ = (pt_vertex) {{.E = CubePositions[0]}, (0 << 28) | (2 << 24) | BytesFromFirstAsset | 0b00};
-	*Vertex++ = (pt_vertex) {{.E = CubePositions[1]}, (0 << 28) | (2 << 24) | BytesFromFirstAsset | 0b01};
-	*Vertex++ = (pt_vertex) {{.E = CubePositions[2]}, (0 << 28) | (2 << 24) | BytesFromFirstAsset | 0b11};
-	*Vertex++ = (pt_vertex) {{.E = CubePositions[3]}, (0 << 28) | (2 << 24) | BytesFromFirstAsset | 0b10};
-
-	// Mem_Cpy(Object.Indices->Data, Indices, sizeof(Indices));
-	Mem_Cpy(Object.Indices->Data, Indices, sizeof(u32) * 6);
-
-	Object.TranslationMatrix = M4x4r32_Translation(Pos.X, Pos.Y, Pos.Z);
-	Object.ScalingMatrix	 = M4x4r32_Scaling(0.5, 0.5, 0.5);
-	Object.RotationMatrix	 = M4x4r32_I;
-
-	return Object;
-}
-
 internal b08
 GetChunk(region *Region, v3s32 Pos, u32 *ChunkIndexOut)
 {

@@ -19,16 +19,6 @@ Mesh_EncodePosition(v3r32 P)
 	return E;
 }
 
-internal v3r32
-Mesh_UnencodePosition(v4s16 E)
-{
-	v3r32 P;
-	P.X = (r32) E.X / S16_MAX;
-	P.Y = (r32) E.Y / S16_MAX;
-	P.Z = (r32) E.Z / S16_MAX;
-	return P;
-}
-
 internal u32
 Mesh_EncodeNormal(v3r32 N)
 {
@@ -37,16 +27,6 @@ Mesh_EncodeNormal(v3r32 N)
 	v3s32 I = V3r32_ToV3s32(N);
 	u32	  E = (1 << 30) | ((I.Z & 0x3FF) << 20) | ((I.Y & 0x3FF) << 10) | (I.X & 0x3FF);
 	return E;
-}
-
-internal v3r32
-Mesh_UnencodeNormal(u32 E)
-{
-	v3r32 N;
-	N.X = (r32) ((E >> 0) & 0x3FF) / 511;
-	N.Y = (r32) ((E >> 10) & 0x3FF) / 511;
-	N.Z = (r32) ((E >> 20) & 0x3FF) / 511;
-	return N;
 }
 
 internal void
@@ -176,13 +156,6 @@ Mesh_GetVertices(mesh *Mesh, u32 ObjectIndex)
 {
 	u32 Offset = ((s32 *) Mesh->VertexOffsets->Data)[ObjectIndex];
 	return (u08 *) Mesh->Vertices->Data + Offset * Mesh->VertexSize;
-}
-
-internal u32 *
-Mesh_GetIndices(mesh *Mesh, u32 ObjectIndex)
-{
-	u32 Offset = ((s32 *) Mesh->IndexOffsets->Data)[ObjectIndex];
-	return (u32 *) Mesh->Indices->Data + Offset;
 }
 
 internal m4x4r32 *
