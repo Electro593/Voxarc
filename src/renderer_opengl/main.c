@@ -134,6 +134,7 @@ Load(platform_state *Platform, platform_module *Module)
 #include <x.h>
 }
 
+#ifdef _DEBUG
 internal void API_ENTRY
 OpenGL_DebugCallback(
 	opengl_debug_source	  Source,
@@ -147,6 +148,7 @@ OpenGL_DebugCallback(
 {
 	// if (Severity != OPENGL_DEBUG_SEVERITY_NOTIFICATION) Error(Message);
 }
+#endif
 
 internal u32
 Renderer_LoadProgram(c08 *VertFileName, c08 *FragFileName)
