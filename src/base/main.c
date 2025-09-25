@@ -12,7 +12,7 @@
 
 #define INCLUDE_HEADER
 #include <util/main.c>
-#include <platform/platform.h>
+#include <platform/main.c>
 #include <renderer.h>
 #include "main.c"
 #include <renderer_opengl/main.c>
@@ -31,7 +31,7 @@ extern game_funcs _F;
 #include <base/world.c>
 #include <base/ui.c>
 
-#if defined(INCLUDE_HEADER) && !defined(NO_SYMBOLS)
+#ifdef INCLUDE_HEADER
 
 #define BASE_MODULE_NAME CStringL("base")
 
@@ -115,7 +115,7 @@ global renderer_state  *Renderer;
 game_state				_G;
 game_funcs				_F;
 
-external API_EXPORT void
+external void
 Load(platform_state *Platform, platform_module *Module)
 {
 	_F = (game_funcs) {
@@ -127,7 +127,8 @@ Load(platform_state *Platform, platform_module *Module)
 	Module->Data  = &_G;
 	Module->Funcs = &_F;
 
-#define EXPORT(R, S, N, ...) S##_##N = Platform->Functions.S##_##N;
+	platform_funcs *PlatformFuncs = Platform->Funcs;
+#define EXPORT(R, N, ...) N = PlatformFuncs->N;
 #define X PLATFORM_FUNCS
 #include <x.h>
 
@@ -145,7 +146,7 @@ Load(platform_state *Platform, platform_module *Module)
 #include <x.h>
 }
 
-external API_EXPORT void
+external void
 Init(platform_state *Platform)
 {
 	game_state *Game = &_G;
@@ -293,7 +294,7 @@ Init(platform_state *Platform)
 	Stack_Pop();
 }
 
-external API_EXPORT void
+external void
 Update(platform_state *Platform)
 {
 	game_state *Game = &_G;

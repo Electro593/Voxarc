@@ -16,7 +16,7 @@
 
 #define INCLUDE_HEADER
 #include <util/main.c>
-#include <platform/platform.h>
+#include <platform/main.c>
 #include <renderer.h>
 #include <base/main.c>
 #include <wayland/main.c>
@@ -35,7 +35,7 @@ global renderer_funcs _F;
 #include "opengl.h"
 #include "mesh.c"
 
-#if defined(INCLUDE_HEADER) && !defined(NO_SYMBOLS)
+#ifdef INCLUDE_HEADER
 
 #define RENDERER_OPENGL_MODULE_NAME CStringL("renderer_opengl")
 
@@ -92,7 +92,7 @@ typedef struct renderer_state {
 #endif
 
 #ifdef INCLUDE_SOURCE
-external API_EXPORT void
+external void
 Load(platform_state *Platform, platform_module *Module)
 {
 	_F = (renderer_funcs) {
@@ -104,7 +104,8 @@ Load(platform_state *Platform, platform_module *Module)
 	Module->Data  = &_G;
 	Module->Funcs = &_F;
 
-#define EXPORT(R, S, N, ...) S##_##N = Platform->Functions.S##_##N;
+	platform_funcs *PlatformFuncs = Platform->Funcs;
+#define EXPORT(R, N, ...) N = PlatformFuncs->N;
 #define X PLATFORM_FUNCS
 #include <x.h>
 
@@ -504,7 +505,7 @@ Renderer_Draw(platform_state *Platform, game_state *Game, renderer_state *Render
 	Stack_Pop();
 }
 
-external API_EXPORT void
+external void
 Init(platform_state *Platform)
 {
 	renderer_state *Renderer   = &_G;
@@ -584,7 +585,7 @@ Init(platform_state *Platform)
 	Renderer->ObjectIndex = Mesh_ReserveObject(&Renderer->Shaders[ShaderID_Glyph].Mesh, 0, 0);
 }
 
-external API_EXPORT void
+external void
 Deinit(platform_state *Platform)
 {
 	for (usize I = 0; I < Shader_Count; I++)
