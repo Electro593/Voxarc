@@ -1,11 +1,11 @@
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
-**                                                                         **
-**  Author: Aria Seiler                                                    **
-**                                                                         **
-**  This program is in the public domain. There is no implied warranty,    **
-**  so use it at your own risk.                                            **
-**                                                                         **
-\* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
+*                                                                             *
+*  Author: Aria Seiler                                                        *
+*                                                                             *
+*  This program is in the public domain. There is no implied warranty, so     *
+*  use it at your own risk.                                                   *
+*                                                                             *
+\* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #ifdef INCLUDE_HEADER
 
@@ -98,10 +98,14 @@ GetGlyph(ui_font *Font, c08 Codepoint)
 	assetpack_asset *Asset = Font->CharCache[I];
 
 	if (!Asset) {
-		Asset			   = FindFirstAssetFromExactTag(Font->Assetpack, TAG_CODEPOINT, &Codepoint);
+		Asset = FindFirstAssetFromExactTag(
+			Font->Assetpack,
+			TAG_CODEPOINT,
+			&Codepoint
+		);
 		Font->CharCache[I] = Asset;
-		// assetpack_tag *Tag = Assetpack_FindExactTag(Font->Assetpack, TAG_CODEPOINT, (vptr)(u64)Codepoint);
-		// if(Tag && Tag->AssetCount)
+		// assetpack_tag *Tag = Assetpack_FindExactTag(Font->Assetpack,
+		// TAG_CODEPOINT, (vptr)(u64)Codepoint); if(Tag && Tag->AssetCount)
 		//     Asset = Font->CharCache[I] = Tag->Assets[0];
 	}
 
@@ -117,24 +121,35 @@ GetInheritedStyle(ui_component *Component)
 	while ((Component = Component->Parent)) {
 		ui_style CStyle = Component->Style;
 
-		if (Style.Enabled == DEFAULT_STYLE.Enabled) Style.Enabled = CStyle.Enabled;
+		if (Style.Enabled == DEFAULT_STYLE.Enabled)
+			Style.Enabled = CStyle.Enabled;
 		if (Style.Size.X == DEFAULT_STYLE.Size.X) Style.Size.X = CStyle.Size.X;
 		if (Style.Size.Y == DEFAULT_STYLE.Size.Y) Style.Size.Y = CStyle.Size.Y;
-		if (Style.Padding.X == DEFAULT_STYLE.Padding.X) Style.Padding.X = CStyle.Padding.X;
-		if (Style.Padding.Y == DEFAULT_STYLE.Padding.Y) Style.Padding.Y = CStyle.Padding.Y;
-		if (Style.Padding.Z == DEFAULT_STYLE.Padding.Z) Style.Padding.Z = CStyle.Padding.Z;
-		if (Style.Padding.W == DEFAULT_STYLE.Padding.W) Style.Padding.W = CStyle.Padding.W;
+		if (Style.Padding.X == DEFAULT_STYLE.Padding.X)
+			Style.Padding.X = CStyle.Padding.X;
+		if (Style.Padding.Y == DEFAULT_STYLE.Padding.Y)
+			Style.Padding.Y = CStyle.Padding.Y;
+		if (Style.Padding.Z == DEFAULT_STYLE.Padding.Z)
+			Style.Padding.Z = CStyle.Padding.Z;
+		if (Style.Padding.W == DEFAULT_STYLE.Padding.W)
+			Style.Padding.W = CStyle.Padding.W;
 		if (Style.ZIndex == DEFAULT_STYLE.ZIndex) Style.ZIndex = CStyle.ZIndex;
-		if (Style.FontSize == DEFAULT_STYLE.FontSize) Style.FontSize = CStyle.FontSize;
-		if (Style.TabSize == DEFAULT_STYLE.TabSize) Style.TabSize = CStyle.TabSize;
+		if (Style.FontSize == DEFAULT_STYLE.FontSize)
+			Style.FontSize = CStyle.FontSize;
+		if (Style.TabSize == DEFAULT_STYLE.TabSize)
+			Style.TabSize = CStyle.TabSize;
 		if (V4u08_IsEqual(Style.BackgroundColor, DEFAULT_STYLE.BackgroundColor))
 			Style.BackgroundColor = CStyle.BackgroundColor;
 		if (V4u08_IsEqual(Style.BorderColor, DEFAULT_STYLE.BorderColor))
 			Style.BorderColor = CStyle.BorderColor;
-		if (Style.BorderSize.X == DEFAULT_STYLE.BorderSize.X) Style.BorderSize.X = CStyle.BorderSize.X;
-		if (Style.BorderSize.Y == DEFAULT_STYLE.BorderSize.Y) Style.BorderSize.Y = CStyle.BorderSize.Y;
-		if (Style.BorderSize.Z == DEFAULT_STYLE.BorderSize.Z) Style.BorderSize.Z = CStyle.BorderSize.Z;
-		if (Style.BorderSize.W == DEFAULT_STYLE.BorderSize.W) Style.BorderSize.W = CStyle.BorderSize.W;
+		if (Style.BorderSize.X == DEFAULT_STYLE.BorderSize.X)
+			Style.BorderSize.X = CStyle.BorderSize.X;
+		if (Style.BorderSize.Y == DEFAULT_STYLE.BorderSize.Y)
+			Style.BorderSize.Y = CStyle.BorderSize.Y;
+		if (Style.BorderSize.Z == DEFAULT_STYLE.BorderSize.Z)
+			Style.BorderSize.Z = CStyle.BorderSize.Z;
+		if (Style.BorderSize.W == DEFAULT_STYLE.BorderSize.W)
+			Style.BorderSize.W = CStyle.BorderSize.W;
 		if (Style.Font == DEFAULT_STYLE.Font) Style.Font = CStyle.Font;
 	}
 
@@ -145,7 +160,7 @@ internal ui_string
 MakeUIString(heap *Heap, string String, ui_style Style)
 {
 	ui_string UIStr;
-	UIStr.Size			 = (v2r32) {0};
+	UIStr.Size			 = (v2r32) { 0 };
 	UIStr.OffsetX		 = R32_INF;
 	UIStr.Style			 = Style;
 	UIStr.String		 = String;
@@ -159,11 +174,14 @@ MakeUIString(heap *Heap, string String, ui_style Style)
 
 	ui_font *Font = Style.Font;
 
-	assetpack_font FontData = FindFirstAssetFromExactTag(Font->Assetpack, TAG_FONT_DESC, &(u32) {0})->Font;
+	assetpack_font FontData =
+		FindFirstAssetFromExactTag(Font->Assetpack, TAG_FONT_DESC, &(u32) { 0 })
+			->Font;
 
-	v2r32 P = {0, Style.FontSize * (FontData.Ascent - FontData.Descent)};
+	v2r32 P = { 0, Style.FontSize * (FontData.Ascent - FontData.Descent) };
 
-	r32 AdvanceY = Style.FontSize * (FontData.Ascent - FontData.Descent + FontData.LineGap);
+	r32 AdvanceY = Style.FontSize
+				 * (FontData.Ascent - FontData.Descent + FontData.LineGap);
 
 	u32 LastWordBreakI	   = 0;
 	u32 LastWordBreakX	   = 0;
@@ -219,7 +237,10 @@ MakeUIString(heap *Heap, string String, ui_style Style)
 
 			if (BrokeOnCurrentLine) {
 				if ((UIStr.LineCount + 1) * sizeof(u32) > UIStr.Lines->Size)
-					Heap_Resize(UIStr.Lines, UIStr.Lines->Size + 4 * sizeof(u32));
+					Heap_Resize(
+						UIStr.Lines,
+						UIStr.Lines->Size + 4 * sizeof(u32)
+					);
 				((u32 *) UIStr.Lines->Data)[UIStr.LineCount] = LastWordBreakI;
 				UIStr.LineCount++;
 
@@ -229,7 +250,10 @@ MakeUIString(heap *Heap, string String, ui_style Style)
 				BrokeOnCurrentLine = FALSE;
 			} else {
 				if ((UIStr.LineCount + 1) * sizeof(u32) > UIStr.Lines->Size)
-					Heap_Resize(UIStr.Lines, UIStr.Lines->Size + 4 * sizeof(u32));
+					Heap_Resize(
+						UIStr.Lines,
+						UIStr.Lines->Size + 4 * sizeof(u32)
+					);
 				((u32 *) UIStr.Lines->Data)[UIStr.LineCount] = I + 1;
 				UIStr.LineCount++;
 
@@ -266,8 +290,10 @@ MakeUIStringObject(heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize)
 {
 	mesh_object Object;
 
-	Object.Vertices = Heap_Allocate(Heap, 4 * UIStr.PrintableCount * sizeof(glyph_vertex));
-	Object.Indices	= Heap_Allocate(Heap, 6 * UIStr.PrintableCount * sizeof(u32));
+	Object.Vertices =
+		Heap_Allocate(Heap, 4 * UIStr.PrintableCount * sizeof(glyph_vertex));
+	Object.Indices =
+		Heap_Allocate(Heap, 6 * UIStr.PrintableCount * sizeof(u32));
 
 	Object.RotationMatrix = M4x4r32_I;
 
@@ -280,16 +306,21 @@ MakeUIStringObject(heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize)
 	ui_style Style = UIStr.Style;
 
 	// TODO: Cache the font data
-	assetpack_font FontData
-		= FindFirstAssetFromExactTag(Style.Font->Assetpack, TAG_FONT_DESC, &(u32) {0})->Font;
+	assetpack_font FontData = FindFirstAssetFromExactTag(
+								  Style.Font->Assetpack,
+								  TAG_FONT_DESC,
+								  &(u32) { 0 }
+	)
+								  ->Font;
 
 	glyph_vertex *Vertex = Object.Vertices->Data;
 	u32			 *Index	 = Object.Indices->Data;
 
 	u32 *Lines = UIStr.Lines->Data;
 
-	v2r32 P		   = {0, UIStr.Size.Y - Style.FontSize * FontData.Ascent};
-	r32	  AdvanceY = Style.FontSize * (FontData.Ascent - FontData.Descent + FontData.LineGap);
+	v2r32 P		   = { 0, UIStr.Size.Y - Style.FontSize * FontData.Ascent };
+	r32	  AdvanceY = Style.FontSize
+				 * (FontData.Ascent - FontData.Descent + FontData.LineGap);
 
 	u32 PI = 0;
 
@@ -304,7 +335,10 @@ MakeUIStringObject(heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize)
 
 				u32 Bytes = (u64) Asset - (u64) Style.Font->Assetpack.Assets;
 
-				v2r32 Q	 = V2r32_Add(P, V2r32_MulS(Asset->Glyph.Bearing, Style.FontSize));
+				v2r32 Q = V2r32_Add(
+					P,
+					V2r32_MulS(Asset->Glyph.Bearing, Style.FontSize)
+				);
 				Q.X		-= UIStr.OffsetX;
 				v2r32 S	 = V2r32_MulS(Asset->Glyph.SizeR, Style.FontSize);
 				if (!P.X) S.X += UIStr.OffsetX;
@@ -315,19 +349,19 @@ MakeUIStringObject(heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize)
 				s16 PYT = ((Q.Y + S.Y) * 2 / UIStr.Size.Y - 1) * 0x7FFF;
 
 				*Vertex++ = (glyph_vertex) {
-					{PXL, PYB},
+					{ PXL, PYB },
 					(Style.ZIndex << 24) | Bytes | 0b00
 				};
 				*Vertex++ = (glyph_vertex) {
-					{PXR, PYB},
+					{ PXR, PYB },
 					(Style.ZIndex << 24) | Bytes | 0b01
 				};
 				*Vertex++ = (glyph_vertex) {
-					{PXR, PYT},
+					{ PXR, PYT },
 					(Style.ZIndex << 24) | Bytes | 0b11
 				};
 				*Vertex++ = (glyph_vertex) {
-					{PXL, PYT},
+					{ PXL, PYT },
 					(Style.ZIndex << 24) | Bytes | 0b10
 				};
 
@@ -358,12 +392,18 @@ MakeUIStringObject(heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize)
 	P.Y -= -FontData.Descent * Style.FontSize;
 
 	Object.TranslationMatrix = M4x4r32_Translation(
-		-1 + (Style.Padding.X + Pos.X + UIStr.OffsetX + UIStr.Size.X) / ViewSize.X,
+		-1
+			+ (Style.Padding.X + Pos.X + UIStr.OffsetX + UIStr.Size.X)
+				  / ViewSize.X,
 		1 - (Style.Padding.Y + Pos.Y + UIStr.Size.Y) / ViewSize.Y,
 		0
 	);
 
-	Object.ScalingMatrix = M4x4r32_Scaling(UIStr.Size.X / ViewSize.X, UIStr.Size.Y / ViewSize.Y, 1);
+	Object.ScalingMatrix = M4x4r32_Scaling(
+		UIStr.Size.X / ViewSize.X,
+		UIStr.Size.Y / ViewSize.Y,
+		1
+	);
 
 	return Object;
 }

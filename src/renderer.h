@@ -1,11 +1,11 @@
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
-**                                                                         **
-**  Author: Aria Seiler                                                    **
-**                                                                         **
-**  This program is in the public domain. There is no implied warranty,    **
-**  so use it at your own risk.                                            **
-**                                                                         **
-\* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
+*                                                                             *
+*  Author: Aria Seiler                                                        *
+*                                                                             *
+*  This program is in the public domain. There is no implied warranty, so     *
+*  use it at your own risk.                                                   *
+*                                                                             *
+\* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #ifdef INCLUDE_HEADER
 typedef struct p_vertex {
@@ -68,8 +68,10 @@ typedef enum mesh_flags {
 
 	MESH_HAS_MATERIALS = 0x1000 | MESH_HAS_COLORS,
 
-	MESH_IS_DIRTY
-	= MESH_GROW_VERTEX_BUFFER | MESH_GROW_INDEX_BUFFER | MESH_GROW_TEXTURE_BUFFER | MESH_GROW_MATRIX_BUFFER
+	MESH_IS_DIRTY = MESH_GROW_VERTEX_BUFFER
+				  | MESH_GROW_INDEX_BUFFER
+				  | MESH_GROW_TEXTURE_BUFFER
+				  | MESH_GROW_MATRIX_BUFFER
 } mesh_flags;
 
 typedef struct mesh_object {

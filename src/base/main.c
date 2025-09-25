@@ -1,11 +1,11 @@
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
-**                                                                         **
-**  Author: Aria Seiler                                                    **
-**                                                                         **
-**  This program is in the public domain. There is no implied warranty,    **
-**  so use it at your own risk.                                            **
-**                                                                         **
-\* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
+*                                                                             *
+*  Author: Aria Seiler                                                        *
+*                                                                             *
+*  This program is in the public domain. There is no implied warranty, so     *
+*  use it at your own risk.                                                   *
+*                                                                             *
+\* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #if !defined(INCLUDE_SOURCE) && !defined(INCLUDE_HEADER)
 #include <shared.h>
@@ -138,8 +138,8 @@ Load(platform_state *Platform, platform_module *Module)
 #define X UTIL_FUNCS
 #include <x.h>
 
-	RendererModule				  = Platform_LoadModule(RENDERER_OPENGL_MODULE_NAME);
-	Renderer					  = RendererModule->Data;
+	RendererModule = Platform_LoadModule(RENDERER_OPENGL_MODULE_NAME);
+	Renderer	   = RendererModule->Data;
 	renderer_funcs *RendererFuncs = RendererModule->Funcs;
 #define EXPORT(R, N, ...) N = RendererFuncs->N;
 #define X RENDERER_FUNCS
@@ -188,17 +188,22 @@ Init(platform_state *Platform)
 		Renderer,
 		ShaderID_PNM3,
 		Renderer->Shaders[ShaderID_PNM3].Mesh.LightPos,
-		(v3r32) { -10000 * R32_cos((r32) Game->TimeOfDay / TICKS_PER_DAY * 2 * R32_PI),
-				  10000 * R32_sin((r32) Game->TimeOfDay / TICKS_PER_DAY * 2 * R32_PI),
-				  0 }
+		(v3r32) {
+			-10000
+				* R32_cos((r32) Game->TimeOfDay / TICKS_PER_DAY * 2 * R32_PI),
+			10000 * R32_sin((r32) Game->TimeOfDay / TICKS_PER_DAY * 2 * R32_PI),
+			0 }
 	);
 
 	Stack_Push();
 
 	u32 *TextureBytes = Stack_Allocate(sizeof(u32) * BLOCK_Count);
 	for (u32 I = 1; I < BLOCK_Count; I++) {
-		assetpack_asset *Asset =
-			FindFirstAssetFromExactTag(Renderer->Assetpack, TAG_BLOCK_TEXTURE, &I);
+		assetpack_asset *Asset = FindFirstAssetFromExactTag(
+			Renderer->Assetpack,
+			TAG_BLOCK_TEXTURE,
+			&I
+		);
 		TextureBytes[I] = (u64) Asset - (u64) Renderer->Assetpack.Assets;
 	}
 
@@ -212,7 +217,8 @@ Init(platform_state *Platform)
 
 		Game->Region.Pos	= (v3s32) { 0 };
 		Game->Region.Chunks = Heap_Allocate(Game->WorldHeap, 0);
-		Game->Region.Nodes	= Heap_Allocate(Game->WorldHeap, sizeof(region_node));
+		Game->Region.Nodes =
+			Heap_Allocate(Game->WorldHeap, sizeof(region_node));
 		Mem_Set(Game->Region.Nodes->Data, 0, sizeof(region_node));
 
 		MakeNonVoxelChunk(
@@ -244,21 +250,32 @@ Init(platform_state *Platform)
 		for (u32 I = 0; I < ChunkCount; I++)
 			if (Chunks[I].Blocks) PTCount++;
 			else PNM3Count++;
-		mesh_object **PTObjects	  = Stack_Allocate(sizeof(mesh_object *) * PTCount);
-		mesh_object **PNM3Objects = Stack_Allocate(sizeof(mesh_object *) * PNM3Count);
+		mesh_object **PTObjects =
+			Stack_Allocate(sizeof(mesh_object *) * PTCount);
+		mesh_object **PNM3Objects =
+			Stack_Allocate(sizeof(mesh_object *) * PNM3Count);
 		PTCount = 0, PNM3Count = 0;
 		for (u32 I = 0; I < ChunkCount; I++)
 			if (Chunks[I].Blocks) PTObjects[PTCount++] = &Chunks[I].Object;
 			else PNM3Objects[PNM3Count++] = &Chunks[I].Object;
-		Mesh_AddObjects(&Renderer->Shaders[ShaderID_PT3].Mesh, PTCount, PTObjects);
-		Mesh_AddObjects(&Renderer->Shaders[ShaderID_PNM3].Mesh, PNM3Count, PNM3Objects);
+		Mesh_AddObjects(
+			&Renderer->Shaders[ShaderID_PT3].Mesh,
+			PTCount,
+			PTObjects
+		);
+		Mesh_AddObjects(
+			&Renderer->Shaders[ShaderID_PNM3].Mesh,
+			PNM3Count,
+			PNM3Objects
+		);
 		for (u32 I = 0; I < ChunkCount; I++) Mesh_FreeObject(Chunks[I].Object);
 		Mesh_Update(&Renderer->Shaders[ShaderID_PT3].Mesh);
 		Mesh_Update(&Renderer->Shaders[ShaderID_PNM3].Mesh);
 	}
 
 	// Block highlight
-	Game->AimBlockObjectIndex = Mesh_ReserveObject(&Renderer->Shaders[ShaderID_P3].Mesh, 24, 0);
+	Game->AimBlockObjectIndex =
+		Mesh_ReserveObject(&Renderer->Shaders[ShaderID_P3].Mesh, 24, 0);
 
 	// Crosshair
 	{
@@ -270,15 +287,23 @@ Init(platform_state *Platform)
 		Mem_Cpy(Object.Indices->Data, Indices, sizeof(Indices));
 		pc_vertex *Vertex = Object.Vertices->Data;
 		r32		   Width  = 0.15;
-		*Vertex++		  = (pc_vertex) { Mesh_EncodePosition((v3r32) { -1, -Width, 0 }), C };
-		*Vertex++		  = (pc_vertex) { Mesh_EncodePosition((v3r32) { 1, -Width, 0 }), C };
-		*Vertex++		  = (pc_vertex) { Mesh_EncodePosition((v3r32) { 1, Width, 0 }), C };
-		*Vertex++		  = (pc_vertex) { Mesh_EncodePosition((v3r32) { -1, Width, 0 }), C };
-		*Vertex++		  = (pc_vertex) { Mesh_EncodePosition((v3r32) { -Width, -1, 0 }), C };
-		*Vertex++		  = (pc_vertex) { Mesh_EncodePosition((v3r32) { Width, -1, 0 }), C };
-		*Vertex++		  = (pc_vertex) { Mesh_EncodePosition((v3r32) { Width, 1, 0 }), C };
-		*Vertex++		  = (pc_vertex) { Mesh_EncodePosition((v3r32) { -Width, 1, 0 }), C };
-		r32 Scale		  = 0.02;
+		*Vertex++ =
+			(pc_vertex) { Mesh_EncodePosition((v3r32) { -1, -Width, 0 }), C };
+		*Vertex++ =
+			(pc_vertex) { Mesh_EncodePosition((v3r32) { 1, -Width, 0 }), C };
+		*Vertex++ =
+			(pc_vertex) { Mesh_EncodePosition((v3r32) { 1, Width, 0 }), C };
+		*Vertex++ =
+			(pc_vertex) { Mesh_EncodePosition((v3r32) { -1, Width, 0 }), C };
+		*Vertex++ =
+			(pc_vertex) { Mesh_EncodePosition((v3r32) { -Width, -1, 0 }), C };
+		*Vertex++ =
+			(pc_vertex) { Mesh_EncodePosition((v3r32) { Width, -1, 0 }), C };
+		*Vertex++ =
+			(pc_vertex) { Mesh_EncodePosition((v3r32) { Width, 1, 0 }), C };
+		*Vertex++ =
+			(pc_vertex) { Mesh_EncodePosition((v3r32) { -Width, 1, 0 }), C };
+		r32 Scale				 = 0.02;
 		Object.TranslationMatrix = M4x4r32_I;
 		Object.ScalingMatrix	 = M4x4r32_Scaling(Scale, Scale, 1);
 		Object.RotationMatrix	 = M4x4r32_I;
@@ -336,8 +361,14 @@ Update(platform_state *Platform)
 			Renderer,
 			ShaderID_PNM3,
 			Renderer->Shaders[ShaderID_PNM3].Mesh.LightPos,
-			(v3r32) { -10000 * R32_cos((r32) Game->TimeOfDay / TICKS_PER_DAY * 2 * R32_PI),
-					  10000 * R32_sin((r32) Game->TimeOfDay / TICKS_PER_DAY * 2 * R32_PI),
+			(v3r32) { -10000
+						  * R32_cos(
+							  (r32) Game->TimeOfDay / TICKS_PER_DAY * 2 * R32_PI
+						  ),
+					  10000
+						  * R32_sin(
+							  (r32) Game->TimeOfDay / TICKS_PER_DAY * 2 * R32_PI
+						  ),
 					  0 }
 		);
 
@@ -348,7 +379,7 @@ Update(platform_state *Platform)
 			}
 		} else Game->Key1WasDown = FALSE;
 
-		v2s32 CursorDelta	= V2s32_Sub(Platform->CursorPos, Game->PrevCursorPos);
+		v2s32 CursorDelta = V2s32_Sub(Platform->CursorPos, Game->PrevCursorPos);
 		Game->PrevCursorPos = Platform->CursorPos;
 
 		DirDelta.X = CursorDelta.Y / 120.0f;
@@ -366,7 +397,9 @@ Update(platform_state *Platform)
 
 			r32 MoveY = 0;
 			if (Platform->Keys[ScanCode_Space]) MoveY++;
-			if (Platform->Keys[ScanCode_ShiftLeft] || Platform->Keys[ScanCode_ShiftRight]) MoveY--;
+			if (Platform->Keys[ScanCode_ShiftLeft]
+				|| Platform->Keys[ScanCode_ShiftRight])
+				MoveY--;
 
 			b08 MoveHoriz = MoveXZ.X != 0 || MoveXZ.Y != 0;
 			if (MoveHoriz) MoveXZ = V2r32_Norm(MoveXZ);
@@ -376,8 +409,10 @@ Update(platform_state *Platform)
 				v3r32 ToMove = { MoveXZ.X, MoveY, MoveXZ.Y };
 				ToMove		 = V3r32_MulS(ToMove, Step);
 
-				Game->Pos.X += ToMove.X * R32_cos(Game->Dir.Y) - ToMove.Z * R32_sin(Game->Dir.Y);
-				Game->Pos.Z += ToMove.X * R32_sin(Game->Dir.Y) + ToMove.Z * R32_cos(Game->Dir.Y);
+				Game->Pos.X += ToMove.X * R32_cos(Game->Dir.Y)
+							 - ToMove.Z * R32_sin(Game->Dir.Y);
+				Game->Pos.Z += ToMove.X * R32_sin(Game->Dir.Y)
+							 + ToMove.Z * R32_cos(Game->Dir.Y);
 				Game->Pos.Y += ToMove.Y;
 
 				Moved = TRUE;
@@ -398,12 +433,14 @@ Update(platform_state *Platform)
 			Force.Y += Game->Gravity * Game->Mass;
 
 			// Walking
-			r32 DeltaFront = (!!Platform->Keys[ScanCode_W] - !!Platform->Keys[ScanCode_S])
-						   * WalkForce
-						   * Game->Mass;
-			r32 DeltaRight = (!!Platform->Keys[ScanCode_D] - !!Platform->Keys[ScanCode_A])
-						   * WalkForce
-						   * Game->Mass;
+			r32 DeltaFront =
+				(!!Platform->Keys[ScanCode_W] - !!Platform->Keys[ScanCode_S])
+				* WalkForce
+				* Game->Mass;
+			r32 DeltaRight =
+				(!!Platform->Keys[ScanCode_D] - !!Platform->Keys[ScanCode_A])
+				* WalkForce
+				* Game->Mass;
 			Force.X += -SinY * DeltaFront + CosY * DeltaRight;
 			Force.Z += CosY * DeltaFront + SinY * DeltaRight;
 
@@ -411,7 +448,8 @@ Update(platform_state *Platform)
 			if (Game->TouchingGround) {
 				Force.Y += -Game->Gravity * Game->Mass;
 
-				if (Platform->Keys[ScanCode_Space]) Game->KeySpaceWasDown = TRUE;
+				if (Platform->Keys[ScanCode_Space])
+					Game->KeySpaceWasDown = TRUE;
 
 				if (!Platform->Keys[ScanCode_Space] && Game->KeySpaceWasDown) {
 					Game->KeySpaceWasDown  = FALSE;
@@ -429,28 +467,39 @@ Update(platform_state *Platform)
 			);
 
 			Game->Acceleration = V3r32_DivS(Force, Game->Mass);
-			Game->Velocity = V3r32_Add(Game->Velocity, V3r32_MulS(Game->Acceleration, DeltaTime));
+			Game->Velocity	   = V3r32_Add(
+				Game->Velocity,
+				V3r32_MulS(Game->Acceleration, DeltaTime)
+			);
 
 			if (!V3r32_IsEqual(Game->Velocity, (v3r32) { 0 })) {
-				Game->Pos = V3r32_Add(Game->Pos, V3r32_MulS(Game->Velocity, DeltaTime));
-				Moved	  = TRUE;
+				Game->Pos =
+					V3r32_Add(Game->Pos, V3r32_MulS(Game->Velocity, DeltaTime));
+				Moved = TRUE;
 
 				Game->TouchingGround = FALSE;
 				chunk *Chunks		 = Game->Region.Chunks->Data;
 				v3r32  PlayerSize	 = { .6, 1.8, .6 };
-				v3s32  ChunkPos		 = { R32_Floor(Game->Pos.X / ChunkDims.X + 0.5f),
-										 R32_Floor(Game->Pos.Y / ChunkDims.Y + 0.5f),
-										 R32_Floor(Game->Pos.Z / ChunkDims.Z + 0.5f) };
-				v3r32  PosInChunk	 = { Game->Pos.X - ChunkPos.X * ChunkDims.X + ChunkDims.X / 2,
-										 Game->Pos.Y - ChunkPos.Y * ChunkDims.Y + ChunkDims.Y / 2,
-										 Game->Pos.Z - ChunkPos.Z * ChunkDims.Z + ChunkDims.Z / 2 };
-				u32	   ChunkIndex;
+				v3s32  ChunkPos		 = {
+					  R32_Floor(Game->Pos.X / ChunkDims.X + 0.5f),
+					  R32_Floor(Game->Pos.Y / ChunkDims.Y + 0.5f),
+					  R32_Floor(Game->Pos.Z / ChunkDims.Z + 0.5f)
+				};
+				v3r32 PosInChunk = {
+					Game->Pos.X - ChunkPos.X * ChunkDims.X + ChunkDims.X / 2,
+					Game->Pos.Y - ChunkPos.Y * ChunkDims.Y + ChunkDims.Y / 2,
+					Game->Pos.Z - ChunkPos.Z * ChunkDims.Z + ChunkDims.Z / 2
+				};
+				u32 ChunkIndex;
 				if (GetChunk(&Game->Region, ChunkPos, &ChunkIndex)) {
 					chunk Chunk = Chunks[ChunkIndex];
 					// TODO: Fix this for multiple chunks
-					for (s32 X = (s32) PosInChunk.X; X <= (s32) (PosInChunk.X + PlayerSize.X); X++)
+					for (s32 X = (s32) PosInChunk.X;
+						 X <= (s32) (PosInChunk.X + PlayerSize.X);
+						 X++)
 					{
-						for (s32 Z = (s32) PosInChunk.Z; Z <= (s32) (PosInChunk.Z + PlayerSize.Z);
+						for (s32 Z = (s32) PosInChunk.Z;
+							 Z <= (s32) (PosInChunk.Z + PlayerSize.Z);
 							 Z++)
 						{
 							b08 R = CollidesWithBlock(
@@ -485,7 +534,10 @@ Update(platform_state *Platform)
 		);
 	}
 
-	if ((Platform->Updates & WINDOW_RESIZED) || Moved || !V3r32_IsEqual(DirDelta, (v3r32) { 0 })) {
+	if ((Platform->Updates & WINDOW_RESIZED)
+		|| Moved
+		|| !V3r32_IsEqual(DirDelta, (v3r32) { 0 }))
+	{
 		r32 Pitch	 = Game->Dir.X;
 		r32 Yaw		 = Game->Dir.Y;
 		r32 CosYaw	 = R32_cos(Yaw);
@@ -496,14 +548,16 @@ Update(platform_state *Platform)
 		v3r32 Right = { CosYaw, 0, SinYaw };
 		v3r32 Up	= { SinYaw * SinPitch, CosPitch, -CosYaw * SinPitch };
 		v3r32 Front = { -SinYaw * CosPitch, SinPitch, CosYaw * CosPitch };
-		v3r32 Pos	= { -Game->Pos.X, -(Game->Pos.Y + EyeHeight), -Game->Pos.Z };
+		v3r32 Pos = { -Game->Pos.X, -(Game->Pos.Y + EyeHeight), -Game->Pos.Z };
 
-		Renderer->ViewMatrix = (m4x4r32) { Right.X, Right.Y, Right.Z, V3r32_Dot(Right, Pos),
-										   Up.X,	Up.Y,	 Up.Z,	  V3r32_Dot(Up, Pos),
-										   Front.X, Front.Y, Front.Z, V3r32_Dot(Front, Pos),
-										   0,		0,		 0,		  1 };
+		Renderer->ViewMatrix =
+			(m4x4r32) { Right.X, Right.Y, Right.Z, V3r32_Dot(Right, Pos),
+						Up.X,	 Up.Y,	  Up.Z,	   V3r32_Dot(Up, Pos),
+						Front.X, Front.Y, Front.Z, V3r32_Dot(Front, Pos),
+						0,		 0,		  0,	   1 };
 
-		m4x4r32 VPMatrix = M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
+		m4x4r32 VPMatrix =
+			M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
 
 		for (u32 I = 0; I < Shader_Count; I++) {
 			if (Renderer->Shaders[I].Mesh.Flags & MESH_HAS_PERSPECTIVE) {
@@ -534,13 +588,19 @@ Update(platform_state *Platform)
 		v4r32 AimDir4 = M4x4r32_MulMV(ViewRotation, (v4r32) { 0, 0, 1, 1 });
 		v3r32 AimDir  = { AimDir4.X, AimDir4.Y, AimDir4.Z };
 
-		v3s32 ChunkPos	 = { (s32) ((Game->Pos.X + ChunkDims.X * 1.5f) / ChunkDims.X) - 1,
-							 (s32) ((Game->Pos.Y + ChunkDims.Y * 1.5f) / ChunkDims.Y) - 1,
-							 (s32) ((Game->Pos.Z + ChunkDims.Z * 1.5f) / ChunkDims.Z) - 1 };
-		v3r32 PosInChunk = { Game->Pos.X + ChunkDims.X / 2.0f - ChunkPos.X * ChunkDims.X,
-							 Game->Pos.Y + ChunkDims.Y / 2.0f - ChunkPos.Y * ChunkDims.Y,
-							 Game->Pos.Z + ChunkDims.Z / 2.0f - ChunkPos.Z * ChunkDims.Z };
-		v3r32 AimBase	 = { PosInChunk.X, PosInChunk.Y + EyeHeight, PosInChunk.Z };
+		v3s32 ChunkPos = {
+			(s32) ((Game->Pos.X + ChunkDims.X * 1.5f) / ChunkDims.X) - 1,
+			(s32) ((Game->Pos.Y + ChunkDims.Y * 1.5f) / ChunkDims.Y) - 1,
+			(s32) ((Game->Pos.Z + ChunkDims.Z * 1.5f) / ChunkDims.Z) - 1
+		};
+		v3r32 PosInChunk = {
+			Game->Pos.X + ChunkDims.X / 2.0f - ChunkPos.X * ChunkDims.X,
+			Game->Pos.Y + ChunkDims.Y / 2.0f - ChunkPos.Y * ChunkDims.Y,
+			Game->Pos.Z + ChunkDims.Z / 2.0f - ChunkPos.Z * ChunkDims.Z
+		};
+		v3r32 AimBase = { PosInChunk.X,
+						  PosInChunk.Y + EyeHeight,
+						  PosInChunk.Z };
 
 		Game->AimBlockValid = FALSE;
 
@@ -564,7 +624,8 @@ Update(platform_state *Platform)
 				UpdateChunkPos = FALSE;
 			}
 
-			block_type BlockType = Blocks[INDEX_3D(X, Y, Z, ChunkDims.X, ChunkDims.Y)];
+			block_type BlockType =
+				Blocks[INDEX_3D(X, Y, Z, ChunkDims.X, ChunkDims.Y)];
 
 			if (BlockType != BLOCK_NONE) {
 				Game->AimBlock		= (v3s32) { X, Y, Z };
@@ -676,39 +737,89 @@ Update(platform_state *Platform)
 		}
 
 		if (Game->AimBlockValid) {
-			p_vertex *Vertex =
-				Mesh_GetVertices(&Renderer->Shaders[ShaderID_P3].Mesh, Game->AimBlockObjectIndex);
+			p_vertex *Vertex = Mesh_GetVertices(
+				&Renderer->Shaders[ShaderID_P3].Mesh,
+				Game->AimBlockObjectIndex
+			);
 
 			v3s32 B = Game->AimBlock;
 			v3r32 P = { (B.X - 8), B.Y - 8, (B.Z - 8) };
 			r32	  S = 2;
 
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + 0, -1 + 0, -1 + 0 }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + 0, -1 + S, -1 + 0 }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + S, -1 + 0, -1 + 0 }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + S, -1 + S, -1 + 0 }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + 0, -1 + 0, -1 + S }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + 0, -1 + S, -1 + S }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + S, -1 + 0, -1 + S }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + S, -1 + S, -1 + S }) };
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + 0, -1 + 0, -1 + 0 })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + 0, -1 + S, -1 + 0 })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + S, -1 + 0, -1 + 0 })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + S, -1 + S, -1 + 0 })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + 0, -1 + 0, -1 + S })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + 0, -1 + S, -1 + S })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + S, -1 + 0, -1 + S })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + S, -1 + S, -1 + S })
+			};
 
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + 0, -1 + 0, -1 + 0 }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + S, -1 + 0, -1 + 0 }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + 0, -1 + 0, -1 + S }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + S, -1 + 0, -1 + S }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + 0, -1 + 0, -1 + 0 }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + 0, -1 + 0, -1 + S }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + S, -1 + 0, -1 + 0 }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + S, -1 + 0, -1 + S }) };
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + 0, -1 + 0, -1 + 0 })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + S, -1 + 0, -1 + 0 })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + 0, -1 + 0, -1 + S })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + S, -1 + 0, -1 + S })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + 0, -1 + 0, -1 + 0 })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + 0, -1 + 0, -1 + S })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + S, -1 + 0, -1 + 0 })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + S, -1 + 0, -1 + S })
+			};
 
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + 0, -1 + S, -1 + 0 }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + S, -1 + S, -1 + 0 }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + 0, -1 + S, -1 + S }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + S, -1 + S, -1 + S }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + 0, -1 + S, -1 + 0 }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + 0, -1 + S, -1 + S }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + S, -1 + S, -1 + 0 }) };
-			*Vertex++ = (p_vertex) { Mesh_EncodePosition((v3r32) { -1 + S, -1 + S, -1 + S }) };
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + 0, -1 + S, -1 + 0 })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + S, -1 + S, -1 + 0 })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + 0, -1 + S, -1 + S })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + S, -1 + S, -1 + S })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + 0, -1 + S, -1 + 0 })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + 0, -1 + S, -1 + S })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + S, -1 + S, -1 + 0 })
+			};
+			*Vertex++ = (p_vertex) {
+				Mesh_EncodePosition((v3r32) { -1 + S, -1 + S, -1 + S })
+			};
 
 			m4x4r32 Translation = M4x4r32_Translation(
 				ChunkPos.X * 16 - 7.5 + B.X,
@@ -718,12 +829,15 @@ Update(platform_state *Platform)
 			m4x4r32 Scaling	 = M4x4r32_Scaling(0.5, 0.501, 0.5);
 			m4x4r32 Rotation = M4x4r32_I;
 
-			m4x4r32 *Matrix =
-				Mesh_GetMatrix(&Renderer->Shaders[ShaderID_P3].Mesh, Game->AimBlockObjectIndex);
+			m4x4r32 *Matrix = Mesh_GetMatrix(
+				&Renderer->Shaders[ShaderID_P3].Mesh,
+				Game->AimBlockObjectIndex
+			);
 			*Matrix = M4x4r32_Mul(M4x4r32_Mul(Translation, Rotation), Scaling);
 
-			s32 *VertexCount = (s32 *) Renderer->Shaders[ShaderID_P3].Mesh.VertexCounts->Data
-							 + Game->AimBlockObjectIndex;
+			s32 *VertexCount =
+				(s32 *) Renderer->Shaders[ShaderID_P3].Mesh.VertexCounts->Data
+				+ Game->AimBlockObjectIndex;
 			*VertexCount = 24;
 
 			Mesh_Update(&Renderer->Shaders[ShaderID_P3].Mesh);

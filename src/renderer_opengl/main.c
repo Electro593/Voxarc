@@ -1,11 +1,11 @@
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
-**                                                                         **
-**  Author: Aria Seiler                                                    **
-**                                                                         **
-**  This program is in the public domain. There is no implied warranty,    **
-**  so use it at your own risk.                                            **
-**                                                                         **
-\* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\
+*                                                                             *
+*  Author: Aria Seiler                                                        *
+*                                                                             *
+*  This program is in the public domain. There is no implied warranty, so     *
+*  use it at your own risk.                                                   *
+*                                                                             *
+\* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #if !defined(INCLUDE_SOURCE) && !defined(INCLUDE_HEADER)
 #ifdef _RENDERER_OPENGL_MODULE
@@ -201,7 +201,11 @@ Renderer_LoadProgram(c08 *VertFileName, c08 *FragFileName)
 }
 
 internal void
-Renderer_LoadShader(renderer_state *Renderer, shader_id ShaderID, mesh_flags Flags)
+Renderer_LoadShader(
+	renderer_state *Renderer,
+	shader_id		ShaderID,
+	mesh_flags		Flags
+)
 {
 	c08 *VertName = ShaderPaths[2 * ShaderID + 0];
 	c08 *FragName = ShaderPaths[2 * ShaderID + 1];
@@ -228,9 +232,14 @@ Renderer_LoadShader(renderer_state *Renderer, shader_id ShaderID, mesh_flags Fla
 
 		Shader->Program = Renderer_LoadProgram(VertName, FragName);
 
-		assetpack_atlas Atlas =
-			FindFirstAssetFromExactTag(Renderer->Assetpack, TAG_ATLAS_DESC, &(u32) { 0 })->Atlas;
-		m4x4r32 VPMatrix = M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
+		assetpack_atlas Atlas = FindFirstAssetFromExactTag(
+									Renderer->Assetpack,
+									TAG_ATLAS_DESC,
+									&(u32) { 0 }
+		)
+									->Atlas;
+		m4x4r32 VPMatrix =
+			M4x4r32_Mul(Renderer->PerspectiveMatrix, Renderer->ViewMatrix);
 
 		if (!Shader->Initialized) {
 			if (T) Shader->Mesh.TextureIndex = 0;
@@ -273,7 +282,10 @@ Renderer_LoadShader(renderer_state *Renderer, shader_id ShaderID, mesh_flags Fla
 				);
 				OpenGL_BindSampler(0, Shader->Mesh.SamplerObject);
 
-				Heap_Resize(Shader->Mesh.Storage, Renderer->Assetpack.Header->AssetsSize);
+				Heap_Resize(
+					Shader->Mesh.Storage,
+					Renderer->Assetpack.Header->AssetsSize
+				);
 				Mem_Cpy(
 					Shader->Mesh.Storage->Data,
 					Renderer->Assetpack.Assets,
@@ -281,9 +293,12 @@ Renderer_LoadShader(renderer_state *Renderer, shader_id ShaderID, mesh_flags Fla
 				);
 				Shader->Mesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
 			} else if (UI) {
-				Shader->Mesh.TextureSSBO = Renderer->Shaders[ShaderID_PT3].Mesh.TextureSSBO;
-				Shader->Mesh.Atlases	 = Renderer->Shaders[ShaderID_PT3].Mesh.Atlases;
-				Shader->Mesh.Storage	 = Renderer->Shaders[ShaderID_PT3].Mesh.Storage;
+				Shader->Mesh.TextureSSBO =
+					Renderer->Shaders[ShaderID_PT3].Mesh.TextureSSBO;
+				Shader->Mesh.Atlases =
+					Renderer->Shaders[ShaderID_PT3].Mesh.Atlases;
+				Shader->Mesh.Storage =
+					Renderer->Shaders[ShaderID_PT3].Mesh.Storage;
 
 				OpenGL_SamplerParameteri(
 					Shader->Mesh.SamplerObject,
@@ -318,7 +333,10 @@ Renderer_LoadShader(renderer_state *Renderer, shader_id ShaderID, mesh_flags Fla
 				// ((Mat0 >> 16) & 0xFF) / 255.0d
 				Heap_Resize(Shader->Mesh.Materials, sizeof(material));
 				((material *) Shader->Mesh.Materials->Data)[0] = Material;
-				OpenGL_BindBuffer(GL_SHADER_STORAGE_BUFFER, Shader->Mesh.MaterialSSBO);
+				OpenGL_BindBuffer(
+					GL_SHADER_STORAGE_BUFFER,
+					Shader->Mesh.MaterialSSBO
+				);
 				OpenGL_BufferData(
 					GL_SHADER_STORAGE_BUFFER,
 					Shader->Mesh.Materials->Size,
@@ -330,36 +348,59 @@ Renderer_LoadShader(renderer_state *Renderer, shader_id ShaderID, mesh_flags Fla
 			if (T) Shader->Mesh.Flags |= MESH_GROW_TEXTURE_BUFFER;
 		}
 
-		Shader->Mesh.Color			= OpenGL_GetUniformLocation(Shader->Program, "Color");
-		Shader->Mesh.AtlasesSampler = OpenGL_GetUniformLocation(Shader->Program, "Atlases");
-		Shader->Mesh.AtlasSize		= OpenGL_GetUniformLocation(Shader->Program, "AtlasSize");
-		Shader->Mesh.VPMatrix		= OpenGL_GetUniformLocation(Shader->Program, "VPMatrix");
-		Shader->Mesh.LightPos		= OpenGL_GetUniformLocation(Shader->Program, "LightPos");
-		Shader->Mesh.CameraPos		= OpenGL_GetUniformLocation(Shader->Program, "CameraPos");
+		Shader->Mesh.Color =
+			OpenGL_GetUniformLocation(Shader->Program, "Color");
+		Shader->Mesh.AtlasesSampler =
+			OpenGL_GetUniformLocation(Shader->Program, "Atlases");
+		Shader->Mesh.AtlasSize =
+			OpenGL_GetUniformLocation(Shader->Program, "AtlasSize");
+		Shader->Mesh.VPMatrix =
+			OpenGL_GetUniformLocation(Shader->Program, "VPMatrix");
+		Shader->Mesh.LightPos =
+			OpenGL_GetUniformLocation(Shader->Program, "LightPos");
+		Shader->Mesh.CameraPos =
+			OpenGL_GetUniformLocation(Shader->Program, "CameraPos");
 
 		if (!N && !T && !C && d3) {
 			OpenGL_UniformMatrix4fv(Shader->Mesh.VPMatrix, 1, FALSE, VPMatrix);
 			OpenGL_Uniform4f(Shader->Mesh.Color, 1, 1, 1, 1);
 		} else if (!N && !T && C && !d3) {
-			OpenGL_UniformMatrix4fv(Shader->Mesh.VPMatrix, 1, FALSE, Renderer->OrthographicMatrix);
+			OpenGL_UniformMatrix4fv(
+				Shader->Mesh.VPMatrix,
+				1,
+				FALSE,
+				Renderer->OrthographicMatrix
+			);
 		} else if (!N && !T && C && d3) {
 			OpenGL_UniformMatrix4fv(Shader->Mesh.VPMatrix, 1, FALSE, VPMatrix);
 		} else if (!N && T && !C && d3) {
 			OpenGL_Uniform1i(Shader->Mesh.AtlasesSampler, 0);
-			OpenGL_Uniform2ui(Shader->Mesh.AtlasSize, Atlas.Size.X, Atlas.Size.Y);
+			OpenGL_Uniform2ui(
+				Shader->Mesh.AtlasSize,
+				Atlas.Size.X,
+				Atlas.Size.Y
+			);
 			OpenGL_UniformMatrix4fv(Shader->Mesh.VPMatrix, 1, FALSE, VPMatrix);
 		} else if (N && !T && C && d3) {
 			OpenGL_UniformMatrix4fv(Shader->Mesh.VPMatrix, 1, FALSE, VPMatrix);
 			OpenGL_Uniform3f(Shader->Mesh.CameraPos, 0, 0, 0);
 		} else if (UI) {
 			OpenGL_Uniform1i(Shader->Mesh.AtlasesSampler, 0);
-			OpenGL_Uniform2ui(Shader->Mesh.AtlasSize, Atlas.Size.X, Atlas.Size.Y);
+			OpenGL_Uniform2ui(
+				Shader->Mesh.AtlasSize,
+				Atlas.Size.X,
+				Atlas.Size.Y
+			);
 		}
 	}
 }
 
 internal void
-Renderer_Resize(v2u32 NewSize, m4x4r32 *OrthographicMatrix, m4x4r32 *PerspectiveMatrix)
+Renderer_Resize(
+	v2u32	 NewSize,
+	m4x4r32 *OrthographicMatrix,
+	m4x4r32 *PerspectiveMatrix
+)
 {
 	v2u32 Pos;
 	v2u32 Size;
@@ -386,20 +427,38 @@ Renderer_Resize(v2u32 NewSize, m4x4r32 *OrthographicMatrix, m4x4r32 *Perspective
 	r32 FarZ		= 256;
 	r32 ZRange		= NearZ - FarZ;
 
-	*PerspectiveMatrix = (m4x4r32) {
-		CotHalfFOV / AspectRatio,  0, 0, 0, 0, CotHalfFOV, 0, 0, 0, 0, (-NearZ - FarZ) / ZRange,
-		2 * FarZ * NearZ / ZRange, 0, 0, 1, 0
-	};
+	*PerspectiveMatrix = (m4x4r32) { CotHalfFOV / AspectRatio,
+									 0,
+									 0,
+									 0,
+									 0,
+									 CotHalfFOV,
+									 0,
+									 0,
+									 0,
+									 0,
+									 (-NearZ - FarZ) / ZRange,
+									 2 * FarZ * NearZ / ZRange,
+									 0,
+									 0,
+									 1,
+									 0 };
 
-	*OrthographicMatrix =
-		(m4x4r32) { 1 / AspectRatio, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 };
+	*OrthographicMatrix = (m4x4r32) {
+		1 / AspectRatio, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
+	};
 
 	OpenGL_Viewport(Pos.X, Pos.Y, Size.X, Size.Y);
 	OpenGL_Scissor(Pos.X, Pos.Y, Size.X, Size.Y);
 }
 
 internal void
-Renderer_SetUniform_V3r32(renderer_state *Renderer, u32 ShaderID, u32 Uniform, v3r32 Value)
+Renderer_SetUniform_V3r32(
+	renderer_state *Renderer,
+	u32				ShaderID,
+	u32				Uniform,
+	v3r32			Value
+)
 {
 	OpenGL_UseProgram(Renderer->Shaders[ShaderID].Program);
 	OpenGL_Uniform3f(Uniform, Value.X, Value.Y, Value.Z);
@@ -420,7 +479,12 @@ Renderer_SetUniform_M4x4r32(
 }
 
 internal void
-Renderer_Draw(platform_state *Platform, game_state *Game, renderer_state *Renderer, r32 FPS)
+Renderer_Draw(
+	platform_state *Platform,
+	game_state	   *Game,
+	renderer_state *Renderer,
+	r32				FPS
+)
 {
 	// Hot-reload the shaders
 	Renderer_LoadShader(Renderer, ShaderID_P3, 0);
@@ -431,7 +495,7 @@ Renderer_Draw(platform_state *Platform, game_state *Game, renderer_state *Render
 	Renderer_LoadShader(Renderer, ShaderID_PNM3, 0);
 
 	Stack_Push();
-	string String = CFStringL(
+	string String = FStringL(
 		"Position (X, Y, Z): %f, %f, %f\n"
 		"Velocity (X, Y, Z): %f, %f, %f\n"
 		"Acceleration (X, Y, Z): %f, %f, %f\n"
@@ -448,9 +512,13 @@ Renderer_Draw(platform_state *Platform, game_state *Game, renderer_state *Render
 		Game->Acceleration.X,
 		Game->Acceleration.Y,
 		Game->Acceleration.Z,
-		Game->AimBlockValid
-			? CFStringL("%d, %d, %d", Game->AimBlock.X, Game->AimBlock.Y, Game->AimBlock.Z)
-			: CStringL("None"),
+		Game->AimBlockValid ? FStringL(
+								  "%d, %d, %d",
+								  Game->AimBlock.X,
+								  Game->AimBlock.Y,
+								  Game->AimBlock.Z
+							  )
+							: CStringL("None"),
 		Game->Dir.X,
 		Game->Dir.Y,
 		Game->TimeOfDay,
@@ -462,8 +530,12 @@ Renderer_Draw(platform_state *Platform, game_state *Game, renderer_state *Render
 	ui_style InheritedStyle = GetInheritedStyle(Component);
 
 	ui_string	UIString = MakeUIString(Renderer->Heap, String, InheritedStyle);
-	mesh_object Object =
-		MakeUIStringObject(Renderer->Heap, UIString, (v2u32) { 10, 0 }, Renderer->WindowSize);
+	mesh_object Object	 = MakeUIStringObject(
+		  Renderer->Heap,
+		  UIString,
+		  (v2u32) { 10, 0 },
+		  Renderer->WindowSize
+	  );
 	FreeUIString(UIString);
 
 	Object.Index	= Renderer->ObjectIndex;
@@ -537,7 +609,11 @@ Init(platform_state *Platform)
 	Renderer->WindowSize		 = WindowSize;
 
 	Renderer_LoadShader(Renderer, ShaderID_P3, 0);
-	Renderer_LoadShader(Renderer, ShaderID_PC2, MESH_HAS_ELEMENTS | MESH_HAS_COLORS);
+	Renderer_LoadShader(
+		Renderer,
+		ShaderID_PC2,
+		MESH_HAS_ELEMENTS | MESH_HAS_COLORS
+	);
 	Renderer_LoadShader(
 		Renderer,
 		ShaderID_PC3,
@@ -551,12 +627,18 @@ Init(platform_state *Platform)
 	Renderer_LoadShader(
 		Renderer,
 		ShaderID_Glyph,
-		MESH_HAS_ELEMENTS | MESH_HAS_TEXTURES | MESH_IS_FOR_UI | MESH_SHARED_TEXTURE_BUFFER
+		MESH_HAS_ELEMENTS
+			| MESH_HAS_TEXTURES
+			| MESH_IS_FOR_UI
+			| MESH_SHARED_TEXTURE_BUFFER
 	);
 	Renderer_LoadShader(
 		Renderer,
 		ShaderID_PNM3,
-		MESH_HAS_ELEMENTS | MESH_HAS_NORMALS | MESH_HAS_MATERIALS | MESH_HAS_PERSPECTIVE
+		MESH_HAS_ELEMENTS
+			| MESH_HAS_NORMALS
+			| MESH_HAS_MATERIALS
+			| MESH_HAS_PERSPECTIVE
 	);
 
 	Mem_Set(&Renderer->Font, 0, sizeof(ui_font));
@@ -582,7 +664,8 @@ Init(platform_state *Platform)
 	*DebugText				= DEFAULT_COMPONENT;
 	DebugText->Parent		= Root;
 
-	Renderer->ObjectIndex = Mesh_ReserveObject(&Renderer->Shaders[ShaderID_Glyph].Mesh, 0, 0);
+	Renderer->ObjectIndex =
+		Mesh_ReserveObject(&Renderer->Shaders[ShaderID_Glyph].Mesh, 0, 0);
 }
 
 external void

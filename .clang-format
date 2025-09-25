@@ -89,7 +89,7 @@ BreakBinaryOperations: RespectPrecedence
 # breakInheritanceList:
 BreakStringLiterals: true
 # BreakTemplateDeclarations:
-ColumnLimit: 100
+ColumnLimit: 80
 # CommentPragmas:
 # CompactNamespaces:
 # ConstructorInitializerIndentWidth:
