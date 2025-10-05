@@ -147,7 +147,8 @@ OpenGL_DebugCallback(
 	vptr				  UserParam
 )
 {
-	// if (Severity != OPENGL_DEBUG_SEVERITY_NOTIFICATION) Error(Message);
+	STOP;
+	if (Severity != OPENGL_DEBUG_SEVERITY_NOTIFICATION) Error(Message);
 }
 #endif
 
@@ -162,6 +163,17 @@ Renderer_LoadProgram(c08 *VertFileName, c08 *FragFileName)
 	string VertCode, FragCode;
 
 	u32 Program = OpenGL_CreateProgram();
+	if (!Program) {
+		OpenGL_GetProgramiv(Program, GL_INFO_LOG_LENGTH, &InfoLogLength);
+		ProgramErrorMessage = Stack_Allocate(InfoLogLength);
+		OpenGL_GetProgramInfoLog(
+			Program,
+			InfoLogLength,
+			NULL,
+			ProgramErrorMessage
+		);
+		Error(ProgramErrorMessage);
+	}
 
 	if (VertFileName) {
 		Vert	 = OpenGL_CreateShader(GL_VERTEX_SHADER);
@@ -181,10 +193,17 @@ Renderer_LoadProgram(c08 *VertFileName, c08 *FragFileName)
 
 	OpenGL_LinkProgram(Program);
 	OpenGL_GetProgramiv(Program, GL_LINK_STATUS, &Result);
-	OpenGL_GetProgramiv(Program, GL_INFO_LOG_LENGTH, &InfoLogLength);
-	ProgramErrorMessage = Stack_Allocate(InfoLogLength);
-	OpenGL_GetProgramInfoLog(Program, InfoLogLength, NULL, ProgramErrorMessage);
-	if (!Result) Error(ProgramErrorMessage);
+	if (!Result) {
+		OpenGL_GetProgramiv(Program, GL_INFO_LOG_LENGTH, &InfoLogLength);
+		ProgramErrorMessage = Stack_Allocate(InfoLogLength);
+		OpenGL_GetProgramInfoLog(
+			Program,
+			InfoLogLength,
+			NULL,
+			ProgramErrorMessage
+		);
+		Error(ProgramErrorMessage);
+	}
 
 	if (VertFileName) {
 		OpenGL_DetachShader(Program, Vert);
@@ -584,7 +603,7 @@ Init(platform_state *Platform)
 	heap		   *Heap	   = Renderer->Heap;
 	v2u32			WindowSize = Platform->WindowSize;
 
-	// Wayland_CreateWindow("Voxarc", 800, 600);
+	Wayland_CreateWindow("Voxarc", 800, 600);
 
 #if defined(_DEBUG)
 	OpenGL_Enable(GL_DEBUG_OUTPUT);
