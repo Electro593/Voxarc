@@ -32,7 +32,7 @@ global renderer_state _G;
 global renderer_funcs _F;
 #endif
 
-#include "opengl.h"
+#include <platform/opengl.h>
 #include "mesh.c"
 
 #ifdef INCLUDE_HEADER

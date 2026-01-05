@@ -3,39 +3,39 @@ BasedOnStyle: LLVM
 AlignAfterOpenBracket: BlockIndent
 AlignArrayOfStructures: Right
 AlignConsecutiveAssignments:
-  Enabled: true
-  AcrossEmptyLines: false
-  AcrossComments: true
-  AlignCompound: true
-  PadOperators: true
+    Enabled: true
+    AcrossEmptyLines: false
+    AcrossComments: true
+    AlignCompound: true
+    PadOperators: true
 AlignConsecutiveBitFields:
-  Enabled: true
-  AcrossEmptyLines: false
-  AcrossComments: true
+    Enabled: true
+    AcrossEmptyLines: false
+    AcrossComments: true
 AlignConsecutiveDeclarations:
-  Enabled: true
-  AcrossEmptyLines: false
-  AcrossComments: true
-  AlignFunctionDeclarations: true
-  AlignFunctionPointers: false
+    Enabled: true
+    AcrossEmptyLines: false
+    AcrossComments: true
+    AlignFunctionDeclarations: true
+    AlignFunctionPointers: false
 AlignConsecutiveMacros:
-  Enabled: true
-  AcrossEmptyLines: false
-  AcrossComments: true
+    Enabled: true
+    AcrossEmptyLines: false
+    AcrossComments: true
 AlignConsecutiveShortCaseStatements:
-  Enabled: true
-  AcrossEmptyLines: true
-  AcrossComments: true
-  # AlignCaseArrows:
-  AlignCaseColons: true
+    Enabled: true
+    AcrossEmptyLines: true
+    AcrossComments: true
+    # AlignCaseArrows:
+    AlignCaseColons: true
 # AlignConsecutiveTableGenBreakingDAGArgColons:
 # AlignConsecutiveTableGenCondOperatorColons:
 # AlignConsecutiveTableGenDefinitionColons:
 AlignEscapedNewlines: LeftWithLastLine
 AlignOperands: AlignAfterOperator
 AlignTrailingComments:
-  Kind: Always
-  OverEmptyLines: 0
+    Kind: Always
+    OverEmptyLines: 0
 AllowAllArgumentsOnNextLine: false
 AllowAllParametersOfDeclarationOnNextLine: false
 # AllowBreakBeforeNoexceptSpecifier:
@@ -55,24 +55,24 @@ BinPackArguments: false
 BinPackParameters: OnePerLine
 BitFieldColonSpacing: Both
 BraceWrapping:
-  AfterCaseLabel: false
-  # AfterClass:
-  AfterControlStatement: MultiLine
-  AfterEnum: false
-  AfterFunction: true
-  # AfterNamespace:
-  # AfterObjCDeclaration:
-  AfterStruct: false
-  AfterUnion: false
-  # AfterExternBlock:
-  # BeforeCatch:
-  BeforeElse: false
-  # BeforeLambdaBody:
-  BeforeWhile: false
-  IndentBraces: false
-  SplitEmptyFunction: false
-  SplitEmptyRecord: false
-  # SplitEmptyNamespace:
+    AfterCaseLabel: false
+    # AfterClass:
+    AfterControlStatement: MultiLine
+    AfterEnum: false
+    AfterFunction: true
+    # AfterNamespace:
+    # AfterObjCDeclaration:
+    AfterStruct: false
+    AfterUnion: false
+    # AfterExternBlock:
+    # BeforeCatch:
+    BeforeElse: false
+    # BeforeLambdaBody:
+    BeforeWhile: false
+    IndentBraces: false
+    SplitEmptyFunction: false
+    SplitEmptyRecord: false
+    # SplitEmptyNamespace:
 BracedInitializerIndentWidth: 4
 BreakAdjacentStringLiterals: true
 # BreakAfterAttributes:
@@ -100,7 +100,7 @@ DisableFormat: false
 # EmptyLineAfterAccessModifier:
 # EmptyLineBeforeAccessModifier:
 # FixNamespaceComments:
-ForEachMacros: [HASHMAP_FOREACH]
+ForEachMacros: [HASHMAP_FOREACH, STRING_FOREACH]
 # IfMacros:
 IncludeBlocks: Preserve
 # IncludeCategories:
@@ -124,9 +124,9 @@ InsertTrailingCommas: Wrapped
 # JavaScriptQuotes:
 # JavaScriptWrapImports:
 KeepEmptyLines:
-  AtStartOfFile: false
-  AtStartOfBlock: false
-  AtEndOfFile: false
+    AtStartOfFile: false
+    AtStartOfBlock: false
+    AtEndOfFile: false
 KeepFormFeed: false
 # LambdaBodyIndentation:
 # Language:
@@ -160,7 +160,8 @@ PPIndentWidth: -1
 # PenaltyReturnTypeOnItsOwnLine:
 PointerAlignment: Right
 QualifierAlignment: Custom
-QualifierOrder: [restrict, volatile, static, inline, const, constexpr, friend, type]
+QualifierOrder:
+    [restrict, volatile, static, inline, const, constexpr, friend, type]
 # RawStringFormats:
 # ReferenceAlignment:
 ReflowComments: Always
@@ -194,15 +195,15 @@ SpacesBeforeTrailingComments: 2
 # SpacesInAngles:
 SpacesInContainerLiterals: true
 SpacesInLineCommentPrefix:
-  Minimum: 1
-  Maximum: 1
+    Minimum: 1
+    Maximum: 1
 SpacesInParens: Custom
 SpacesInParensOptions:
-  ExceptDoubleParentheses: true
-  InConditionalStatements: false
-  InCStyleCasts: false
-  InEmptyParentheses: false
-  Other: false
+    ExceptDoubleParentheses: true
+    InConditionalStatements: false
+    InCStyleCasts: false
+    InEmptyParentheses: false
+    Other: false
 SpacesInSquareBrackets: false
 # Standard:
 StatementAttributeLikeMacros: [global, persist, internal, external]
