@@ -23,8 +23,8 @@
 #undef INCLUDE_SOURCE
 #else
 #ifdef INCLUDE_SOURCE
-extern game_state _G;
-extern game_funcs _F;
+global game_state _G;
+global game_funcs _F;
 #endif
 
 #include <base/file.c>
@@ -112,8 +112,6 @@ typedef struct game_funcs {
 #ifdef INCLUDE_SOURCE
 global platform_module *RendererModule;
 global renderer_state  *Renderer;
-game_state				_G;
-game_funcs				_F;
 
 external void
 Load(platform_state *Platform, platform_module *Module)

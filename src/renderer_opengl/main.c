@@ -19,7 +19,6 @@
 #include <platform/main.c>
 #include <renderer.h>
 #include <base/main.c>
-#include <wayland/main.c>
 #include "main.c"
 #undef INCLUDE_HEADER
 
@@ -120,14 +119,6 @@ Load(platform_state *Platform, platform_module *Module)
 #define EXPORT(R, N, ...) N = GameFuncs->N;
 #define X GAME_FUNCS
 #include <x.h>
-
-	platform_module *WaylandModule = Platform_LoadModule(WAYLAND_MODULE_NAME);
-	if (WaylandModule && WaylandModule->Funcs) {
-		wayland_funcs *WaylandFuncs = WaylandModule->Funcs;
-#define EXPORT(R, N, ...) N = WaylandFuncs->N;
-#define X WAYLAND_FUNCS
-#include <x.h>
-	}
 
 	opengl_funcs *OpenGLFuncs = Platform_LoadOpenGL();
 #define IMPORT(R, N, ...) OpenGL_##N = OpenGLFuncs->OpenGL_##N;
@@ -603,7 +594,7 @@ Init(platform_state *Platform)
 	heap		   *Heap	   = Renderer->Heap;
 	v2u32			WindowSize = Platform->WindowSize;
 
-	Wayland_CreateWindow("Voxarc", 800, 600);
+	if (Wayland_TryInit()) Wayland_CreateOpenGLWindow("Voxarc", 800, 600);
 
 #if defined(_DEBUG)
 	OpenGL_Enable(GL_DEBUG_OUTPUT);
