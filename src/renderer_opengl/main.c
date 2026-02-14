@@ -154,17 +154,7 @@ Renderer_LoadProgram(c08 *VertFileName, c08 *FragFileName)
 	string VertCode, FragCode;
 
 	u32 Program = OpenGL_CreateProgram();
-	if (!Program) {
-		OpenGL_GetProgramiv(Program, GL_INFO_LOG_LENGTH, &InfoLogLength);
-		ProgramErrorMessage = Stack_Allocate(InfoLogLength);
-		OpenGL_GetProgramInfoLog(
-			Program,
-			InfoLogLength,
-			NULL,
-			ProgramErrorMessage
-		);
-		Error(ProgramErrorMessage);
-	}
+	if (!Program) return 0;
 
 	if (VertFileName) {
 		Vert	 = OpenGL_CreateShader(GL_VERTEX_SHADER);
@@ -594,7 +584,7 @@ Init(platform_state *Platform)
 	heap		   *Heap	   = Renderer->Heap;
 	v2u32			WindowSize = Platform->WindowSize;
 
-	if (Wayland_TryInit()) Wayland_CreateOpenGLWindow("Voxarc", 800, 600);
+	if (Wayland_TryInit()) Wayland_CreateGLWindow("Voxarc", 800, 600);
 
 #if defined(_DEBUG)
 	OpenGL_Enable(GL_DEBUG_OUTPUT);
