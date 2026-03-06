@@ -92,7 +92,7 @@ typedef struct ui_component {
 #ifdef INCLUDE_SOURCE
 
 internal assetpack_asset *
-GetGlyph(ui_font *Font, c08 Codepoint)
+GetGlyph(ui_font *Font, c32 Codepoint)
 {
 	u32				 I	   = Codepoint - ' ';
 	assetpack_asset *Asset = Font->CharCache[I];

@@ -138,7 +138,6 @@ OpenGL_DebugCallback(
 	vptr				  UserParam
 )
 {
-	STOP;
 	if (Severity != OPENGL_DEBUG_SEVERITY_NOTIFICATION) Error(Message);
 }
 #endif
@@ -154,7 +153,15 @@ Renderer_LoadProgram(c08 *VertFileName, c08 *FragFileName)
 	string VertCode, FragCode;
 
 	u32 Program = OpenGL_CreateProgram();
-	if (!Program) return 0;
+	if (!Program) {
+		FPrintL(
+			"Failed to create an OpenGL program for [%s]/[%s]: code %#x\n",
+			CString(VertFileName),
+			CString(FragFileName),
+			OpenGL_GetError()
+		);
+		return 0;
+	}
 
 	if (VertFileName) {
 		Vert	 = OpenGL_CreateShader(GL_VERTEX_SHADER);
@@ -362,17 +369,27 @@ Renderer_LoadShader(
 			OpenGL_GetUniformLocation(Shader->Program, "CameraPos");
 
 		if (!N && !T && !C && d3) {
-			OpenGL_UniformMatrix4fv(Shader->Mesh.VPMatrix, 1, FALSE, VPMatrix);
+			OpenGL_UniformMatrix4fv(
+				Shader->Mesh.VPMatrix,
+				1,
+				FALSE,
+				VPMatrix.E
+			);
 			OpenGL_Uniform4f(Shader->Mesh.Color, 1, 1, 1, 1);
 		} else if (!N && !T && C && !d3) {
 			OpenGL_UniformMatrix4fv(
 				Shader->Mesh.VPMatrix,
 				1,
 				FALSE,
-				Renderer->OrthographicMatrix
+				Renderer->OrthographicMatrix.E
 			);
 		} else if (!N && !T && C && d3) {
-			OpenGL_UniformMatrix4fv(Shader->Mesh.VPMatrix, 1, FALSE, VPMatrix);
+			OpenGL_UniformMatrix4fv(
+				Shader->Mesh.VPMatrix,
+				1,
+				FALSE,
+				VPMatrix.E
+			);
 		} else if (!N && T && !C && d3) {
 			OpenGL_Uniform1i(Shader->Mesh.AtlasesSampler, 0);
 			OpenGL_Uniform2ui(
@@ -380,9 +397,19 @@ Renderer_LoadShader(
 				Atlas.Size.X,
 				Atlas.Size.Y
 			);
-			OpenGL_UniformMatrix4fv(Shader->Mesh.VPMatrix, 1, FALSE, VPMatrix);
+			OpenGL_UniformMatrix4fv(
+				Shader->Mesh.VPMatrix,
+				1,
+				FALSE,
+				VPMatrix.E
+			);
 		} else if (N && !T && C && d3) {
-			OpenGL_UniformMatrix4fv(Shader->Mesh.VPMatrix, 1, FALSE, VPMatrix);
+			OpenGL_UniformMatrix4fv(
+				Shader->Mesh.VPMatrix,
+				1,
+				FALSE,
+				VPMatrix.E
+			);
 			OpenGL_Uniform3f(Shader->Mesh.CameraPos, 0, 0, 0);
 		} else if (UI) {
 			OpenGL_Uniform1i(Shader->Mesh.AtlasesSampler, 0);
@@ -475,7 +502,7 @@ Renderer_SetUniform_M4x4r32(
 )
 {
 	OpenGL_UseProgram(Renderer->Shaders[ShaderID].Program);
-	OpenGL_UniformMatrix4fv(Uniform, Count, Transpose, Value);
+	OpenGL_UniformMatrix4fv(Uniform, Count, Transpose, Value.E);
 }
 
 internal void
@@ -584,7 +611,7 @@ Init(platform_state *Platform)
 	heap		   *Heap	   = Renderer->Heap;
 	v2u32			WindowSize = Platform->WindowSize;
 
-	if (Wayland_TryInit()) Wayland_CreateGLWindow("Voxarc", 800, 600);
+	Platform_CreateWindow("Voxarc", 800, 600);
 
 #if defined(_DEBUG)
 	OpenGL_Enable(GL_DEBUG_OUTPUT);
