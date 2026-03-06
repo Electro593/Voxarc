@@ -568,6 +568,7 @@ Renderer_Draw(
 	Object.Index	= Renderer->ObjectIndex;
 	mesh *GlyphMesh = &Renderer->Shaders[ShaderID_Glyph].Mesh;
 	Mesh_Bind(GlyphMesh);
+	Mesh_Update(GlyphMesh);
 
 	Mesh_UpdateVertices(GlyphMesh, Object);
 	Mesh_UpdateIndices(GlyphMesh, Object);
@@ -609,9 +610,8 @@ Init(platform_state *Platform)
 {
 	renderer_state *Renderer   = &_G;
 	heap		   *Heap	   = Renderer->Heap;
-	v2u32			WindowSize = Platform->WindowSize;
 
-	Platform_CreateWindow("Voxarc", 800, 600);
+	Platform_CreateWindow("Voxarc", Platform->WindowSize.X, Platform->WindowSize.Y);
 
 #if defined(_DEBUG)
 	OpenGL_Enable(GL_DEBUG_OUTPUT);
@@ -633,7 +633,7 @@ Init(platform_state *Platform)
 	Renderer->OrthographicMatrix = M4x4r32_I;
 	Renderer->PerspectiveMatrix	 = M4x4r32_I;
 	Renderer->ViewMatrix		 = M4x4r32_I;
-	Renderer->WindowSize		 = WindowSize;
+	Renderer->WindowSize		 = Platform->WindowSize;
 
 	Renderer_LoadShader(Renderer, ShaderID_P3, 0);
 	Renderer_LoadShader(
