@@ -23,6 +23,7 @@
 #undef INCLUDE_HEADER
 
 #define INCLUDE_SOURCE
+#include <platform/opengl.h>
 #include "main.c"
 #undef INCLUDE_SOURCE
 #else
@@ -31,7 +32,6 @@ global renderer_state _G;
 global renderer_funcs _F;
 #endif
 
-#include <platform/opengl.h>
 #include "mesh.c"
 
 #ifdef INCLUDE_HEADER
@@ -602,16 +602,16 @@ Renderer_Draw(
 	Mesh_Draw(GlyphMesh, GL_TRIANGLES);
 	OpenGL_Enable(GL_DEPTH_TEST);
 
+	Wayland_SwapBuffers();
+
 	Stack_Pop();
 }
 
 external void
 Init(platform_state *Platform)
 {
-	renderer_state *Renderer   = &_G;
-	heap		   *Heap	   = Renderer->Heap;
-
-	Platform_CreateWindow("Voxarc", Platform->WindowSize.X, Platform->WindowSize.Y);
+	renderer_state *Renderer = &_G;
+	heap		   *Heap	 = Renderer->Heap;
 
 #if defined(_DEBUG)
 	OpenGL_Enable(GL_DEBUG_OUTPUT);
@@ -629,6 +629,12 @@ Init(platform_state *Platform)
 
 	OpenGL_ClearColor(.5, .5, .5, 1);
 	OpenGL_PolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+	Platform_CreateWindow(
+		"Voxarc",
+		Platform->WindowSize.X,
+		Platform->WindowSize.Y
+	);
 
 	Renderer->OrthographicMatrix = M4x4r32_I;
 	Renderer->PerspectiveMatrix	 = M4x4r32_I;
