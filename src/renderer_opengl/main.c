@@ -616,6 +616,12 @@ Init(platform_state *Platform)
 	renderer_state *Renderer = &_G;
 	heap		   *Heap	 = Renderer->Heap;
 
+	Platform_CreateWindow(
+		"Voxarc",
+		Platform->WindowSize.X,
+		Platform->WindowSize.Y
+	);
+
 #if defined(_DEBUG)
 	OpenGL_Enable(GL_DEBUG_OUTPUT);
 	OpenGL_DebugMessageCallback(OpenGL_DebugCallback, NULL);
@@ -630,14 +636,12 @@ Init(platform_state *Platform)
 	OpenGL_Enable(GL_BLEND);
 	OpenGL_BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	OpenGL_ColorMask(TRUE, TRUE, TRUE, TRUE);
 	OpenGL_ClearColor(.5, .5, .5, 1);
 	OpenGL_PolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-	Platform_CreateWindow(
-		"Voxarc",
-		Platform->WindowSize.X,
-		Platform->WindowSize.Y
-	);
+	OpenGL_Viewport(0, 0, Platform->WindowSize.X, Platform->WindowSize.Y);
+	OpenGL_Scissor(0, 0, Platform->WindowSize.X, Platform->WindowSize.Y);
 
 	Renderer->OrthographicMatrix = M4x4r32_I;
 	Renderer->PerspectiveMatrix	 = M4x4r32_I;
