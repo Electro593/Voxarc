@@ -20,8 +20,7 @@
 typedef enum block_type {
 	BLOCK_NONE,
 
-#define ENUM(EnumName, FileName) \
-      BLOCK_##EnumName,
+#define ENUM(EnumName, FileName) BLOCK_##EnumName,
 	BLOCK_TYPES
 #undef ENUM
 
@@ -30,9 +29,8 @@ typedef enum block_type {
 
 global c08 *BlockTexturePaths[BLOCK_Count] = { "",
 
-#define ENUM(EnumName, FileName) \
-      BLOCK_TEXTURE_PREFIX #FileName ".bmp",
-											   BLOCK_TYPES
+#define ENUM(EnumName, FileName) BLOCK_TEXTURE_PREFIX #FileName ".bmp",
+	BLOCK_TYPES
 #undef ENUM
 };
 
@@ -77,10 +75,14 @@ global v3u32 RegionDims = { 16, 16, 16 };
 */
 
 global u32 CubePositions[] = {
-	0b01100000000110000000011000000001, 0b01100000000110000000010111111111,
-	0b01100000000101111111110111111111, 0b01100000000101111111111000000001,
-	0b01011111111110000000011000000001, 0b01011111111110000000010111111111,
-	0b01011111111101111111110111111111, 0b01011111111101111111111000000001
+	0b01100000000110000000011000000001,
+	0b01100000000110000000010111111111,
+	0b01100000000101111111110111111111,
+	0b01100000000101111111111000000001,
+	0b01011111111110000000011000000001,
+	0b01011111111110000000010111111111,
+	0b01011111111101111111110111111111,
+	0b01011111111101111111111000000001,
 };
 
 internal b08
@@ -292,8 +294,9 @@ MakeChunk(
 					// For each 'V' coordinate:
 					for (; P.E[S2] < C.E[S2]; P.E[S2]++) {
 						// For each 'U' coordinate:
-						for (P.E[S1] = Min.E[S1]; P.E[S1] <= Max.E[S1];
-							 P.E[S1]++)
+						for (
+							P.E[S1] = Min.E[S1]; P.E[S1] <= Max.E[S1]; P.E[S1]++
+						)
 						{
 							I  = INDEX_3D(P.X, P.Y, P.Z, C.X, C.Y);
 							DI = INDEX_3D(
@@ -318,8 +321,9 @@ MakeChunk(
 						// give up on it.
 						else if (P.E[S1] <= Max.E[S1]) break;
 						// We're merging this row, so consume it.
-						for (P.E[S1] = Min.E[S1]; P.E[S1] <= Max.E[S1];
-							 P.E[S1]++)
+						for (
+							P.E[S1] = Min.E[S1]; P.E[S1] <= Max.E[S1]; P.E[S1]++
+						)
 							Consumed[INDEX_3D(P.X, P.Y, P.Z, C.X, C.Y)] |= Flag;
 					}
 					// Set our max 'V' coordinate.
@@ -337,8 +341,8 @@ MakeChunk(
 						);
 						Vertex = (pt_vertex *) Chunk->Object.Vertices->Data
 							   + 4 * VertexCount;
-						Index = (u32 *) Chunk->Object.Indices->Data
-							  + 6 * VertexCount;
+						Index  = (u32 *) Chunk->Object.Indices->Data
+							   + 6 * VertexCount;
 						VertexCount += 12;
 					}
 
@@ -384,21 +388,21 @@ MakeChunk(
 					u32 K[] = { 0, 1, 2, 1, 1, 0 };
 					u32 R[] = { 0b00, 0b01, 0b11, 0b10, 0b00, 0b01, 0b11 };
 
-					*Vertex++ = (pt_vertex) {
+					*Vertex++ = (pt_vertex){
 						Mesh_EncodePosition(P0),
-						RepV | RepU | TextureBytes[T] | R[K[F] + 0]
+						RepV | RepU | TextureBytes[T] | R[K[F] + 0],
 					};
-					*Vertex++ = (pt_vertex) {
+					*Vertex++ = (pt_vertex){
 						Mesh_EncodePosition(P1),
-						RepV | RepU | TextureBytes[T] | R[K[F] + 1]
+						RepV | RepU | TextureBytes[T] | R[K[F] + 1],
 					};
-					*Vertex++ = (pt_vertex) {
+					*Vertex++ = (pt_vertex){
 						Mesh_EncodePosition(P2),
-						RepV | RepU | TextureBytes[T] | R[K[F] + 2]
+						RepV | RepU | TextureBytes[T] | R[K[F] + 2],
 					};
-					*Vertex++ = (pt_vertex) {
+					*Vertex++ = (pt_vertex){
 						Mesh_EncodePosition(P3),
-						RepV | RepU | TextureBytes[T] | R[K[F] + 3]
+						RepV | RepU | TextureBytes[T] | R[K[F] + 3],
 					};
 
 					*Index++ = 4 * VertexIndex + 0;
@@ -444,12 +448,12 @@ CollidesWithBlock(
 
 	block_type *Blocks = Chunk.Blocks->Data;
 	block_type	Type   = Blocks[INDEX_3D(
-		   BlockPos.X,
-		   BlockPos.Y,
-		   BlockPos.Z,
-		   ChunkDims.X,
-		   ChunkDims.Y
-	   )];
+		BlockPos.X,
+		BlockPos.Y,
+		BlockPos.Z,
+		ChunkDims.X,
+		ChunkDims.Y
+	)];
 
 	if (Type == BLOCK_NONE) return FALSE;
 
@@ -505,7 +509,7 @@ MakeNonVoxelChunk(
 			VerticesR[INDEX_2D(X, Z, VertexCountX)] = Pos;
 
 			pnm_vertex *Vertex = Vertices + INDEX_2D(X, Z, VertexCountX);
-			*Vertex = (pnm_vertex) { Mesh_EncodePosition(Pos), 0, 0 };
+			*Vertex			   = (pnm_vertex){ Mesh_EncodePosition(Pos), 0, 0 };
 		}
 	}
 
@@ -540,22 +544,22 @@ MakeNonVoxelChunk(
 			v3r32 TL, TM, TR, BL, BM, BR;
 
 			if (X == 0 || Z == 0) {
-				BL = (v3r32) { 0 };
-				BM = (v3r32) { 0 };
+				BL = (v3r32){ 0 };
+				BM = (v3r32){ 0 };
 			} else {
 				BL = Normals[2 * INDEX_2D(X - 1, Z - 1, SquareCountX) + 1];
 				BM = Normals[2 * INDEX_2D(X - 1, Z - 1, SquareCountX) + 0];
 			}
 
-			if (X == VertexCountX - 1 || Z == 0) BR = (v3r32) { 0 };
+			if (X == VertexCountX - 1 || Z == 0) BR = (v3r32){ 0 };
 			else BR = Normals[2 * INDEX_2D(X, Z - 1, SquareCountX) + 1];
 
-			if (X == 0 || Z == VertexCountZ - 1) TL = (v3r32) { 0 };
+			if (X == 0 || Z == VertexCountZ - 1) TL = (v3r32){ 0 };
 			else TL = Normals[2 * INDEX_2D(X - 1, Z, SquareCountX) + 0];
 
 			if (X == VertexCountX - 1 || Z == VertexCountZ - 1) {
-				TM = (v3r32) { 0 };
-				TR = (v3r32) { 0 };
+				TM = (v3r32){ 0 };
+				TR = (v3r32){ 0 };
 			} else {
 				TR = Normals[2 * INDEX_2D(X, Z, SquareCountX) + 0];
 				TM = Normals[2 * INDEX_2D(X, Z, SquareCountX) + 1];

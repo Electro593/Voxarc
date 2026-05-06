@@ -160,7 +160,7 @@ internal ui_string
 MakeUIString(heap *Heap, string String, ui_style Style)
 {
 	ui_string UIStr;
-	UIStr.Size			 = (v2r32) { 0 };
+	UIStr.Size			 = (v2r32){ 0 };
 	UIStr.OffsetX		 = R32_INF;
 	UIStr.Style			 = Style;
 	UIStr.String		 = String;
@@ -175,7 +175,7 @@ MakeUIString(heap *Heap, string String, ui_style Style)
 	ui_font *Font = Style.Font;
 
 	assetpack_font FontData =
-		FindFirstAssetFromExactTag(Font->Assetpack, TAG_FONT_DESC, &(u32) { 0 })
+		FindFirstAssetFromExactTag(Font->Assetpack, TAG_FONT_DESC, &(u32){ 0 })
 			->Font;
 
 	v2r32 P = { 0, Style.FontSize * (FontData.Ascent - FontData.Descent) };
@@ -307,9 +307,9 @@ MakeUIStringObject(heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize)
 
 	// TODO: Cache the font data
 	assetpack_font FontData = FindFirstAssetFromExactTag(
-								  Style.Font->Assetpack,
-								  TAG_FONT_DESC,
-								  &(u32) { 0 }
+		Style.Font->Assetpack,
+		TAG_FONT_DESC,
+		&(u32){ 0 }
 	)
 								  ->Font;
 
@@ -320,7 +320,7 @@ MakeUIStringObject(heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize)
 
 	v2r32 P		   = { 0, UIStr.Size.Y - Style.FontSize * FontData.Ascent };
 	r32	  AdvanceY = Style.FontSize
-				 * (FontData.Ascent - FontData.Descent + FontData.LineGap);
+				   * (FontData.Ascent - FontData.Descent + FontData.LineGap);
 
 	u32 PI = 0;
 
@@ -348,19 +348,19 @@ MakeUIStringObject(heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize)
 				s16 PYB = ((Q.Y) * 2 / UIStr.Size.Y - 1) * 0x7FFF;
 				s16 PYT = ((Q.Y + S.Y) * 2 / UIStr.Size.Y - 1) * 0x7FFF;
 
-				*Vertex++ = (glyph_vertex) {
+				*Vertex++ = (glyph_vertex){
 					{ PXL, PYB },
 					(Style.ZIndex << 24) | Bytes | 0b00
 				};
-				*Vertex++ = (glyph_vertex) {
+				*Vertex++ = (glyph_vertex){
 					{ PXR, PYB },
 					(Style.ZIndex << 24) | Bytes | 0b01
 				};
-				*Vertex++ = (glyph_vertex) {
+				*Vertex++ = (glyph_vertex){
 					{ PXR, PYT },
 					(Style.ZIndex << 24) | Bytes | 0b11
 				};
-				*Vertex++ = (glyph_vertex) {
+				*Vertex++ = (glyph_vertex){
 					{ PXL, PYT },
 					(Style.ZIndex << 24) | Bytes | 0b10
 				};
@@ -410,8 +410,6 @@ MakeUIStringObject(heap *Heap, ui_string UIStr, v2u32 Pos, v2u32 ViewSize)
 
 internal void
 FreeUIString(ui_string String)
-{
-	Heap_Free(String.Lines);
-}
+{ Heap_Free(String.Lines); }
 
 #endif

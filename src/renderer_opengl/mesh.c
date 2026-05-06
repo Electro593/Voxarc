@@ -26,9 +26,9 @@ Mesh_EncodeNormal(v3r32 N)
 	N		= V3r32_MulS(N, 511);
 	v3s32 I = V3r32_ToV3s32(N);
 	u32	  E = (1 << 30)
-		  | ((I.Z & 0x3FF) << 20)
-		  | ((I.Y & 0x3FF) << 10)
-		  | (I.X & 0x3FF);
+			| ((I.Z & 0x3FF) << 20)
+			| ((I.Y & 0x3FF) << 10)
+			| (I.X & 0x3FF);
 	return E;
 }
 
@@ -191,9 +191,7 @@ Mesh_GetVertices(mesh *Mesh, u32 ObjectIndex)
 
 internal m4x4r32 *
 Mesh_GetMatrix(mesh *Mesh, u32 ObjectIndex)
-{
-	return (m4x4r32 *) Mesh->Matrices->Data + ObjectIndex;
-}
+{ return (m4x4r32 *) Mesh->Matrices->Data + ObjectIndex; }
 
 internal u32
 Mesh_ReserveObject(mesh *Mesh, u32 VertexCount, u32 IndexCount)
@@ -600,9 +598,7 @@ Mesh_DrawPartial(mesh *Mesh, u32 DrawMode, u32 ObjectOffset, u32 ObjectCount)
 
 internal void
 Mesh_Draw(mesh *Mesh, u32 DrawMode)
-{
-	Mesh_DrawPartial(Mesh, DrawMode, 0, Mesh->ObjectCount);
-}
+{ Mesh_DrawPartial(Mesh, DrawMode, 0, Mesh->ObjectCount); }
 
 internal void
 Mesh_Free(mesh *Mesh)

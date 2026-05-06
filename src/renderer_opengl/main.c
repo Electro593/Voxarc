@@ -50,10 +50,18 @@ typedef enum shader_id {
 } shader_id;
 
 c08 *ShaderPaths[] = {
-	SHADERS_DIR "p.vert",	  SHADERS_DIR "p.frag",	   SHADERS_DIR "pc2.vert",
-	SHADERS_DIR "pc2.frag",	  SHADERS_DIR "pc3.vert",  SHADERS_DIR "pc3.frag",
-	SHADERS_DIR "pt.vert",	  SHADERS_DIR "pt.frag",   SHADERS_DIR "glyph.vert",
-	SHADERS_DIR "glyph.frag", SHADERS_DIR "pnc3.vert", SHADERS_DIR "pnc3.frag",
+	SHADERS_DIR "p.vert",
+	SHADERS_DIR "p.frag",
+	SHADERS_DIR "pc2.vert",
+	SHADERS_DIR "pc2.frag",
+	SHADERS_DIR "pc3.vert",
+	SHADERS_DIR "pc3.frag",
+	SHADERS_DIR "pt.vert",
+	SHADERS_DIR "pt.frag",
+	SHADERS_DIR "glyph.vert",
+	SHADERS_DIR "glyph.frag",
+	SHADERS_DIR "pnc3.vert",
+	SHADERS_DIR "pnc3.frag",
 };
 
 typedef struct shader {
@@ -94,7 +102,7 @@ typedef struct renderer_state {
 external void
 Load(platform_state *Platform, platform_module *Module)
 {
-	_F = (renderer_funcs) {
+	_F = (renderer_funcs){
 #define EXPORT(R, N, ...) N,
 #define X RENDERER_FUNCS
 #include <x.h>
@@ -240,9 +248,9 @@ Renderer_LoadShader(
 		Shader->Program = Renderer_LoadProgram(VertName, FragName);
 
 		assetpack_atlas Atlas = FindFirstAssetFromExactTag(
-									Renderer->Assetpack,
-									TAG_ATLAS_DESC,
-									&(u32) { 0 }
+			Renderer->Assetpack,
+			TAG_ATLAS_DESC,
+			&(u32){ 0 }
 		)
 									->Atlas;
 		m4x4r32 VPMatrix =
@@ -331,9 +339,9 @@ Renderer_LoadShader(
 
 			if (FLAG_SET(Flags, MESH_HAS_MATERIALS)) {
 				material Material = {
-					(v3u08) { 150, 150, 160 },
-					(v3u08) { 170, 170, 170 },
-					(v3u08) { 200, 200, 200 },
+					(v3u08){ 150, 150, 160 },
+					(v3u08){ 170, 170, 170 },
+					(v3u08){ 200, 200, 200 },
 					2,
 					0
 				};
@@ -454,26 +462,21 @@ Renderer_Resize(
 	r32 FarZ		= 256;
 	r32 ZRange		= NearZ - FarZ;
 
-	*PerspectiveMatrix = (m4x4r32) { CotHalfFOV / AspectRatio,
-									 0,
-									 0,
-									 0,
-									 0,
-									 CotHalfFOV,
-									 0,
-									 0,
-									 0,
-									 0,
-									 (-NearZ - FarZ) / ZRange,
-									 2 * FarZ * NearZ / ZRange,
-									 0,
-									 0,
-									 1,
-									 0 };
-
-	*OrthographicMatrix = (m4x4r32) {
-		1 / AspectRatio, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
+	// clang-format off
+	*PerspectiveMatrix = (m4x4r32){
+		CotHalfFOV / AspectRatio,          0,                        0,                         0,
+		                       0, CotHalfFOV,                        0,                         0,
+		                       0,          0, (-NearZ - FarZ) / ZRange, 2 * FarZ * NearZ / ZRange,
+		                       0,          0,                        1,                         0,
 	};
+
+	*OrthographicMatrix = (m4x4r32){
+		1 / AspectRatio, 0, 0, 0,
+		              0, 1, 0, 0,
+		              0, 0, 1, 0,
+		              0, 0, 0, 1,
+	};
+	// clang-format on
 
 	OpenGL_Viewport(Pos.X, Pos.Y, Size.X, Size.Y);
 	OpenGL_Scissor(Pos.X, Pos.Y, Size.X, Size.Y);
@@ -558,11 +561,11 @@ Renderer_Draw(
 
 	ui_string	UIString = MakeUIString(Renderer->Heap, String, InheritedStyle);
 	mesh_object Object	 = MakeUIStringObject(
-		  Renderer->Heap,
-		  UIString,
-		  (v2u32) { 10, 0 },
-		  Renderer->WindowSize
-	  );
+		Renderer->Heap,
+		UIString,
+		(v2u32){ 10, 0 },
+		Renderer->WindowSize
+	);
 	FreeUIString(UIString);
 
 	Object.Index	= Renderer->ObjectIndex;
@@ -602,7 +605,7 @@ Renderer_Draw(
 	Mesh_Draw(GlyphMesh, GL_TRIANGLES);
 	OpenGL_Enable(GL_DEPTH_TEST);
 
-	Wayland_SwapBuffers();
+	Platform_SwapBuffers();
 
 	Stack_Pop();
 }
@@ -683,14 +686,14 @@ Init(platform_state *Platform)
 	ui_component *Root			= Components + 0;
 	*Root						= DEFAULT_COMPONENT;
 	Root->Style.Visible			= FALSE;
-	Root->Style.Size			= (v2u32) { (u32) -1, (u32) -1 };
-	Root->Style.Padding			= (v4u32) { 20, 20, 20, 20 };
+	Root->Style.Size			= (v2u32){ (u32) -1, (u32) -1 };
+	Root->Style.Padding			= (v4u32){ 20, 20, 20, 20 };
 	Root->Style.ZIndex			= 0;
 	Root->Style.FontSize		= 30;
 	Root->Style.TabSize			= 80;
-	Root->Style.BackgroundColor = (v4u08) { 100, 100, 100, 255 };
-	Root->Style.BorderColor		= (v4u08) { 20, 20, 20, 255 };
-	Root->Style.BorderSize		= (v4u32) { 2, 2, 2, 2 };
+	Root->Style.BackgroundColor = (v4u08){ 100, 100, 100, 255 };
+	Root->Style.BorderColor		= (v4u08){ 20, 20, 20, 255 };
+	Root->Style.BorderSize		= (v4u32){ 2, 2, 2, 2 };
 	Root->Style.Font			= &Renderer->Font;
 
 	ui_component *DebugText = Components + 1;

@@ -435,7 +435,7 @@ File_LoadAssetpack(c08 *FileName, heap *Heap)
 internal void
 BeginAssetpack(assetpack_gen *Assetpack, heap *Heap)
 {
-	Assetpack->Header	  = (assetpack_header) { 0 };
+	Assetpack->Header	  = (assetpack_header){ 0 };
 	Assetpack->Registries = Heap_Allocate(Heap, 0);
 	Assetpack->Tags		  = Heap_Allocate(Heap, 0);
 	Assetpack->TagData	  = Heap_Allocate(Heap, 0);
@@ -444,8 +444,8 @@ BeginAssetpack(assetpack_gen *Assetpack, heap *Heap)
 
 	Mem_Set(Assetpack->RegistryMap, U32_MAX, TAG_Count * sizeof(u32));
 
-	Assetpack->Padding	   = (v2u32) { 1, 1 };
-	Assetpack->AtlasDims   = (v2u32) { 512, 512 };
+	Assetpack->Padding	   = (v2u32){ 1, 1 };
+	Assetpack->AtlasDims   = (v2u32){ 512, 512 };
 	Assetpack->AtlasCount  = 0;
 	Assetpack->AtlasOffset = 0;
 
@@ -456,8 +456,8 @@ BeginAssetpack(assetpack_gen *Assetpack, heap *Heap)
 
 	Assetpack->NullPackerNode = Stack_Allocate(sizeof(binpacker_node));
 	Assetpack->NullPackerNode->AtlasIndex = 0;
-	Assetpack->NullPackerNode->Pos		  = (v2u32) { 0 };
-	Assetpack->NullPackerNode->Size		  = (v2u32) { 0 };
+	Assetpack->NullPackerNode->Pos		  = (v2u32){ 0 };
+	Assetpack->NullPackerNode->Size		  = (v2u32){ 0 };
 	Assetpack->NullPackerNode->Next		  = Assetpack->NullPackerNode;
 }
 
@@ -725,9 +725,9 @@ AddTag(
 		Tag				= Tags + Index;
 		Tag->AssetCount = 1;
 		Tag->AssetsGen	= Heap_Allocate(
-			 Heap_GetHeap(Assetpack->TagData),
-			 sizeof(assetpack_asset *)
-		 );
+			Heap_GetHeap(Assetpack->TagData),
+			sizeof(assetpack_asset *)
+		);
 		assetpack_asset **Assets = Tag->AssetsGen->Data;
 		Assets[0] = (vptr) ((u64) Asset - (u64) Assetpack->Assets->Data);
 
@@ -809,8 +809,10 @@ AddToAtlas(
 	if (Glyph) AssetNode->Glyph = *Glyph;
 	AssetNode->FileHandle	= FileHandle;
 	AssetNode->BitmapOffset = BitmapOffset;
-	AssetNode->Size	 = (v2u32) { Asset->Header.Size.X + Assetpack->Padding.X,
-								 Asset->Header.Size.Y + Assetpack->Padding.Y };
+	AssetNode->Size			= (v2u32){
+		Asset->Header.Size.X + Assetpack->Padding.X,
+		Asset->Header.Size.Y + Assetpack->Padding.Y,
+	};
 	AssetNode->Asset = (vptr) ((u64) Asset - (u64) Assetpack->Assets->Data);
 	AssetNode->Prev	 = Assetpack->NullAssetNode;
 	AssetNode->Next	 = Assetpack->NullAssetNode->Next;
@@ -847,8 +849,10 @@ MakeAtlas(assetpack_gen *Assetpack, v4u08 BorderColor)
 				while (AssetNode->Next != NullAssetNode) {
 					AssetNode = AssetNode->Next;
 
-					v2s32 SizeDiff = { Node->Size.X - AssetNode->Size.X,
-									   Node->Size.Y - AssetNode->Size.Y };
+					v2s32 SizeDiff = {
+						Node->Size.X - AssetNode->Size.X,
+						Node->Size.Y - AssetNode->Size.Y,
+					};
 
 					if (SizeDiff.X < 0 || SizeDiff.Y < 0) continue;
 
@@ -859,8 +863,9 @@ MakeAtlas(assetpack_gen *Assetpack, v4u08 BorderColor)
 						BestNode	  = Node;
 						BestAssetNode = AssetNode;
 						MinShortSide  = ShortSide;
-					} else if (ShortSide == MinShortSide
-							   && LongSide < MinLongSide)
+					} else if (
+						ShortSide == MinShortSide && LongSide < MinLongSide
+					)
 					{
 						BestNode	  = Node;
 						BestAssetNode = AssetNode;
@@ -975,7 +980,7 @@ MakeAtlas(assetpack_gen *Assetpack, v4u08 BorderColor)
 					NewNode->Next->Prev = NewNode;
 					NewNode->Pos		= Node->Pos;
 					NewNode->Size =
-						(v2u32) { Pos.X - Node->Pos.X, Node->Size.Y };
+						(v2u32){ Pos.X - Node->Pos.X, Node->Size.Y };
 				}
 
 				if (Node->Pos.X < Pos2.X && Pos2.X < NodePos2.X) {
@@ -985,9 +990,9 @@ MakeAtlas(assetpack_gen *Assetpack, v4u08 BorderColor)
 					NewNode->Next		= Node->Next;
 					NewNode->Prev->Next = NewNode;
 					NewNode->Next->Prev = NewNode;
-					NewNode->Pos		= (v2u32) { Pos2.X, Node->Pos.Y };
+					NewNode->Pos		= (v2u32){ Pos2.X, Node->Pos.Y };
 					NewNode->Size =
-						(v2u32) { NodePos2.X - Pos2.X, Node->Size.Y };
+						(v2u32){ NodePos2.X - Pos2.X, Node->Size.Y };
 				}
 			}
 
@@ -1001,7 +1006,7 @@ MakeAtlas(assetpack_gen *Assetpack, v4u08 BorderColor)
 					NewNode->Next->Prev = NewNode;
 					NewNode->Pos		= Node->Pos;
 					NewNode->Size =
-						(v2u32) { Node->Size.X, Pos.Y - Node->Pos.Y };
+						(v2u32){ Node->Size.X, Pos.Y - Node->Pos.Y };
 				}
 
 				if (Node->Pos.Y < Pos2.Y && Pos2.Y < NodePos2.Y) {
@@ -1011,9 +1016,9 @@ MakeAtlas(assetpack_gen *Assetpack, v4u08 BorderColor)
 					NewNode->Next		= Node->Next;
 					NewNode->Prev->Next = NewNode;
 					NewNode->Next->Prev = NewNode;
-					NewNode->Pos		= (v2u32) { Node->Pos.X, Pos2.Y };
+					NewNode->Pos		= (v2u32){ Node->Pos.X, Pos2.Y };
 					NewNode->Size =
-						(v2u32) { Node->Size.X, NodePos2.Y - Pos2.Y };
+						(v2u32){ Node->Size.X, NodePos2.Y - Pos2.Y };
 				}
 			}
 
@@ -1051,7 +1056,7 @@ MakeAtlas(assetpack_gen *Assetpack, v4u08 BorderColor)
 	Asset->Atlas.DataOffset = 0;
 	Asset->Atlas.Size		= AtlasDims;
 	Asset->Atlas.Count		= AtlasCount;
-	AddTag(Assetpack, Asset, TAG_ATLAS_DESC, &(u32) { 0 });
+	AddTag(Assetpack, Asset, TAG_ATLAS_DESC, &(u32){ 0 });
 
 	Assetpack->AtlasCount			= AtlasCount;
 	Assetpack->AtlasOffset			= AtlasesOffset;
@@ -1091,7 +1096,7 @@ File_CreateAssetpack(c08 *FileName, heap *Heap, r32 FontSize)
 		Asset->Font.LineGap = Font.hhea->LineGap * UnitScale;
 		AddTag(&Assetpack, Asset, TAG_FONT_NAME, &FontName);
 		AddTag(&Assetpack, Asset, TAG_FONT_STYLE, &FontStyle);
-		AddTag(&Assetpack, Asset, TAG_FONT_DESC, &(u32) { 0 });
+		AddTag(&Assetpack, Asset, TAG_FONT_DESC, &(u32){ 0 });
 
 		for (u32 Codepoint = ' '; Codepoint <= '~'; Codepoint++) {
 			u32 GlyphIndex = Font_GetGlyphIndex(Font, Codepoint);
@@ -1101,7 +1106,7 @@ File_CreateAssetpack(c08 *FileName, heap *Heap, r32 FontSize)
 
 			Asset = AddAsset(&Assetpack, ASSET_GLYPH);
 			Asset->Header.Size =
-				(v2u32) { Glyph.Size.X * FontSize, Glyph.Size.Y * FontSize };
+				(v2u32){ Glyph.Size.X * FontSize, Glyph.Size.Y * FontSize };
 			Asset->Glyph.AdvanceX = Glyph.Advance;
 			Asset->Glyph.Bearing  = Glyph.Bearing;
 			Asset->Glyph.SizeR	  = Glyph.Size;
@@ -1129,7 +1134,7 @@ File_CreateAssetpack(c08 *FileName, heap *Heap, r32 FontSize)
 
 			Asset = AddAsset(&Assetpack, ASSET_TEXTURE);
 			Asset->Header.Size =
-				(v2u32) { BitmapHeader.Width, BitmapHeader.Height };
+				(v2u32){ BitmapHeader.Width, BitmapHeader.Height };
 
 			u32 HandleIndex = 0;
 			AddToAtlas(
@@ -1152,7 +1157,7 @@ File_CreateAssetpack(c08 *FileName, heap *Heap, r32 FontSize)
 
 			Asset = AddAsset(&Assetpack, ASSET_TEXTURE);
 			Asset->Header.Size =
-				(v2u32) { BitmapHeader.Width, BitmapHeader.Height };
+				(v2u32){ BitmapHeader.Width, BitmapHeader.Height };
 
 			u32 HandleIndex = 0;
 			AddToAtlas(
