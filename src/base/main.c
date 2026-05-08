@@ -58,7 +58,7 @@ global game_funcs _F;
 #define TICKS_PER_DAY 480
 
 typedef struct game_state {
-	r64 LastTime;
+	timestamp LastTime;
 
 	b08 Key1WasDown;
 	b08 KeySpaceWasDown;
@@ -172,7 +172,7 @@ Init(platform_state *Platform)
 	Game->TimeOfDay	   = TICKS_PER_DAY / 4;
 	Game->Velocity	   = (v3r32){ 0, 0, 0 };
 	Game->Acceleration = (v3r32){ 0, 0, 0 };
-	Game->LastTime	   = Platform_GetTime();
+	Game->LastTime	   = Platform_GetTimestamp();
 	Renderer->Heap	   = RendererHeap;
 	RendererModule->Init(Platform);
 
@@ -323,9 +323,9 @@ Update(platform_state *Platform)
 {
 	game_state *Game = &_G;
 
-	r64 CurrentTime = Platform_GetTime();
-	r64 DeltaTime	= CurrentTime - Game->LastTime;
-	Game->LastTime	= CurrentTime;
+	timestamp CurrentTime = Platform_GetTimestamp();
+	r64 DeltaTime  = Platform_GetSecondsElapsed(Game->LastTime, CurrentTime);
+	Game->LastTime = CurrentTime;
 
 	if (Platform->Updates & WINDOW_RESIZED) {
 		Renderer_Resize(
