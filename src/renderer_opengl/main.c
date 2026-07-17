@@ -13,6 +13,7 @@
 #endif
 
 #include <shared.h>
+#include <platform/shared.h>
 
 #define INCLUDE_HEADER
 #include <util/main.c>
@@ -135,7 +136,7 @@ Load(platform_state *Platform, platform_module *Module)
 }
 
 #ifdef _DEBUG
-internal void API_ENTRY
+internal void
 OpenGL_DebugCallback(
 	opengl_debug_source	  Source,
 	opengl_debug_type	  Type,
