@@ -175,7 +175,7 @@ Init(platform_state *Platform)
 	Game->Acceleration = (v3r32){ 0, 0, 0 };
 	Game->LastTime	   = Platform_GetTimestamp();
 	Renderer->Heap	   = RendererHeap;
-	RendererModule->Init(Platform);
+	Renderer_Init(Platform);
 
 	Renderer_SetUniform_V3r32(
 		Renderer,

@@ -611,8 +611,8 @@ Renderer_Draw(
 	Stack_Pop();
 }
 
-external void
-Init(platform_state *Platform)
+internal void
+Renderer_Init(platform_state *Platform)
 {
 	renderer_state *Renderer = &_G;
 	heap		   *Heap	 = Renderer->Heap;
