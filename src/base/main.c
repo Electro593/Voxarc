@@ -282,7 +282,7 @@ Init(platform_state *Platform)
 		mesh_object Object;
 		Object.Vertices = Heap_Allocate(RendererHeap, 8 * sizeof(pc_vertex));
 		Object.Indices	= Heap_Allocate(RendererHeap, 12 * sizeof(u32));
-		v4u08 C			= { 127, 127, 127, 255 };
+		v4u08 C			= { 191, 191, 191, 255 };
 		u32	  Indices[] = { 0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7 };
 		Mem_Cpy(Object.Indices->Data, Indices, sizeof(Indices));
 		pc_vertex *Vertex = Object.Vertices->Data;
