@@ -238,15 +238,17 @@ Renderer_LoadShader(
 	b32		UI	   = Flags & MESH_IS_FOR_UI;
 
 	b08 ShouldReload = !Shader->Initialized;
-	if (!ShouldReload && HasTime)
-		ShouldReload =
+
+	if (HasTime) {
+		ShouldReload |=
 			Platform_CmpFileTime(Shader->VertLastModified, VertTime) == LESS
 			|| Platform_CmpFileTime(Shader->FragLastModified, FragTime) == LESS;
 
-	if (ShouldReload) {
 		Shader->VertLastModified = VertTime;
 		Shader->FragLastModified = FragTime;
+	}
 
+	if (ShouldReload) {
 		if (Shader->Initialized) OpenGL_DeleteProgram(Shader->Program);
 
 		Shader->Program = Renderer_LoadProgram(VertName, FragName);
