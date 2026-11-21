@@ -1,0 +1,2 @@
+[diagnostics]
+suppress = ["err_pp_including_mainfile_in_preamble"]
