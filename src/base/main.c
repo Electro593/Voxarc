@@ -314,7 +314,11 @@ Init(platform_state *Platform)
 		Mesh_FreeObject(Object);
 	}
 
-	Platform->ExecutionState = EXECUTION_RUNNING;
+	Intrin_CompareExchange32(
+		&Platform->ExecutionState,
+		EXECUTION_INITIALIZING,
+		EXECUTION_RUNNING
+	);
 
 	Stack_Pop();
 }
