@@ -227,8 +227,8 @@ Renderer_LoadShader(
 	c08 *FragName = ShaderPaths[2 * ShaderID + 1];
 
 	datetime VertTime, FragTime;
-	Platform_GetFileTime(VertName, 0, 0, &VertTime);
-	Platform_GetFileTime(FragName, 0, 0, &FragTime);
+	b08		 HasTime = Platform_GetFileTime(VertName, 0, 0, &VertTime)
+					&& Platform_GetFileTime(FragName, 0, 0, &FragTime);
 
 	shader *Shader = &Renderer->Shaders[ShaderID];
 	b32		N	   = Flags & MESH_HAS_NORMALS;
@@ -237,10 +237,13 @@ Renderer_LoadShader(
 	b32		d3	   = Flags & MESH_HAS_PERSPECTIVE;
 	b32		UI	   = Flags & MESH_IS_FOR_UI;
 
-	if (!Shader->Initialized
-		|| Platform_CmpFileTime(Shader->VertLastModified, VertTime) == LESS
-		|| Platform_CmpFileTime(Shader->FragLastModified, FragTime) == LESS)
-	{
+	b08 ShouldReload = !Shader->Initialized;
+	if (!ShouldReload && HasTime)
+		ShouldReload =
+			Platform_CmpFileTime(Shader->VertLastModified, VertTime) == LESS
+			|| Platform_CmpFileTime(Shader->FragLastModified, FragTime) == LESS;
+
+	if (ShouldReload) {
 		Shader->VertLastModified = VertTime;
 		Shader->FragLastModified = FragTime;
 
