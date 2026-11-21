@@ -7,6 +7,7 @@
 *                                                                             *
 \* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+_Static_assert(1);
 #if !defined(INCLUDE_SOURCE) && !defined(INCLUDE_HEADER)
 #include <shared.h>
 #include <platform/shared.h>
