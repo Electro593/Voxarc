@@ -2,3 +2,4 @@ build/
 
 DEBUGOutput.txt
 heap_dump.txt
+compile_commands.json
